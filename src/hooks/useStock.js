@@ -1,0 +1,100 @@
+import { useState, useEffect, useCallback } from 'react'
+import { supabase } from '../lib/supabase'
+import { useAuth } from './useAuth'
+
+export function useStock() {
+  const { profile } = useAuth()
+  const [stockItems, setStockItems] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  const fetch = useCallback(async () => {
+    if (!profile?.household_id) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
+
+    const { data, error } = await supabase
+      .from('stock')
+      .select('*, items(id, name, name_he, emoji, default_unit, category_id, categories(id, name, name_he, emoji, sort_order))')
+      .eq('household_id', profile.household_id)
+      .order('updated_at', { ascending: false })
+
+    if (data) setStockItems(data)
+    if (error) console.error('Failed to fetch stock:', error)
+    setLoading(false)
+  }, [profile?.household_id])
+
+  useEffect(() => {
+    fetch()
+  }, [fetch])
+
+  const addToStock = async (itemId, quantity, unit, lowThreshold = 1) => {
+    const { data, error } = await supabase
+      .from('stock')
+      .upsert({
+        household_id: profile.household_id,
+        item_id: itemId,
+        quantity,
+        unit,
+        low_threshold: lowThreshold,
+        updated_by: profile.id,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'household_id,item_id' })
+      .select('*, items(id, name, name_he, emoji, default_unit, category_id, categories(id, name, name_he, emoji, sort_order))')
+      .single()
+
+    if (error) throw error
+    await fetch()
+    return data
+  }
+
+  const updateQuantity = async (stockId, quantity) => {
+    const { error } = await supabase
+      .from('stock')
+      .update({
+        quantity: Math.max(0, quantity),
+        updated_by: profile.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', stockId)
+
+    if (error) throw error
+    setStockItems((prev) =>
+      prev.map((s) => (s.id === stockId ? { ...s, quantity: Math.max(0, quantity) } : s))
+    )
+  }
+
+  const updateThreshold = async (stockId, lowThreshold) => {
+    const { error } = await supabase
+      .from('stock')
+      .update({ low_threshold: lowThreshold })
+      .eq('id', stockId)
+
+    if (error) throw error
+    setStockItems((prev) =>
+      prev.map((s) => (s.id === stockId ? { ...s, low_threshold: lowThreshold } : s))
+    )
+  }
+
+  const removeFromStock = async (stockId) => {
+    const { error } = await supabase.from('stock').delete().eq('id', stockId)
+    if (error) throw error
+    setStockItems((prev) => prev.filter((s) => s.id !== stockId))
+  }
+
+  const lowStockItems = stockItems.filter((s) => s.quantity <= s.low_threshold)
+  const lowStockCount = lowStockItems.length
+
+  return {
+    stockItems,
+    loading,
+    refetch: fetch,
+    addToStock,
+    updateQuantity,
+    updateThreshold,
+    removeFromStock,
+    lowStockItems,
+    lowStockCount,
+  }
+}
