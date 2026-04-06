@@ -4,14 +4,16 @@ import { useStock } from '../hooks/useStock'
 import { useItems } from '../hooks/useItems'
 import { useCategories } from '../hooks/useCategories'
 import { getCategoryName } from '../lib/categoryName'
+import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function Stock() {
   const { t, i18n } = useTranslation()
-  const { stockItems, loading, addToStock, updateQuantity, updateThreshold, removeFromStock, lowStockCount } = useStock()
+  const { stockItems, loading, addToStock, updateQuantity, updateThreshold, updateStock, removeFromStock, lowStockCount } = useStock()
   const { items: allItems } = useItems()
   const { categories } = useCategories()
   const [showAddModal, setShowAddModal] = useState(false)
+  const [editingStock, setEditingStock] = useState(null) // stock item to edit
   const [filterLow, setFilterLow] = useState(false)
   const [editingThreshold, setEditingThreshold] = useState(null)
 
@@ -156,16 +158,24 @@ export default function Stock() {
                           </button>
                         )}
 
-                        <button
-                          onClick={() => {
-                            if (window.confirm(i18n.language === 'he' ? 'להסיר מהמלאי?' : 'Remove from stock?')) {
-                              removeFromStock(s.id)
-                            }
-                          }}
-                          className="text-xs text-danger hover:underline py-1.5 px-2 min-h-[36px] flex items-center"
-                        >
-                          {t('common.delete')}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setEditingStock(s)}
+                            className="text-xs text-primary hover:underline py-1.5 px-2 min-h-[36px] flex items-center"
+                          >
+                            {t('common.edit', 'Edit')}
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(i18n.language === 'he' ? 'להסיר מהמלאי?' : 'Remove from stock?')) {
+                                removeFromStock(s.id)
+                              }
+                            }}
+                            className="text-xs text-danger hover:underline py-1.5 px-2 min-h-[36px] flex items-center"
+                          >
+                            {t('common.delete')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )
@@ -197,6 +207,18 @@ export default function Stock() {
           onClose={() => setShowAddModal(false)}
         />
       )}
+
+      {/* Edit stock modal */}
+      {editingStock && (
+        <EditStockModal
+          stockItem={editingStock}
+          onSave={async (updates) => {
+            await updateStock(editingStock.id, updates)
+            setEditingStock(null)
+          }}
+          onClose={() => setEditingStock(null)}
+        />
+      )}
     </div>
   )
 }
@@ -206,8 +228,9 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
   const [quantity, setQuantity] = useState(1)
-  const [threshold, setThreshold] = useState(1)
+  const [threshold, setThreshold] = useState(0)
   const [saving, setSaving] = useState(false)
+  const isKeyboardVisible = useKeyboardVisible()
 
   const filtered = search.trim()
     ? items.filter((i) => i.name?.toLowerCase().includes(search.toLowerCase()) || i.name_he?.toLowerCase().includes(search.toLowerCase()))
@@ -231,7 +254,7 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
       <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] min-h-[50vh] overflow-y-auto animate-slide-up sm:animate-fade-in"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
+        style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
       >
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
           <h2 className="text-lg font-extrabold text-text">
@@ -240,7 +263,7 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
         </div>
 
-        <div className="p-4">
+        <div className="p-4 pb-20">
           {!selected ? (
             <>
               <input
@@ -323,6 +346,81 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
               </button>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EditStockModal({ stockItem, onSave, onClose }) {
+  const { t, i18n } = useTranslation()
+  const [quantity, setQuantity] = useState(stockItem.quantity)
+  const [threshold, setThreshold] = useState(stockItem.low_threshold)
+  const [saving, setSaving] = useState(false)
+  const isKeyboardVisible = useKeyboardVisible()
+
+  const handleSubmit = async () => {
+    setSaving(true)
+    await onSave({ quantity, low_threshold: threshold })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
+      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-y-auto animate-slide-up sm:animate-fade-in"
+        style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
+      >
+        <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
+          <h2 className="text-lg font-extrabold text-text">
+            {i18n.language === 'he' ? 'עריכת מלאי' : 'Edit Stock'}
+          </h2>
+          <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
+        </div>
+
+        <div className="p-4 pb-20 space-y-4">
+          <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl border border-primary/30">
+            <span className="text-3xl">{stockItem.items?.emoji || '🛒'}</span>
+            <div>
+              <p className="font-bold">{stockItem.items?.name}</p>
+              <p className="text-xs text-text-secondary">{stockItem.unit}</p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              {i18n.language === 'he' ? 'כמות נוכחית' : 'Current Quantity'}
+            </label>
+            <div className="flex items-center gap-3">
+              <button onClick={() => setQuantity(Math.max(0, quantity - 1))} className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-bold text-lg active:scale-90 transition-transform">−</button>
+              <input
+                type="number"
+                value={quantity}
+                onChange={(e) => setQuantity(Math.max(0, Number(e.target.value)))}
+                className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-bold"
+              />
+              <button onClick={() => setQuantity(quantity + 1)} className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-lg active:scale-90 transition-transform">+</button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-semibold mb-1">
+              {i18n.language === 'he' ? 'סף מלאי נמוך' : 'Low Stock Threshold'}
+            </label>
+            <input
+              type="number"
+              value={threshold}
+              onChange={(e) => setThreshold(Math.max(0, Number(e.target.value)))}
+              className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center"
+            />
+          </div>
+
+          <button
+            onClick={handleSubmit}
+            disabled={saving}
+            className="w-full py-3.5 rounded-xl bg-primary text-white font-bold text-lg disabled:opacity-50 min-h-[48px]"
+          >
+            {saving ? t('items.saving') : t('common.save')}
+          </button>
         </div>
       </div>
     </div>

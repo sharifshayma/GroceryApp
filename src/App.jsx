@@ -16,6 +16,7 @@ import Profile from './pages/Profile'
 import ManageCategories from './pages/ManageCategories'
 import ManageTags from './pages/ManageTags'
 import CreateList from './pages/CreateList'
+import EditList from './pages/EditList'
 
 export default function App() {
   useDirection()
@@ -38,7 +39,9 @@ export default function App() {
             <Route index element={<Home />} />
             <Route path="/category/:categoryId" element={<Category />} />
             <Route path="/lists" element={<Lists />} />
+            <Route path="/lists/:listId" element={<Lists />} />
             <Route path="/create-list" element={<CreateList />} />
+            <Route path="/edit-list/:listId" element={<EditList />} />
             <Route path="/stock" element={<Stock />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/manage-categories" element={<ManageCategories />} />

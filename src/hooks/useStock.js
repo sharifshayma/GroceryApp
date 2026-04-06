@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
+import { useRefreshOnFocus } from './useRefreshOnFocus'
+import { emit, on } from '../lib/events'
 
 export function useStock() {
   const { profile } = useAuth()
@@ -29,6 +31,13 @@ export function useStock() {
     fetch()
   }, [fetch])
 
+  useRefreshOnFocus(fetch)
+
+  // Listen for stock invalidation from other hook instances
+  useEffect(() => {
+    return on('stock-changed', fetch)
+  }, [fetch])
+
   const addToStock = async (itemId, quantity, unit, lowThreshold = 1) => {
     const { data, error } = await supabase
       .from('stock')
@@ -46,6 +55,7 @@ export function useStock() {
 
     if (error) throw error
     await fetch()
+    emit('stock-changed')
     return data
   }
 
@@ -77,10 +87,31 @@ export function useStock() {
     )
   }
 
+  const updateStock = async (stockId, { quantity, unit, low_threshold }) => {
+    const updates = {
+      updated_by: profile.id,
+      updated_at: new Date().toISOString(),
+    }
+    if (quantity !== undefined) updates.quantity = Math.max(0, quantity)
+    if (unit !== undefined) updates.unit = unit
+    if (low_threshold !== undefined) updates.low_threshold = Math.max(0, low_threshold)
+
+    const { error } = await supabase
+      .from('stock')
+      .update(updates)
+      .eq('id', stockId)
+
+    if (error) throw error
+    setStockItems((prev) =>
+      prev.map((s) => (s.id === stockId ? { ...s, ...updates } : s))
+    )
+  }
+
   const removeFromStock = async (stockId) => {
     const { error } = await supabase.from('stock').delete().eq('id', stockId)
     if (error) throw error
     setStockItems((prev) => prev.filter((s) => s.id !== stockId))
+    emit('stock-changed')
   }
 
   const lowStockItems = stockItems.filter((s) => s.quantity <= s.low_threshold)
@@ -93,6 +124,7 @@ export function useStock() {
     addToStock,
     updateQuantity,
     updateThreshold,
+    updateStock,
     removeFromStock,
     lowStockItems,
     lowStockCount,

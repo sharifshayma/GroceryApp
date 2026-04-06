@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
+import { useRefreshOnFocus } from './useRefreshOnFocus'
 
 export function useLists() {
   const { profile } = useAuth()
@@ -11,11 +12,22 @@ export function useLists() {
     if (!profile?.household_id) return
     setLoading(true)
 
-    const { data, error } = await supabase
+    // Try with extended columns first, fall back if migrations not applied yet
+    let { data, error } = await supabase
       .from('grocery_lists')
-      .select('*, list_items(id, item_id, quantity, unit, is_bought, items(name, name_he, emoji, category_id, categories(name, name_he, emoji)))')
+      .select('*, list_items(id, item_id, quantity, unit, is_bought, notes, stock_updated, items(name, name_he, emoji, default_unit, category_id, categories(name, name_he, emoji)))')
       .eq('household_id', profile.household_id)
       .order('created_at', { ascending: false })
+
+    if (error) {
+      const fallback = await supabase
+        .from('grocery_lists')
+        .select('*, list_items(id, item_id, quantity, unit, is_bought, items(name, name_he, emoji, default_unit, category_id, categories(name, name_he, emoji)))')
+        .eq('household_id', profile.household_id)
+        .order('created_at', { ascending: false })
+      data = fallback.data
+      error = fallback.error
+    }
 
     if (data) setLists(data)
     if (error) console.error('Failed to fetch lists:', error)
@@ -25,6 +37,8 @@ export function useLists() {
   useEffect(() => {
     fetch()
   }, [fetch])
+
+  useRefreshOnFocus(fetch)
 
   const createList = async (name, items) => {
     // items: [{ item_id, quantity, unit }]
@@ -47,6 +61,7 @@ export function useLists() {
         item_id: item.item_id,
         quantity: item.quantity,
         unit: item.unit,
+        ...(item.notes ? { notes: item.notes } : {}),
       }))
 
       const { error: itemsErr } = await supabase
@@ -89,6 +104,49 @@ export function useLists() {
     return createList(newName, items)
   }
 
+  const addItemToList = async (listId, item) => {
+    // item: { item_id, quantity, unit, notes? }
+    const { error } = await supabase
+      .from('list_items')
+      .insert({
+        list_id: listId,
+        item_id: item.item_id,
+        quantity: item.quantity,
+        unit: item.unit,
+        ...(item.notes ? { notes: item.notes } : {}),
+      })
+    if (error) throw error
+    await fetch()
+  }
+
+  const removeItemFromList = async (listItemId) => {
+    const { error } = await supabase
+      .from('list_items')
+      .delete()
+      .eq('id', listItemId)
+    if (error) throw error
+    await fetch()
+  }
+
+  const updateListItem = async (listItemId, updates) => {
+    // updates: { quantity?, unit?, notes? }
+    const { error } = await supabase
+      .from('list_items')
+      .update(updates)
+      .eq('id', listItemId)
+    if (error) throw error
+    await fetch()
+  }
+
+  const updateListName = async (listId, name) => {
+    const { error } = await supabase
+      .from('grocery_lists')
+      .update({ name })
+      .eq('id', listId)
+    if (error) throw error
+    await fetch()
+  }
+
   const toggleBought = async (listItemId, isBought) => {
     const updates = {
       is_bought: isBought,
@@ -114,5 +172,9 @@ export function useLists() {
     deleteList,
     duplicateList,
     toggleBought,
+    addItemToList,
+    removeItemFromList,
+    updateListItem,
+    updateListName,
   }
 }

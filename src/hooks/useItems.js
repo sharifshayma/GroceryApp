@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
+import { useRefreshOnFocus } from './useRefreshOnFocus'
 
 export function useItems(categoryId = null) {
   const { profile } = useAuth()
@@ -31,6 +32,8 @@ export function useItems(categoryId = null) {
   useEffect(() => {
     fetch()
   }, [fetch])
+
+  useRefreshOnFocus(fetch)
 
   const addItem = async (item) => {
     const { data, error } = await supabase

@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useTags } from '../hooks/useTags'
+import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 
 const TYPE_ICONS = { recipe: '🍽️', store: '🏪', custom: '🏷️' }
 
@@ -12,6 +13,8 @@ export default function TagPicker({ itemId, onClose }) {
   const [loading, setLoading] = useState(true)
   const [editingNotes, setEditingNotes] = useState(null)
   const [noteText, setNoteText] = useState('')
+  const isKeyboardVisible = useKeyboardVisible()
+  const scrollRef = useRef(null)
 
   useEffect(() => {
     if (!itemId) return
@@ -68,8 +71,9 @@ export default function TagPicker({ itemId, onClose }) {
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
       <div
+        ref={scrollRef}
         className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[85vh] min-h-[50vh] overflow-y-auto animate-slide-up sm:animate-fade-in"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
+        style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
       >
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
           <h2 className="text-lg font-extrabold text-text">
@@ -78,7 +82,7 @@ export default function TagPicker({ itemId, onClose }) {
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
         </div>
 
-        <div className="p-4 space-y-4">
+        <div className="p-4 pb-20 space-y-4">
           {tags.length === 0 ? (
             <p className="text-center text-text-secondary py-6">
               {i18n.language === 'he' ? 'אין תגיות. צור תגיות בפרופיל.' : 'No tags yet. Create tags in Profile.'}
@@ -146,6 +150,7 @@ export default function TagPicker({ itemId, onClose }) {
                                 onChange={(e) => setNoteText(e.target.value)}
                                 placeholder={i18n.language === 'he' ? 'הערה לתגית...' : 'Note for this tag...'}
                                 autoFocus
+                              onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
                                 className="flex-1 min-w-0 px-3 py-2.5 rounded-xl border border-neutral/40 bg-bg text-text text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
                               />
                               <button

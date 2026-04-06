@@ -14,7 +14,7 @@ const COLOR_OPTIONS = ['#F28B30', '#E8C840', '#8BC34A', '#5A9E3E', '#3B82F6', '#
 export default function ManageTags() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const { tags, recipeTags, storeTags, customTags, createTag, updateTag, deleteTag } = useTags()
+  const { tags, recipeTags, storeTags, customTags, createTag, updateTag, deleteTag, getTagUsageCount } = useTags()
   const [editing, setEditing] = useState(null) // null | 'new' | tag object
   const [name, setName] = useState('')
   const [type, setType] = useState('recipe')
@@ -59,7 +59,16 @@ export default function ManageTags() {
   }
 
   const handleDelete = async (tag) => {
-    if (!window.confirm(i18n.language === 'he' ? `למחוק "${tag.name}"?` : `Delete "${tag.name}"?`)) return
+    const count = await getTagUsageCount(tag.id)
+    let msg
+    if (count > 0) {
+      msg = i18n.language === 'he'
+        ? `התגית "${tag.name}" משויכת ל-${count} פריטים. למחוק? היא תוסר מכל הפריטים.`
+        : `"${tag.name}" is assigned to ${count} item${count > 1 ? 's' : ''}. Delete? It will be removed from all items.`
+    } else {
+      msg = i18n.language === 'he' ? `למחוק "${tag.name}"?` : `Delete "${tag.name}"?`
+    }
+    if (!window.confirm(msg)) return
     await deleteTag(tag.id)
   }
 

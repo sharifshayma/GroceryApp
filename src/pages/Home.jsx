@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
@@ -6,8 +6,10 @@ import { useAuth } from '../hooks/useAuth'
 import { useCategories } from '../hooks/useCategories'
 import { useItems } from '../hooks/useItems'
 import { useTags } from '../hooks/useTags'
+import { useLists } from '../hooks/useLists'
 import { getCategoryName } from '../lib/categoryName'
 import HorizontalItemRow from '../components/HorizontalItemRow'
+import AddToListModal from '../components/AddToListModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 
 export default function Home() {
@@ -16,11 +18,24 @@ export default function Home() {
   const { categories, loading } = useCategories()
   const { items: allItems } = useItems()
   const { tags } = useTags()
+  const { lists, createList, addItemToList } = useLists()
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState(null)
   const [taggedItemIds, setTaggedItemIds] = useState(null)
   const [frequentItems, setFrequentItems] = useState([])
   const [needToBuy, setNeedToBuy] = useState([])
+  const [addToListItem, setAddToListItem] = useState(null) // item for AddToListModal
+
+  // Track which items are in active/draft lists
+  const itemsInList = useMemo(() => {
+    const set = new Set()
+    lists
+      .filter((l) => l.status === 'draft' || l.status === 'active')
+      .forEach((l) => {
+        ;(l.list_items || []).forEach((li) => set.add(li.item_id))
+      })
+    return set
+  }, [lists])
 
   // Fetch frequently bought items
   useEffect(() => {
@@ -29,12 +44,11 @@ export default function Home() {
     async function fetchFrequent() {
       const { data } = await supabase
         .from('list_items')
-        .select('item_id, items(id, name, name_he, emoji)')
+        .select('item_id, items(id, name, name_he, emoji, default_unit)')
         .eq('is_bought', true)
         .not('items', 'is', null)
 
       if (data) {
-        // Count frequency
         const counts = {}
         data.forEach((li) => {
           if (!li.items) return
@@ -53,7 +67,7 @@ export default function Home() {
       // 1. Items not bought from completed lists
       const { data: unbought } = await supabase
         .from('list_items')
-        .select('item_id, items(id, name, name_he, emoji), grocery_lists!inner(status)')
+        .select('item_id, items(id, name, name_he, emoji, default_unit), grocery_lists!inner(status)')
         .eq('is_bought', false)
         .eq('grocery_lists.status', 'completed')
         .not('items', 'is', null)
@@ -67,7 +81,7 @@ export default function Home() {
       // 2. Low stock items
       const { data: lowStock } = await supabase
         .from('stock')
-        .select('item_id, quantity, low_threshold, items(id, name, name_he, emoji)')
+        .select('item_id, quantity, low_threshold, items(id, name, name_he, emoji, default_unit)')
         .eq('household_id', profile.household_id)
 
       if (lowStock) {
@@ -111,6 +125,20 @@ export default function Home() {
         )
       })
     : null
+
+  const handleAddToList = async (listId, item) => {
+    await addItemToList(listId, item)
+  }
+
+  const handleCreateAndAdd = async (item) => {
+    const today = new Date().toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', {
+      month: 'short',
+      day: 'numeric',
+    })
+    const name = `${t('nav.lists')} — ${today}`
+    const list = await createList(name, [item])
+    return list
+  }
 
   return (
     <div className="px-4 pt-6 pb-8 max-w-lg mx-auto animate-fade-in">
@@ -254,6 +282,8 @@ export default function Home() {
             icon="🔴"
             items={needToBuy}
             accentClass="border-t-danger"
+            onItemClick={(item) => setAddToListItem(item)}
+            itemsInList={itemsInList}
           />
 
           {/* Frequently Bought */}
@@ -262,6 +292,8 @@ export default function Home() {
             icon="⭐"
             items={frequentItems}
             accentClass="border-t-secondary"
+            onItemClick={(item) => setAddToListItem(item)}
+            itemsInList={itemsInList}
           />
 
           {/* Category grid */}
@@ -288,6 +320,17 @@ export default function Home() {
             </div>
           )}
         </>
+      )}
+
+      {/* Add to List Modal */}
+      {addToListItem && (
+        <AddToListModal
+          item={addToListItem}
+          lists={lists}
+          onAddToList={handleAddToList}
+          onCreateAndAdd={handleCreateAndAdd}
+          onClose={() => setAddToListItem(null)}
+        />
       )}
     </div>
   )

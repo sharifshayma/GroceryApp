@@ -1,9 +1,12 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useLists } from '../hooks/useLists'
+import { useStock } from '../hooks/useStock'
 import { getCategoryName } from '../lib/categoryName'
 import LoadingSpinner from '../components/LoadingSpinner'
+import ShareSheet from '../components/ShareSheet'
+import UpdateStockModal from '../components/UpdateStockModal'
 
 function formatDate(dateStr, lang) {
   const d = new Date(dateStr)
@@ -18,8 +21,25 @@ function formatDate(dateStr, lang) {
 
 export default function Lists() {
   const { t, i18n } = useTranslation()
+  const { listId: paramListId } = useParams()
+  const navigate = useNavigate()
   const { lists, loading, updateListStatus, deleteList, duplicateList, toggleBought, refetch } = useLists()
   const [shoppingListId, setShoppingListId] = useState(null)
+  const [shareList, setShareList] = useState(null) // list object for ShareSheet
+  const [showUpdateStock, setShowUpdateStock] = useState(false)
+  const { addToStock } = useStock()
+
+  // Handle deep link: open list from URL param
+  useEffect(() => {
+    if (paramListId && lists.length > 0 && !shoppingListId) {
+      const found = lists.find((l) => l.id === paramListId)
+      if (found) {
+        setShoppingListId(found.id)
+        // Replace URL to clean /lists/:id -> /lists
+        navigate('/lists', { replace: true })
+      }
+    }
+  }, [paramListId, lists, shoppingListId, navigate])
 
   if (loading) return <LoadingSpinner fullScreen={false} />
 
@@ -49,24 +69,6 @@ export default function Lists() {
       arr.sort((a, b) => (a.is_bought === b.is_bought ? 0 : a.is_bought ? 1 : -1))
     })
 
-    const handleShare = async () => {
-      let text = `🛒 ${shoppingList.name}\n\n`
-      Object.entries(grouped).forEach(([cat, catItems]) => {
-        text += `${cat}\n`
-        catItems.forEach((li) => {
-          const check = li.is_bought ? '✅' : '⬜'
-          text += `${check} ${li.items?.name || '?'} × ${li.quantity} ${li.unit}\n`
-        })
-        text += '\n'
-      })
-
-      if (navigator.share) {
-        try { await navigator.share({ text }); return } catch {}
-      }
-      await navigator.clipboard.writeText(text)
-      alert(i18n.language === 'he' ? 'הועתק!' : 'Copied!')
-    }
-
     const handleDone = async () => {
       await updateListStatus(shoppingList.id, 'completed')
       setShoppingListId(null)
@@ -85,7 +87,21 @@ export default function Lists() {
             </svg>
           </button>
           <h1 className="text-lg font-extrabold flex-1 text-center truncate px-2">{shoppingList.name}</h1>
-          <button onClick={handleShare} className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary">
+          {shoppingList.status !== 'completed' && (
+            <button
+              onClick={() => navigate(`/edit-list/${shoppingList.id}`)}
+              className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary"
+              title="Edit"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+              </svg>
+            </button>
+          )}
+          <button
+            onClick={() => setShareList(shoppingList)}
+            className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary"
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
             </svg>
@@ -126,9 +142,16 @@ export default function Lists() {
                     )}
                   </div>
                   <span className="text-lg">{li.items?.emoji || '🛒'}</span>
-                  <span className={`flex-1 text-sm font-medium text-start ${li.is_bought ? 'line-through text-text-secondary' : ''}`}>
-                    {li.items?.name || '?'}
-                  </span>
+                  <div className="flex-1 text-start min-w-0">
+                    <span className={`text-sm font-medium block ${li.is_bought ? 'line-through text-text-secondary' : ''}`}>
+                      {li.items?.name || '?'}
+                    </span>
+                    {li.notes && (
+                      <span className="text-xs text-text-secondary block truncate">
+                        📝 {li.notes}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs text-text-secondary flex-shrink-0">
                     {li.quantity} {li.unit}
                   </span>
@@ -138,15 +161,40 @@ export default function Lists() {
           </div>
         ))}
 
+        {/* Update Stock button — shown when items have been bought */}
+        {boughtCount > 0 && (
+          <button
+            onClick={() => setShowUpdateStock(true)}
+            className="w-full py-3 rounded-xl font-semibold text-sm border-2 border-green text-green-dark hover:bg-green/10 transition-colors mt-4 min-h-[48px]"
+          >
+            📦 {i18n.language === 'he' ? 'עדכן מלאי' : 'Update Stock'}
+          </button>
+        )}
+
         {/* Done button */}
         <button
           onClick={handleDone}
-          className={`w-full py-3.5 rounded-xl font-bold text-lg text-white transition-colors mt-4 ${
+          className={`w-full py-3.5 rounded-xl font-bold text-lg text-white transition-colors mt-2 ${
             boughtCount === total ? 'bg-green-dark hover:bg-green' : 'bg-primary hover:bg-primary-light'
           }`}
         >
           {t('common.done')} ✓
         </button>
+
+        {shareList && <ShareSheet list={shareList} onClose={() => setShareList(null)} />}
+
+        {showUpdateStock && (
+          <UpdateStockModal
+            listItems={items}
+            onUpdateStock={async (stockUpdates) => {
+              for (const item of stockUpdates) {
+                await addToStock(item.itemId, item.quantity, item.unit, 0)
+              }
+              await refetch()
+            }}
+            onClose={() => setShowUpdateStock(false)}
+          />
+        )}
       </div>
     )
   }
@@ -186,12 +234,23 @@ export default function Lists() {
                 {(activeList.list_items || []).filter((li) => li.is_bought).length}/
                 {(activeList.list_items || []).length} {i18n.language === 'he' ? 'פריטים' : 'items'}
               </p>
-              <button
-                onClick={() => setShoppingListId(activeList.id)}
-                className="w-full py-2.5 rounded-xl bg-primary text-white font-semibold"
-              >
-                {i18n.language === 'he' ? 'המשך קניות' : 'Continue Shopping'} →
-              </button>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setShoppingListId(activeList.id)}
+                  className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold"
+                >
+                  {i18n.language === 'he' ? 'המשך קניות' : 'Continue Shopping'} →
+                </button>
+                <button
+                  onClick={() => setShareList(activeList)}
+                  className="w-11 h-11 rounded-xl bg-white border border-primary/30 text-primary flex items-center justify-center"
+                  title="Share"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                  </svg>
+                </button>
+              </div>
             </div>
           )}
 
@@ -223,15 +282,26 @@ export default function Lists() {
                 </p>
                 <div className="flex gap-2">
                   {list.status === 'draft' && (
-                    <button
-                      onClick={async () => {
-                        await updateListStatus(list.id, 'active')
-                        setShoppingListId(list.id)
-                      }}
-                      className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm min-h-[44px]"
-                    >
-                      {i18n.language === 'he' ? 'התחל קניות' : 'Start Shopping'}
-                    </button>
+                    <>
+                      <button
+                        onClick={async () => {
+                          await updateListStatus(list.id, 'active')
+                          setShoppingListId(list.id)
+                        }}
+                        className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm min-h-[44px]"
+                      >
+                        {i18n.language === 'he' ? 'התחל קניות' : 'Start Shopping'}
+                      </button>
+                      <Link
+                        to={`/edit-list/${list.id}`}
+                        className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-text-secondary flex items-center justify-center"
+                        title="Edit"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125" />
+                        </svg>
+                      </Link>
+                    </>
                   )}
                   {list.status === 'completed' && (
                     <button
@@ -241,6 +311,15 @@ export default function Lists() {
                       {i18n.language === 'he' ? 'צפייה' : 'View'}
                     </button>
                   )}
+                  <button
+                    onClick={() => setShareList(list)}
+                    className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-text-secondary flex items-center justify-center"
+                    title="Share"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z" />
+                    </svg>
+                  </button>
                   <button
                     onClick={() => duplicateList(list)}
                     className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-text-secondary flex items-center justify-center text-base"
@@ -274,6 +353,8 @@ export default function Lists() {
       >
         +
       </Link>
+
+      {shareList && <ShareSheet list={shareList} onClose={() => setShareList(null)} />}
     </div>
   )
 }

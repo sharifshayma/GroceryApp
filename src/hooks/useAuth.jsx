@@ -61,6 +61,17 @@ export function AuthProvider({ children }) {
     return data
   }, [user])
 
+  // Refresh session when app comes back to foreground
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        supabase.auth.getSession()
+      }
+    }
+    document.addEventListener('visibilitychange', onVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+  }, [])
+
   useEffect(() => {
     // Use onAuthStateChange as the single source of truth
     const {

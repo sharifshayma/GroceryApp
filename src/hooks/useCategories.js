@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
+import { useRefreshOnFocus } from './useRefreshOnFocus'
 
 export function useCategories() {
   const { profile } = useAuth()
@@ -25,6 +26,8 @@ export function useCategories() {
   useEffect(() => {
     fetch()
   }, [fetch])
+
+  useRefreshOnFocus(fetch)
 
   return { categories, loading, refetch: fetch }
 }

@@ -1,9 +1,11 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCategories } from '../hooks/useCategories'
 import { useItems } from '../hooks/useItems'
 import { useLists } from '../hooks/useLists'
+import { useTags } from '../hooks/useTags'
+import { supabase } from '../lib/supabase'
 import { getCategoryName } from '../lib/categoryName'
 
 export default function CreateList() {
@@ -12,15 +14,55 @@ export default function CreateList() {
   const { categories } = useCategories()
   const { items: allItems } = useItems()
   const { createList } = useLists()
+  const { tags } = useTags()
   const [selected, setSelected] = useState({}) // { itemId: { quantity, unit } }
   const [search, setSearch] = useState('')
   const [activeCategory, setActiveCategory] = useState(null)
+  const [activeTags, setActiveTags] = useState([]) // array of tag ids
+  const [taggedItemData, setTaggedItemData] = useState(null) // { itemId: [{ tagName, tagColor, notes }] }
   const [saving, setSaving] = useState(false)
+
+  // Fetch tagged items when tag filter changes
+  useEffect(() => {
+    if (activeTags.length === 0) {
+      setTaggedItemData(null)
+      return
+    }
+    supabase
+      .from('item_tags')
+      .select('item_id, notes, tags(name, color)')
+      .in('tag_id', activeTags)
+      .then(({ data }) => {
+        if (data) {
+          const map = {}
+          data.forEach((row) => {
+            if (!map[row.item_id]) map[row.item_id] = []
+            map[row.item_id].push({
+              tagName: row.tags?.name || '',
+              tagColor: row.tags?.color || '#3B82F6',
+              notes: row.notes || '',
+            })
+          })
+          setTaggedItemData(map)
+        }
+      })
+  }, [activeTags])
+
+  const toggleTagFilter = (tagId) => {
+    setActiveTags((prev) =>
+      prev.includes(tagId) ? prev.filter((id) => id !== tagId) : [...prev, tagId]
+    )
+    setActiveCategory(null)
+    setSearch('')
+  }
 
   const filteredItems = allItems.filter((item) => {
     if (search.trim()) {
       const q = search.toLowerCase()
       return item.name?.toLowerCase().includes(q) || item.name_he?.toLowerCase().includes(q)
+    }
+    if (activeTags.length > 0 && taggedItemData) {
+      return !!taggedItemData[item.id]
     }
     if (activeCategory) return item.category_id === activeCategory
     return true
@@ -56,6 +98,15 @@ export default function CreateList() {
 
   const selectedCount = Object.keys(selected).length
 
+  // Build notes string for an item from active tag data
+  const getItemNotes = (itemId) => {
+    if (!taggedItemData || !taggedItemData[itemId]) return ''
+    return taggedItemData[itemId]
+      .filter((t) => t.notes)
+      .map((t) => `${t.tagName}: ${t.notes}`)
+      .join(' | ')
+  }
+
   const handleCreate = async () => {
     if (selectedCount === 0) return
     setSaving(true)
@@ -70,6 +121,7 @@ export default function CreateList() {
       item_id,
       quantity,
       unit,
+      notes: getItemNotes(item_id) || null,
     }))
 
     try {
@@ -106,19 +158,50 @@ export default function CreateList() {
             <input
               type="text"
               value={search}
-              onChange={(e) => { setSearch(e.target.value); setActiveCategory(null) }}
+              onChange={(e) => { setSearch(e.target.value); setActiveCategory(null); setActiveTags([]) }}
               placeholder={t('items.search')}
               className="w-full ps-10 pe-4 py-2.5 rounded-xl border border-neutral bg-surface text-text text-sm placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
             />
           </div>
         </div>
 
+        {/* Tag filter pills */}
+        {tags.length > 0 && (
+          <div className="flex gap-2 px-4 pb-2 overflow-x-auto no-scrollbar max-w-lg mx-auto">
+            {activeTags.length > 0 && (
+              <button
+                onClick={() => setActiveTags([])}
+                className="flex-shrink-0 px-3 py-2 rounded-full text-xs font-semibold bg-neutral/30 text-text-secondary min-h-[36px]"
+              >
+                {i18n.language === 'he' ? 'נקה' : 'Clear'}
+              </button>
+            )}
+            {tags.map((tag) => {
+              const isActive = activeTags.includes(tag.id)
+              return (
+                <button
+                  key={tag.id}
+                  onClick={() => toggleTagFilter(tag.id)}
+                  className="flex-shrink-0 px-3 py-2 rounded-full text-xs font-semibold transition-colors min-h-[36px] flex items-center gap-1.5"
+                  style={isActive
+                    ? { backgroundColor: tag.color, color: 'white' }
+                    : { backgroundColor: 'white', color: '#6B7280', border: '1px solid rgba(0,0,0,0.1)' }
+                  }
+                >
+                  <span className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: isActive ? 'white' : tag.color }} />
+                  {tag.name}
+                </button>
+              )
+            })}
+          </div>
+        )}
+
         {/* Category pills */}
         <div className="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar max-w-lg mx-auto">
           <button
-            onClick={() => { setActiveCategory(null); setSearch('') }}
+            onClick={() => { setActiveCategory(null); setSearch(''); setActiveTags([]) }}
             className={`flex-shrink-0 px-4 py-2.5 rounded-full text-xs font-semibold transition-colors min-h-[40px] ${
-              !activeCategory && !search ? 'bg-primary text-white' : 'bg-white text-text-secondary border border-neutral/30 shadow-sm'
+              !activeCategory && !search && activeTags.length === 0 ? 'bg-primary text-white' : 'bg-white text-text-secondary border border-neutral/30 shadow-sm'
             }`}
           >
             {t('items.allCategories')}
@@ -126,7 +209,7 @@ export default function CreateList() {
           {categories.map((cat) => (
             <button
               key={cat.id}
-              onClick={() => { setActiveCategory(cat.id); setSearch('') }}
+              onClick={() => { setActiveCategory(cat.id); setSearch(''); setActiveTags([]) }}
               className={`flex-shrink-0 px-4 py-2.5 rounded-full text-xs font-semibold transition-colors min-h-[40px] ${
                 activeCategory === cat.id ? 'bg-primary text-white' : 'bg-white text-text-secondary border border-neutral/30 shadow-sm'
               }`}
@@ -154,43 +237,57 @@ export default function CreateList() {
                 {catItems.map((item) => {
                   const isSelected = !!selected[item.id]
                   const sel = selected[item.id]
+                  const itemTagNotes = taggedItemData?.[item.id]
                   return (
-                    <div
-                      key={item.id}
-                      className={`bg-white rounded-xl p-3.5 flex items-center gap-3 border shadow-sm transition-colors min-h-[52px] ${
-                        isSelected ? 'border-primary bg-primary/5' : 'border-neutral/20'
-                      }`}
-                    >
-                      <button
-                        onClick={() => toggleItem(item)}
-                        className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                          isSelected ? 'bg-primary border-primary text-white' : 'border-neutral'
+                    <div key={item.id}>
+                      <div
+                        className={`bg-white rounded-xl p-3.5 flex items-center gap-3 border shadow-sm transition-colors min-h-[52px] ${
+                          isSelected ? 'border-primary bg-primary/5' : 'border-neutral/20'
                         }`}
                       >
-                        {isSelected && (
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                          </svg>
-                        )}
-                      </button>
-                      <span className="text-xl">{item.emoji}</span>
-                      <span className="flex-1 font-medium text-sm truncate">{item.name}</span>
+                        <button
+                          onClick={() => toggleItem(item)}
+                          className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                            isSelected ? 'bg-primary border-primary text-white' : 'border-neutral'
+                          }`}
+                        >
+                          {isSelected && (
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                            </svg>
+                          )}
+                        </button>
+                        <span className="text-xl">{item.emoji}</span>
+                        <span className="flex-1 font-medium text-sm truncate">{item.name}</span>
 
-                      {isSelected && (
-                        <div className="flex items-center gap-1.5 flex-shrink-0">
-                          <button
-                            onClick={() => updateQuantity(item.id, sel.quantity - 1)}
-                            className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center text-text font-bold text-base active:scale-90 transition-transform"
-                          >
-                            −
-                          </button>
-                          <span className="w-8 text-center font-bold text-sm">{sel.quantity}</span>
-                          <button
-                            onClick={() => updateQuantity(item.id, sel.quantity + 1)}
-                            className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-base active:scale-90 transition-transform"
-                          >
-                            +
-                          </button>
+                        {isSelected && (
+                          <div className="flex items-center gap-1.5 flex-shrink-0">
+                            <button
+                              onClick={() => updateQuantity(item.id, sel.quantity - 1)}
+                              className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center text-text font-bold text-base active:scale-90 transition-transform"
+                            >
+                              −
+                            </button>
+                            <span className="w-8 text-center font-bold text-sm">{sel.quantity}</span>
+                            <button
+                              onClick={() => updateQuantity(item.id, sel.quantity + 1)}
+                              className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-base active:scale-90 transition-transform"
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Tag notes display when filtering by tags */}
+                      {activeTags.length > 0 && itemTagNotes && itemTagNotes.some((t) => t.notes) && (
+                        <div className="ms-10 mt-1 px-3 py-1.5 bg-secondary-light/30 rounded-lg">
+                          <p className="text-xs text-text-secondary">
+                            {itemTagNotes
+                              .filter((t) => t.notes)
+                              .map((t) => `${t.tagName}: ${t.notes}`)
+                              .join(' | ')}
+                          </p>
                         </div>
                       )}
                     </div>

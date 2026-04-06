@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
+import { useRefreshOnFocus } from './useRefreshOnFocus'
+import { emit, on } from '../lib/events'
 
 export function useTags() {
   const { profile } = useAuth()
@@ -30,6 +32,8 @@ export function useTags() {
     fetch()
   }, [fetch])
 
+  useRefreshOnFocus(fetch)
+
   const createTag = async (tag) => {
     const { data, error } = await supabase
       .from('tags')
@@ -55,17 +59,27 @@ export function useTags() {
     return data
   }
 
+  const getTagUsageCount = async (tagId) => {
+    const { count, error } = await supabase
+      .from('item_tags')
+      .select('*', { count: 'exact', head: true })
+      .eq('tag_id', tagId)
+    if (error) return 0
+    return count || 0
+  }
+
   const deleteTag = async (id) => {
     const { error } = await supabase.from('tags').delete().eq('id', id)
     if (error) throw error
     setTags((prev) => prev.filter((t) => t.id !== id))
+    emit('tags-changed')
   }
 
   const recipeTags = tags.filter((t) => t.type === 'recipe')
   const storeTags = tags.filter((t) => t.type === 'store')
   const customTags = tags.filter((t) => t.type === 'custom')
 
-  return { tags, recipeTags, storeTags, customTags, loading, refetch: fetch, createTag, updateTag, deleteTag }
+  return { tags, recipeTags, storeTags, customTags, loading, refetch: fetch, createTag, updateTag, deleteTag, getTagUsageCount }
 }
 
 export function useItemTags(itemId) {
@@ -88,6 +102,11 @@ export function useItemTags(itemId) {
 
   useEffect(() => {
     fetch()
+  }, [fetch])
+
+  // Refetch when tags are deleted/changed elsewhere
+  useEffect(() => {
+    return on('tags-changed', fetch)
   }, [fetch])
 
   const assignTag = async (tagId, notes = null) => {

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getCategoryName } from '../lib/categoryName'
+import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 
 const UNITS = ['pcs', 'kg', 'g', 'L', 'mL', 'pack', 'box', 'bottle', 'bag', 'bunch']
 
@@ -18,6 +19,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const isKeyboardVisible = useKeyboardVisible()
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -46,7 +48,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
 
       {/* Modal */}
       <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] min-h-[50vh] overflow-y-auto animate-slide-up sm:animate-fade-in"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
+        style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
       >
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
@@ -61,7 +63,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-5 space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 pb-20 space-y-4">
           {/* Emoji picker */}
           <div className="flex items-center gap-3">
             <button
@@ -156,6 +158,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
               onChange={(e) => setNotes(e.target.value)}
               placeholder={t('items.notesPlaceholder')}
               rows={2}
+              onFocus={(e) => setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)}
               className="w-full px-3 py-2.5 rounded-xl border border-neutral/40 bg-bg text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
             />
           </div>
