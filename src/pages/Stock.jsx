@@ -79,6 +79,17 @@ export default function Stock() {
         </div>
       ) : (
         <>
+          {unstockedItems.length > 0 && (
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="w-full py-3 rounded-xl border-2 border-dashed border-primary/30 text-primary font-medium text-sm mb-5 hover:bg-primary/5 transition-colors min-h-[48px]"
+            >
+              {i18n.language === 'he'
+                ? `+ הוסף פריטים חסרים (${unstockedItems.length})`
+                : `+ Add Missing Items (${unstockedItems.length})`}
+            </button>
+          )}
+
           {sortedGroups.map(([catId, group]) => (
             <div key={catId} className="mb-5">
               <h3 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-1.5">
@@ -202,8 +213,10 @@ export default function Stock() {
         <AddToStockModal
           items={unstockedItems}
           categories={categories}
-          onAdd={async (itemId, qty, unit, threshold) => {
-            await addToStock(itemId, qty, unit, threshold)
+          onBatchAdd={async (items) => {
+            for (const item of items) {
+              await addToStock(item.itemId, item.quantity, item.unit, item.lowThreshold)
+            }
             setShowAddModal(false)
           }}
           onClose={() => setShowAddModal(false)}
@@ -225,14 +238,21 @@ export default function Stock() {
   )
 }
 
-function AddToStockModal({ items, categories, onAdd, onClose }) {
+function AddToStockModal({ items, categories, onBatchAdd, onClose }) {
   const { t, i18n } = useTranslation()
   const [search, setSearch] = useState('')
-  const [selected, setSelected] = useState(null)
-  const [quantity, setQuantity] = useState(1)
-  const [threshold, setThreshold] = useState(0)
+  const [selectedItems, setSelectedItems] = useState(new Map())
   const [saving, setSaving] = useState(false)
   const isKeyboardVisible = useKeyboardVisible()
+
+  const toggleSelect = (item) => {
+    setSelectedItems((prev) => {
+      const next = new Map(prev)
+      if (next.has(item.id)) next.delete(item.id)
+      else next.set(item.id, item)
+      return next
+    })
+  }
 
   const filtered = search.trim()
     ? items.filter((i) => i.name?.toLowerCase().includes(search.toLowerCase()) || i.name_he?.toLowerCase().includes(search.toLowerCase()))
@@ -247,108 +267,88 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
   })
 
   const handleSubmit = async () => {
-    if (!selected) return
+    if (selectedItems.size === 0) return
     setSaving(true)
-    await onAdd(selected.id, quantity, selected.default_unit || 'pcs', threshold)
+    const batch = [...selectedItems.values()].map((item) => ({
+      itemId: item.id,
+      quantity: 0,
+      unit: item.default_unit || 'pcs',
+      lowThreshold: 0,
+    }))
+    await onBatchAdd(batch)
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
-      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] min-h-[50vh] overflow-y-auto animate-slide-up sm:animate-fade-in"
-        style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
-      >
-        <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
+    <div
+      className="fixed inset-x-0 top-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ bottom: isKeyboardVisible ? 0 : 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+    >
+      <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={saving ? undefined : onClose} />
+      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-full min-h-[50vh] flex flex-col animate-slide-up sm:animate-fade-in">
+        <div className="flex-shrink-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
           <h2 className="text-lg font-semibold text-text">
             {i18n.language === 'he' ? 'הוסף למלאי' : 'Add to Stock'}
           </h2>
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
         </div>
 
-        <div className="p-4 pb-20">
-          {!selected ? (
-            <>
-              <input
-                type="text"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder={t('items.search')}
-                autoFocus
-                className="w-full px-3 py-2.5 rounded-xl border border-neutral bg-surface text-text text-sm placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-3"
-              />
-              {items.length === 0 ? (
-                <p className="text-center text-text-secondary py-6">
-                  {i18n.language === 'he' ? 'כל הפריטים כבר במלאי' : 'All items are already in stock'}
-                </p>
-              ) : (
-                Object.entries(grouped).map(([catId, group]) => (
-                  <div key={catId} className="mb-3">
-                    <h3 className="text-xs font-medium text-text-secondary mb-1">{group.emoji} {group.name}</h3>
-                    {group.items.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => setSelected(item)}
-                        className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-bg transition-colors min-h-[48px]"
-                      >
-                        <span className="text-xl">{item.emoji}</span>
-                        <span className="text-sm font-medium">{item.name}</span>
-                      </button>
-                    ))}
-                  </div>
-                ))
-              )}
-            </>
+        <div className="flex-1 overflow-y-auto p-4">
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('items.search')}
+            autoFocus
+            className="w-full px-3 py-2.5 rounded-xl border border-neutral bg-surface text-text text-sm placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent mb-3"
+          />
+          {items.length === 0 ? (
+            <p className="text-center text-text-secondary py-6">
+              {i18n.language === 'he' ? 'כל הפריטים כבר במלאי' : 'All items are already in stock'}
+            </p>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl border border-primary/30">
-                <span className="text-3xl">{selected.emoji}</span>
-                <div>
-                  <p className="font-medium">{selected.name}</p>
-                  <p className="text-xs text-text-secondary">{selected.default_unit || 'pcs'}</p>
-                </div>
+            Object.entries(grouped).map(([catId, group]) => (
+              <div key={catId} className="mb-3">
+                <h3 className="text-xs font-medium text-text-secondary mb-1">{group.emoji} {group.name}</h3>
+                {group.items.map((item) => {
+                  const isSelected = selectedItems.has(item.id)
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => toggleSelect(item)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors min-h-[48px] ${
+                        isSelected ? 'bg-primary/10' : 'hover:bg-bg'
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        isSelected ? 'bg-primary border-primary text-white' : 'border-neutral'
+                      }`}>
+                        {isSelected && <span className="text-xs">✓</span>}
+                      </span>
+                      <span className="text-xl">{item.emoji}</span>
+                      <span className="text-sm font-medium">{item.name}</span>
+                    </button>
+                  )
+                })}
               </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">
-                  {i18n.language === 'he' ? 'כמות נוכחית' : 'Current Quantity'}
-                </label>
-                <div className="flex items-center gap-3">
-                  <button onClick={() => setQuantity(Math.max(0, quantity - 1))} className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-medium text-lg active:scale-90 transition-transform">−</button>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(Math.max(0, Number(e.target.value)))}
-                    className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-medium"
-                  />
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform">+</button>
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold mb-1">
-                  {i18n.language === 'he' ? 'סף מלאי נמוך' : 'Low Stock Threshold'}
-                </label>
-                <input
-                  type="number"
-                  value={threshold}
-                  onChange={(e) => setThreshold(Math.max(0, Number(e.target.value)))}
-                  className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center"
-                />
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={saving}
-                className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg disabled:opacity-50 min-h-[48px]"
-              >
-                {saving ? t('items.saving') : t('common.add')}
-              </button>
-              <button onClick={() => setSelected(null)} className="w-full py-3 text-text-secondary font-semibold text-sm min-h-[44px]">
-                {t('common.back')}
-              </button>
-            </div>
+            ))
           )}
         </div>
+
+        {selectedItems.size > 0 && (
+          <div className="flex-shrink-0 p-4 border-t border-neutral/30 bg-white rounded-b-3xl">
+            <button
+              onClick={handleSubmit}
+              disabled={saving}
+              className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg shadow-lg disabled:opacity-50 min-h-[48px] active:scale-[0.98] transition-transform"
+            >
+              {saving
+                ? (i18n.language === 'he' ? 'מוסיף...' : 'Adding...')
+                : i18n.language === 'he'
+                  ? `הוסף ${selectedItems.size} פריטים למלאי`
+                  : `Add ${selectedItems.size} item${selectedItems.size > 1 ? 's' : ''} to stock`}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )
@@ -367,10 +367,13 @@ function EditStockModal({ stockItem, onSave, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div
+      className="fixed inset-x-0 top-0 z-50 flex items-end sm:items-center justify-center"
+      style={{ bottom: isKeyboardVisible ? 0 : 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+    >
       <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
-      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md overflow-y-auto animate-slide-up sm:animate-fade-in"
-        style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
+      <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-full overflow-y-auto animate-slide-up sm:animate-fade-in"
+        style={{ paddingBottom: isKeyboardVisible ? '40vh' : '16px' }}
       >
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
           <h2 className="text-lg font-semibold text-text">
