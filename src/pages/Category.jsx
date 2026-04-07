@@ -25,15 +25,18 @@ export default function Category() {
   const pillsRef = useRef(null)
   const activePillRef = useRef(null)
 
-  // Auto-scroll to active pill
+  // Auto-scroll to center the active pill in the container
   useEffect(() => {
-    if (activePillRef.current && pillsRef.current) {
-      const pill = activePillRef.current
-      const container = pillsRef.current
-      const scrollPos = pill.offsetLeft - container.clientWidth / 2 + pill.clientWidth / 2
-      container.scrollTo({ left: scrollPos, behavior: 'smooth' })
-    }
-  }, [categoryId])
+    const timer = setTimeout(() => {
+      if (activePillRef.current && pillsRef.current) {
+        const pill = activePillRef.current
+        const container = pillsRef.current
+        const scrollLeft = pill.offsetLeft - container.offsetWidth / 2 + pill.offsetWidth / 2
+        container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' })
+      }
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [categoryId, categories])
 
   if (catsLoading) return <LoadingSpinner fullScreen={false} />
 
