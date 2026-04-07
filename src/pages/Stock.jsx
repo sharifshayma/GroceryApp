@@ -185,20 +185,20 @@ export default function Stock() {
 
       {/* Add items — dotted box with two buttons */}
       {unstockedItems.length > 0 && (
-        <div className="mt-6 mb-20 rounded-2xl border-2 border-dashed border-primary/30 p-4">
-          <p className="text-sm font-medium text-primary text-center mb-3">
+        <div className="mt-6 mb-20 rounded-2xl border-2 border-dashed border-text/30 p-4">
+          <p className="text-sm font-medium text-text text-center mb-3">
             {i18n.language === 'he' ? 'הוסף פריטים' : 'Add Items'}
           </p>
           <div className="flex gap-3">
             <button
               onClick={() => setAddModalMode('in-stock')}
-              className="flex-1 py-2.5 rounded-xl bg-green/10 border border-green/30 text-green-dark font-medium text-sm hover:bg-green/20 transition-colors active:scale-[0.98] min-h-[44px]"
+              className="flex-1 py-2.5 rounded-xl bg-green/15 border border-green/30 text-text font-medium text-sm hover:bg-green/25 transition-colors active:scale-[0.98] min-h-[44px]"
             >
               + {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
             </button>
             <button
               onClick={() => setAddModalMode('out-of-stock')}
-              className="flex-1 py-2.5 rounded-xl bg-neutral/10 border border-neutral/30 text-text-secondary font-medium text-sm hover:bg-neutral/20 transition-colors active:scale-[0.98] min-h-[44px]"
+              className="flex-1 py-2.5 rounded-xl bg-danger/10 border border-danger/30 text-text font-medium text-sm hover:bg-danger/20 transition-colors active:scale-[0.98] min-h-[44px]"
             >
               − {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
             </button>
