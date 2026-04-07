@@ -183,27 +183,26 @@ export default function Stock() {
         </>
       )}
 
-      {/* Add items buttons — below the list */}
+      {/* Add items — dotted box with two buttons */}
       {unstockedItems.length > 0 && (
-        <div className="mt-6 mb-20 flex gap-3">
-          <button
-            onClick={() => setAddModalMode('in-stock')}
-            className="flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl bg-green/10 border border-green/30 hover:bg-green/20 transition-colors active:scale-[0.98]"
-          >
-            <span className="w-10 h-10 rounded-xl bg-green text-white flex items-center justify-center text-lg">✓</span>
-            <p className="text-xs font-medium text-text">
-              {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
-            </p>
-          </button>
-          <button
-            onClick={() => setAddModalMode('out-of-stock')}
-            className="flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl bg-neutral/10 border border-neutral/30 hover:bg-neutral/20 transition-colors active:scale-[0.98]"
-          >
-            <span className="w-10 h-10 rounded-xl bg-neutral/50 text-text-secondary flex items-center justify-center text-lg">✗</span>
-            <p className="text-xs font-medium text-text">
-              {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
-            </p>
-          </button>
+        <div className="mt-6 mb-20 rounded-2xl border-2 border-dashed border-primary/30 p-4">
+          <p className="text-sm font-medium text-primary text-center mb-3">
+            {i18n.language === 'he' ? 'הוסף פריטים' : 'Add Items'}
+          </p>
+          <div className="flex gap-3">
+            <button
+              onClick={() => setAddModalMode('in-stock')}
+              className="flex-1 py-2.5 rounded-xl bg-green/10 border border-green/30 text-green-dark font-medium text-sm hover:bg-green/20 transition-colors active:scale-[0.98] min-h-[44px]"
+            >
+              + {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
+            </button>
+            <button
+              onClick={() => setAddModalMode('out-of-stock')}
+              className="flex-1 py-2.5 rounded-xl bg-neutral/10 border border-neutral/30 text-text-secondary font-medium text-sm hover:bg-neutral/20 transition-colors active:scale-[0.98] min-h-[44px]"
+            >
+              − {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
+            </button>
+          </div>
         </div>
       )}
 
