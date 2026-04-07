@@ -185,34 +185,24 @@ export default function Stock() {
 
       {/* Add items buttons — below the list */}
       {unstockedItems.length > 0 && (
-        <div className="mt-6 mb-20 space-y-2">
+        <div className="mt-6 mb-20 flex gap-3">
           <button
             onClick={() => setAddModalMode('in-stock')}
-            className="w-full flex items-center gap-3 p-4 rounded-2xl bg-green/10 border border-green/30 hover:bg-green/20 transition-colors active:scale-[0.98]"
+            className="flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl bg-green/10 border border-green/30 hover:bg-green/20 transition-colors active:scale-[0.98]"
           >
             <span className="w-10 h-10 rounded-xl bg-green text-white flex items-center justify-center text-lg">✓</span>
-            <div className="text-start">
-              <p className="text-sm font-medium text-text">
-                {i18n.language === 'he' ? 'הוסף פריטים במלאי' : 'Add In-Stock Items'}
-              </p>
-              <p className="text-xs text-text-secondary">
-                {i18n.language === 'he' ? 'פריטים שיש לך בבית' : 'Items you have at home'}
-              </p>
-            </div>
+            <p className="text-xs font-medium text-text">
+              {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
+            </p>
           </button>
           <button
             onClick={() => setAddModalMode('out-of-stock')}
-            className="w-full flex items-center gap-3 p-4 rounded-2xl bg-neutral/10 border border-neutral/30 hover:bg-neutral/20 transition-colors active:scale-[0.98]"
+            className="flex-1 flex flex-col items-center gap-2 p-4 rounded-2xl bg-neutral/10 border border-neutral/30 hover:bg-neutral/20 transition-colors active:scale-[0.98]"
           >
             <span className="w-10 h-10 rounded-xl bg-neutral/50 text-text-secondary flex items-center justify-center text-lg">✗</span>
-            <div className="text-start">
-              <p className="text-sm font-medium text-text">
-                {i18n.language === 'he' ? 'סמן פריטים חסרים' : 'Mark Out-of-Stock Items'}
-              </p>
-              <p className="text-xs text-text-secondary">
-                {i18n.language === 'he' ? 'פריטים שנגמרו או חסרים' : 'Items you need to buy'}
-              </p>
-            </div>
+            <p className="text-xs font-medium text-text">
+              {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
+            </p>
           </button>
         </div>
       )}
