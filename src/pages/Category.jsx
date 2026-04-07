@@ -41,53 +41,48 @@ export default function Category() {
 
   return (
     <div className="min-h-dvh bg-bg">
-      {/* Header */}
+      {/* Header — single row: back | scrollable categories | settings */}
       <div className="sticky top-0 z-10 bg-bg">
-        <div className="px-4 pt-4 pb-2 flex items-center gap-3 max-w-lg mx-auto">
+        <div className="flex items-center gap-2 px-4 pt-4 pb-3 max-w-lg mx-auto">
           <button
             onClick={() => navigate('/')}
-            className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors"
+            className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors flex-shrink-0"
           >
             <IconBack />
           </button>
-          <h1 className="text-xl font-semibold flex-1 flex items-center gap-2">
-            <span>{activeCategory?.emoji}</span>
-            <span>{getCategoryName(activeCategory)}</span>
-          </h1>
+
+          <div
+            ref={pillsRef}
+            className="flex-1 flex gap-2 overflow-x-auto no-scrollbar"
+          >
+            {categories.map((cat) => {
+              const isActive = cat.id === categoryId
+              return (
+                <button
+                  key={cat.id}
+                  ref={isActive ? activePillRef : null}
+                  onClick={() => navigate(`/category/${cat.id}`, { replace: true })}
+                  className={`flex-shrink-0 px-3 py-2 rounded-full text-xs font-medium transition-colors min-h-[36px] ${
+                    isActive
+                      ? 'bg-primary text-white'
+                      : 'bg-white text-text-secondary border border-neutral/30 hover:text-text'
+                  }`}
+                >
+                  {cat.emoji} {getCategoryName(cat)}
+                </button>
+              )
+            })}
+          </div>
+
           <button
             onClick={() => setManageMode(!manageMode)}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors flex-shrink-0 ${
               manageMode ? 'bg-primary text-white' : 'bg-surface border border-neutral text-text-secondary hover:text-text'
             }`}
           >
             <IconSettings />
           </button>
         </div>
-
-        {/* Horizontal category pills */}
-        <div
-          ref={pillsRef}
-          className="flex gap-2 px-4 pb-3 overflow-x-auto no-scrollbar max-w-lg mx-auto"
-        >
-          {categories.map((cat) => {
-            const isActive = cat.id === categoryId
-            return (
-              <button
-                key={cat.id}
-                ref={isActive ? activePillRef : null}
-                onClick={() => navigate(`/category/${cat.id}`, { replace: true })}
-                className={`flex-shrink-0 px-4 py-2.5 rounded-full text-sm font-semibold transition-colors min-h-[40px] ${
-                  isActive
-                    ? 'bg-primary text-white'
-                    : 'bg-white text-text-secondary border border-neutral/30 hover:text-text shadow-sm'
-                }`}
-              >
-                {cat.emoji} {getCategoryName(cat)}
-              </button>
-            )
-          })}
-        </div>
-
         <div className="border-b border-neutral/50" />
       </div>
 
