@@ -66,24 +66,6 @@ export default function Stock() {
         )}
       </div>
 
-      {/* Two action buttons: In Stock / Out of Stock */}
-      {unstockedItems.length > 0 && (
-        <div className="flex gap-3 mb-5">
-          <button
-            onClick={() => setAddModalMode('in-stock')}
-            className="flex-1 py-3 rounded-xl bg-green text-white font-medium text-sm transition-colors hover:bg-green-dark min-h-[48px]"
-          >
-            ✓ {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
-          </button>
-          <button
-            onClick={() => setAddModalMode('out-of-stock')}
-            className="flex-1 py-3 rounded-xl bg-neutral/30 text-text-secondary font-medium text-sm transition-colors hover:bg-neutral/50 min-h-[48px]"
-          >
-            ✗ {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
-          </button>
-        </div>
-      )}
-
       {stockItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[40vh]">
           <div className="flex justify-center mb-4"><IllustrationNoItems className="w-28 h-28" /></div>
@@ -199,6 +181,40 @@ export default function Stock() {
             </div>
           ))}
         </>
+      )}
+
+      {/* Add items buttons — below the list */}
+      {unstockedItems.length > 0 && (
+        <div className="mt-6 mb-20 space-y-2">
+          <button
+            onClick={() => setAddModalMode('in-stock')}
+            className="w-full flex items-center gap-3 p-4 rounded-2xl bg-green/10 border border-green/30 hover:bg-green/20 transition-colors active:scale-[0.98]"
+          >
+            <span className="w-10 h-10 rounded-xl bg-green text-white flex items-center justify-center text-lg">✓</span>
+            <div className="text-start">
+              <p className="text-sm font-medium text-text">
+                {i18n.language === 'he' ? 'הוסף פריטים במלאי' : 'Add In-Stock Items'}
+              </p>
+              <p className="text-xs text-text-secondary">
+                {i18n.language === 'he' ? 'פריטים שיש לך בבית' : 'Items you have at home'}
+              </p>
+            </div>
+          </button>
+          <button
+            onClick={() => setAddModalMode('out-of-stock')}
+            className="w-full flex items-center gap-3 p-4 rounded-2xl bg-neutral/10 border border-neutral/30 hover:bg-neutral/20 transition-colors active:scale-[0.98]"
+          >
+            <span className="w-10 h-10 rounded-xl bg-neutral/50 text-text-secondary flex items-center justify-center text-lg">✗</span>
+            <div className="text-start">
+              <p className="text-sm font-medium text-text">
+                {i18n.language === 'he' ? 'סמן פריטים חסרים' : 'Mark Out-of-Stock Items'}
+              </p>
+              <p className="text-xs text-text-secondary">
+                {i18n.language === 'he' ? 'פריטים שנגמרו או חסרים' : 'Items you need to buy'}
+              </p>
+            </div>
+          </button>
+        </div>
       )}
 
       {/* Add to stock modal */}
