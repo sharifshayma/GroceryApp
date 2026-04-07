@@ -348,43 +348,24 @@ export default function Home() {
         )}
       </div>
 
-      {/* Search bar + Select toggle */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="relative flex-1">
-          <IconSearch className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder={t('items.search')}
-            className="w-full ps-10 pe-4 py-3 rounded-xl border border-neutral bg-surface text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute end-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral/50 flex items-center justify-center text-text-secondary hover:text-text"
-            >
-              ×
-            </button>
-          )}
-        </div>
-        <button
-          onClick={() => {
-            if (selectMode) {
-              setSelectMode(false)
-              setSelectedItems(new Map())
-            } else {
-              setSelectMode(true)
-            }
-          }}
-          className={`flex-shrink-0 px-3 py-3 rounded-xl text-xs font-medium transition-colors ${
-            selectMode ? 'bg-primary text-white' : 'bg-surface border border-neutral text-text-secondary'
-          }`}
-        >
-          {selectMode
-            ? (i18n.language === 'he' ? 'ביטול' : 'Cancel')
-            : (i18n.language === 'he' ? 'בחירה' : 'Select')}
-        </button>
+      {/* Search bar */}
+      <div className="relative mb-4">
+        <IconSearch className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder={t('items.search')}
+          className="w-full ps-10 pe-4 py-3 rounded-xl border border-neutral bg-surface text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute end-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral/50 flex items-center justify-center text-text-secondary hover:text-text"
+          >
+            ×
+          </button>
+        )}
       </div>
 
       {/* Filter row: Categories + Tag types */}
@@ -481,6 +462,27 @@ export default function Home() {
             </Link>
           )}
 
+          {/* Select / Clear button — only when items are showing */}
+          {(activeTag || activeCategory) && (
+            <button
+              onClick={() => {
+                if (selectMode) {
+                  setSelectMode(false)
+                  setSelectedItems(new Map())
+                } else {
+                  setSelectMode(true)
+                }
+              }}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                selectMode ? 'bg-primary text-white' : 'bg-surface border border-neutral text-text-secondary'
+              }`}
+            >
+              {selectMode
+                ? (i18n.language === 'he' ? 'נקה' : 'Clear')
+                : (i18n.language === 'he' ? 'בחירה' : 'Select')}
+            </button>
+          )}
+
           {/* Select all / deselect all (visible in select mode with filtered items) */}
           {selectMode && (activeTag || activeCategory) && (
             <button
@@ -548,6 +550,27 @@ export default function Home() {
       )}
 
       {/* Search results */}
+      {searchResults && searchResults.length > 0 && (
+        <div className="flex gap-2 mb-3">
+          <button
+            onClick={() => {
+              if (selectMode) {
+                setSelectMode(false)
+                setSelectedItems(new Map())
+              } else {
+                setSelectMode(true)
+              }
+            }}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              selectMode ? 'bg-primary text-white' : 'bg-surface border border-neutral text-text-secondary'
+            }`}
+          >
+            {selectMode
+              ? (i18n.language === 'he' ? 'נקה' : 'Clear')
+              : (i18n.language === 'he' ? 'בחירה' : 'Select')}
+          </button>
+        </div>
+      )}
       {searchResults && (
         <div className="space-y-2">
           {searchResults.length === 0 ? (
