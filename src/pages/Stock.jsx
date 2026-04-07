@@ -14,7 +14,7 @@ export default function Stock() {
   const { stockItems, loading, error, addToStock, updateQuantity, updateThreshold, updateStock, removeFromStock, lowStockCount, refetch } = useStock()
   const { items: allItems } = useItems()
   const { categories } = useCategories()
-  const [showAddModal, setShowAddModal] = useState(false)
+  const [addModalMode, setAddModalMode] = useState(null) // null | 'in-stock' | 'out-of-stock'
   const [editingStock, setEditingStock] = useState(null) // stock item to edit
   const [filterLow, setFilterLow] = useState(false)
   const [editingThreshold, setEditingThreshold] = useState(null)
@@ -66,31 +66,32 @@ export default function Stock() {
         )}
       </div>
 
+      {/* Two action buttons: In Stock / Out of Stock */}
+      {unstockedItems.length > 0 && (
+        <div className="flex gap-3 mb-5">
+          <button
+            onClick={() => setAddModalMode('in-stock')}
+            className="flex-1 py-3 rounded-xl bg-green text-white font-medium text-sm transition-colors hover:bg-green-dark min-h-[48px]"
+          >
+            ✓ {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
+          </button>
+          <button
+            onClick={() => setAddModalMode('out-of-stock')}
+            className="flex-1 py-3 rounded-xl bg-neutral/30 text-text-secondary font-medium text-sm transition-colors hover:bg-neutral/50 min-h-[48px]"
+          >
+            ✗ {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
+          </button>
+        </div>
+      )}
+
       {stockItems.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[50vh]">
+        <div className="flex flex-col items-center justify-center min-h-[40vh]">
           <div className="flex justify-center mb-4"><IllustrationNoItems className="w-28 h-28" /></div>
           <h2 className="text-xl font-medium mb-2">{t('empty.noStock')}</h2>
-          <p className="text-text-secondary text-center mb-6">{t('empty.noStockDesc')}</p>
-          <button
-            onClick={() => setShowAddModal(true)}
-            className="px-6 py-3 rounded-xl bg-primary text-white font-medium text-lg"
-          >
-            + {t('common.add')}
-          </button>
+          <p className="text-text-secondary text-center mb-4">{t('empty.noStockDesc')}</p>
         </div>
       ) : (
         <>
-          {unstockedItems.length > 0 && (
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="w-full py-3 rounded-xl border-2 border-dashed border-primary/30 text-primary font-medium text-sm mb-5 hover:bg-primary/5 transition-colors min-h-[48px]"
-            >
-              {i18n.language === 'he'
-                ? `+ הוסף פריטים חסרים (${unstockedItems.length})`
-                : `+ Add Missing Items (${unstockedItems.length})`}
-            </button>
-          )}
-
           {sortedGroups.map(([catId, group]) => (
             <div key={catId} className="mb-5">
               <h3 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-1.5">
@@ -200,27 +201,19 @@ export default function Stock() {
         </>
       )}
 
-      {/* FAB */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="fixed bottom-20 end-4 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center text-2xl font-medium hover:bg-primary-light active:bg-primary-dark transition-all active:scale-90 z-20"
-        style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      >
-        +
-      </button>
-
       {/* Add to stock modal */}
-      {showAddModal && (
+      {addModalMode && (
         <AddToStockModal
+          mode={addModalMode}
           items={unstockedItems}
           categories={categories}
           onBatchAdd={async (items) => {
             for (const item of items) {
               await addToStock(item.itemId, item.quantity, item.unit, item.lowThreshold)
             }
-            setShowAddModal(false)
+            setAddModalMode(null)
           }}
-          onClose={() => setShowAddModal(false)}
+          onClose={() => setAddModalMode(null)}
         />
       )}
 
@@ -239,12 +232,15 @@ export default function Stock() {
   )
 }
 
-function AddToStockModal({ items, categories, onBatchAdd, onClose }) {
+function AddToStockModal({ mode, items, categories, onBatchAdd, onClose }) {
   const { t, i18n } = useTranslation()
   const [search, setSearch] = useState('')
   const [selectedItems, setSelectedItems] = useState(new Map())
+  const [singleQty, setSingleQty] = useState(1)
   const [saving, setSaving] = useState(false)
   const isKeyboardVisible = useKeyboardVisible()
+
+  const isInStock = mode === 'in-stock'
 
   const toggleSelect = (item) => {
     setSelectedItems((prev) => {
@@ -270,14 +266,21 @@ function AddToStockModal({ items, categories, onBatchAdd, onClose }) {
   const handleSubmit = async () => {
     if (selectedItems.size === 0) return
     setSaving(true)
+
+    const defaultQty = isInStock
+      ? (selectedItems.size === 1 ? singleQty : 1)
+      : 0
+
     const batch = [...selectedItems.values()].map((item) => ({
       itemId: item.id,
-      quantity: 0,
+      quantity: defaultQty,
       unit: item.default_unit || 'pcs',
       lowThreshold: 0,
     }))
     await onBatchAdd(batch)
   }
+
+  const accentColor = isInStock ? 'green' : 'neutral'
 
   return (
     <div
@@ -288,7 +291,9 @@ function AddToStockModal({ items, categories, onBatchAdd, onClose }) {
       <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-full min-h-[50vh] flex flex-col animate-slide-up sm:animate-fade-in">
         <div className="flex-shrink-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
           <h2 className="text-lg font-semibold text-text">
-            {i18n.language === 'he' ? 'הוסף למלאי' : 'Add to Stock'}
+            {isInStock
+              ? (i18n.language === 'he' ? 'הוסף למלאי' : 'Add to Stock')
+              : (i18n.language === 'he' ? 'סמן כחסר במלאי' : 'Mark Out of Stock')}
           </h2>
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
         </div>
@@ -317,13 +322,17 @@ function AddToStockModal({ items, categories, onBatchAdd, onClose }) {
                       key={item.id}
                       onClick={() => toggleSelect(item)}
                       className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors min-h-[48px] ${
-                        isSelected ? 'bg-primary/10' : 'hover:bg-bg'
+                        isSelected
+                          ? isInStock ? 'bg-green/10' : 'bg-danger/10'
+                          : 'hover:bg-bg'
                       }`}
                     >
                       <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                        isSelected ? 'bg-primary border-primary text-white' : 'border-neutral'
+                        isSelected
+                          ? isInStock ? 'bg-green border-green text-white' : 'bg-danger border-danger text-white'
+                          : 'border-neutral'
                       }`}>
-                        {isSelected && <span className="text-xs">✓</span>}
+                        {isSelected && <span className="text-xs">{isInStock ? '✓' : '✗'}</span>}
                       </span>
                       <span className="text-xl">{item.emoji}</span>
                       <span className="text-sm font-medium">{item.name}</span>
@@ -336,17 +345,41 @@ function AddToStockModal({ items, categories, onBatchAdd, onClose }) {
         </div>
 
         {selectedItems.size > 0 && (
-          <div className="flex-shrink-0 p-4 border-t border-neutral/30 bg-white rounded-b-3xl">
+          <div className="flex-shrink-0 p-4 border-t border-neutral/30 bg-white rounded-b-3xl space-y-3">
+            {/* Quantity stepper for single item in "in-stock" mode */}
+            {isInStock && selectedItems.size === 1 && (
+              <div className="flex items-center justify-center gap-3">
+                <span className="text-sm text-text-secondary">
+                  {i18n.language === 'he' ? 'כמות:' : 'Qty:'}
+                </span>
+                <button
+                  onClick={() => setSingleQty(Math.max(0, singleQty - 1))}
+                  className="w-10 h-10 rounded-lg bg-neutral/30 flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
+                >−</button>
+                <span className="w-10 text-center font-medium text-lg">{singleQty}</span>
+                <button
+                  onClick={() => setSingleQty(singleQty + 1)}
+                  className="w-10 h-10 rounded-lg bg-green text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
+                >+</button>
+              </div>
+            )}
+
             <button
               onClick={handleSubmit}
               disabled={saving}
-              className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg shadow-lg disabled:opacity-50 min-h-[48px] active:scale-[0.98] transition-transform"
+              className={`w-full py-3.5 rounded-xl text-white font-medium text-lg shadow-lg disabled:opacity-50 min-h-[48px] active:scale-[0.98] transition-transform ${
+                isInStock ? 'bg-green-dark' : 'bg-danger'
+              }`}
             >
               {saving
                 ? (i18n.language === 'he' ? 'מוסיף...' : 'Adding...')
-                : i18n.language === 'he'
-                  ? `הוסף ${selectedItems.size} פריטים למלאי`
-                  : `Add ${selectedItems.size} item${selectedItems.size > 1 ? 's' : ''} to stock`}
+                : isInStock
+                  ? (i18n.language === 'he'
+                      ? `הוסף ${selectedItems.size} פריטים למלאי`
+                      : `Add ${selectedItems.size} item${selectedItems.size > 1 ? 's' : ''} to stock`)
+                  : (i18n.language === 'he'
+                      ? `סמן ${selectedItems.size} כחסר`
+                      : `Mark ${selectedItems.size} as out of stock`)}
             </button>
           </div>
         )}
