@@ -315,8 +315,9 @@ export default function Home() {
 
   return (
     <div className="px-4 pt-6 pb-8 max-w-lg mx-auto animate-fade-in">
-      {/* Header with settings gear */}
-      <div ref={settingsRef} className="flex items-center justify-end mb-4 relative">
+      {/* Header with title + settings gear */}
+      <div ref={settingsRef} className="flex items-center justify-between mb-4 relative">
+        <h1 className="text-2xl font-semibold">{i18n.language === 'he' ? 'פריטים' : 'Items'}</h1>
         <button
           onMouseDown={(e) => { e.preventDefault(); setShowSettings((v) => !v) }}
           className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors"
@@ -588,8 +589,6 @@ export default function Home() {
               <p className="text-text-secondary">{t('empty.welcomeDesc')}</p>
             </div>
           ) : (
-            <>
-            <h2 className="text-lg font-semibold mb-3">{i18n.language === 'he' ? 'פריטים' : 'Items'}</h2>
             <div className="grid grid-cols-3 gap-3">
               {categories.map((cat) => (
                 <Link
@@ -604,7 +603,6 @@ export default function Home() {
                 </Link>
               ))}
             </div>
-            </>
           )}
         </>
       )}

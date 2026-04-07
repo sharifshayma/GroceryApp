@@ -8,7 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import ShareSheet from '../components/ShareSheet'
 import UpdateStockModal from '../components/UpdateStockModal'
-import { IconBack, IconEdit, IconShare, IconCheck, IconChevronDown, IllustrationNoLists } from '../components/Icons'
+import { IconBack, IconEdit, IconShare, IconCheck, IconChevronDown, IconCopy, IconTrash, IllustrationNoLists } from '../components/Icons'
 
 function formatDate(dateStr, lang) {
   const d = new Date(dateStr)
@@ -333,10 +333,10 @@ export default function Lists() {
                   </button>
                   <button
                     onClick={() => duplicateList(list)}
-                    className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-text-secondary flex items-center justify-center text-base"
+                    className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-text-secondary flex items-center justify-center"
                     title="Duplicate"
                   >
-                    📋
+                    <IconCopy className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => {
@@ -344,10 +344,10 @@ export default function Lists() {
                         deleteList(list.id)
                       }
                     }}
-                    className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-danger flex items-center justify-center text-base"
+                    className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-danger flex items-center justify-center"
                     title="Delete"
                   >
-                    🗑
+                    <IconTrash className="w-4 h-4" />
                   </button>
                 </div>
               </div>
