@@ -183,26 +183,21 @@ export default function Stock() {
         </>
       )}
 
-      {/* Add items — dotted box with two buttons */}
+      {/* Add items buttons */}
       {unstockedItems.length > 0 && (
-        <div className="mt-6 mb-20 rounded-2xl border-2 border-dashed border-text/30 p-4">
-          <p className="text-sm font-medium text-text text-center mb-3">
-            {i18n.language === 'he' ? 'הוסף פריטים' : 'Add Items'}
-          </p>
-          <div className="flex gap-3">
-            <button
-              onClick={() => setAddModalMode('in-stock')}
-              className="flex-1 py-2.5 rounded-xl bg-green/15 border border-green/30 text-text font-medium text-sm hover:bg-green/25 transition-colors active:scale-[0.98] min-h-[44px]"
-            >
-              + {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
-            </button>
-            <button
-              onClick={() => setAddModalMode('out-of-stock')}
-              className="flex-1 py-2.5 rounded-xl bg-danger/10 border border-danger/30 text-text font-medium text-sm hover:bg-danger/20 transition-colors active:scale-[0.98] min-h-[44px]"
-            >
-              − {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
-            </button>
-          </div>
+        <div className="mt-6 mb-20 flex gap-3">
+          <button
+            onClick={() => setAddModalMode('in-stock')}
+            className="flex-1 py-3.5 rounded-xl bg-green text-white font-medium text-sm shadow-sm hover:bg-green-dark transition-colors active:scale-[0.98] min-h-[48px]"
+          >
+            + {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
+          </button>
+          <button
+            onClick={() => setAddModalMode('out-of-stock')}
+            className="flex-1 py-3.5 rounded-xl bg-white text-danger font-medium text-sm border border-danger/30 shadow-sm hover:bg-danger/5 transition-colors active:scale-[0.98] min-h-[48px]"
+          >
+            − {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
+          </button>
         </div>
       )}
 
