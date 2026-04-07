@@ -7,6 +7,7 @@ import { getCategoryName } from '../lib/categoryName'
 import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
+import { IllustrationNoItems } from '../components/Icons'
 
 export default function Stock() {
   const { t, i18n } = useTranslation()
@@ -67,7 +68,7 @@ export default function Stock() {
 
       {stockItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[50vh]">
-          <span className="text-6xl mb-4">📦</span>
+          <div className="flex justify-center mb-4"><IllustrationNoItems className="w-28 h-28" /></div>
           <h2 className="text-xl font-medium mb-2">{t('empty.noStock')}</h2>
           <p className="text-text-secondary text-center mb-6">{t('empty.noStockDesc')}</p>
           <button

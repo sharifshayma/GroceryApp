@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
@@ -12,14 +12,14 @@ import HorizontalItemRow from '../components/HorizontalItemRow'
 import AddToListModal from '../components/AddToListModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
-import { IconSearch, IconPlus, IconEdit, IllustrationNoResults, IllustrationNoItems } from '../components/Icons'
+import { IconSearch, IconPlus, IconEdit, IconSettings, IconChevronDown, IconChevronRight, IllustrationNoResults, IllustrationNoItems } from '../components/Icons'
 
 export default function Home() {
   const { t, i18n } = useTranslation()
   const { profile } = useAuth()
   const { categories, loading, error: categoriesError, refetch: refetchCategories } = useCategories()
   const { items: allItems } = useItems()
-  const { tags } = useTags()
+  const { tags, recipeTags, storeTags, customTags } = useTags()
   const { lists, createList, addItemToList } = useLists()
   const [search, setSearch] = useState('')
   const [activeTag, setActiveTag] = useState(null)
@@ -32,6 +32,31 @@ export default function Home() {
   const [selectMode, setSelectMode] = useState(false)
   const [selectedItems, setSelectedItems] = useState(new Map()) // Map<item_id, item>
   const [showListPicker, setShowListPicker] = useState(false)
+
+  // Filter state
+  const [activeCategory, setActiveCategory] = useState(null)
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
+  const [expandedTagType, setExpandedTagType] = useState(null)
+  const [showSettings, setShowSettings] = useState(false)
+
+  // Refs for click-outside dropdown closing
+  const settingsRef = useRef(null)
+  const categoryDropdownRef = useRef(null)
+  const tagDropdownRef = useRef(null)
+
+  useEffect(() => {
+    if (!showSettings && !showCategoryDropdown && !expandedTagType) return
+    const handleClickOutside = (e) => {
+      if (showSettings && settingsRef.current && !settingsRef.current.contains(e.target)) setShowSettings(false)
+      if (showCategoryDropdown && categoryDropdownRef.current && !categoryDropdownRef.current.contains(e.target)) setShowCategoryDropdown(false)
+      if (expandedTagType && tagDropdownRef.current && !tagDropdownRef.current.contains(e.target)) setExpandedTagType(null)
+    }
+    // Use requestAnimationFrame to ensure the listener is added after the current event cycle
+    const rafId = requestAnimationFrame(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    })
+    return () => { cancelAnimationFrame(rafId); document.removeEventListener('mousedown', handleClickOutside) }
+  }, [showSettings, showCategoryDropdown, expandedTagType])
 
   // Track which items are in active/draft lists
   const itemsInList = useMemo(() => {
@@ -124,11 +149,18 @@ export default function Home() {
       })
   }, [activeTag])
 
-  // Clear select mode when leaving tag/search
+  // Clear selections when switching filters
   useEffect(() => {
-    setSelectMode(false)
     setSelectedItems(new Map())
-  }, [activeTag, search])
+  }, [activeTag, activeCategory, search])
+
+  // Mutual exclusivity: category and tag filters
+  useEffect(() => {
+    if (activeCategory) setActiveTag(null)
+  }, [activeCategory])
+  useEffect(() => {
+    if (activeTag) setActiveCategory(null)
+  }, [activeTag])
 
   if (loading) return <LoadingSpinner fullScreen={false} />
   if (categoriesError) return <ErrorBanner error={categoriesError} onRetry={refetchCategories} />
@@ -269,53 +301,205 @@ export default function Home() {
 
   const openLists = lists.filter((l) => l.status === 'draft' || l.status === 'active')
 
+  // Computed: items filtered by active category
+  const categoryFilteredItems = activeCategory
+    ? allItems.filter((i) => i.category_id === activeCategory)
+    : null
+
+  // Tag type groups for filter chips
+  const tagGroups = [
+    { type: 'recipe', emoji: '🍽️', label: i18n.language === 'he' ? 'מתכונים' : 'Recipes', items: recipeTags },
+    { type: 'store', emoji: '🏪', label: i18n.language === 'he' ? 'חנויות' : 'Stores', items: storeTags },
+    { type: 'custom', emoji: '🏷️', label: i18n.language === 'he' ? 'מותאם' : 'Custom', items: customTags },
+  ].filter((g) => g.items.length > 0)
+
   return (
     <div className="px-4 pt-6 pb-8 max-w-lg mx-auto animate-fade-in">
-      {/* Search bar */}
-      <div className="relative mb-6">
-        <IconSearch className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('items.search')}
-          className="w-full ps-10 pe-4 py-3 rounded-xl border border-neutral bg-surface text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-        />
-        {search && (
-          <button
-            onClick={() => setSearch('')}
-            className="absolute end-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral/50 flex items-center justify-center text-text-secondary hover:text-text"
-          >
-            ×
-          </button>
+      {/* Header with settings gear */}
+      <div ref={settingsRef} className="flex items-center justify-end mb-4 relative">
+        <button
+          onMouseDown={(e) => { e.preventDefault(); setShowSettings((v) => !v) }}
+          className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors"
+        >
+          <IconSettings />
+        </button>
+        {showSettings && (
+          <>
+            <div className="absolute end-0 top-full mt-1 z-20 bg-surface rounded-xl border border-neutral shadow-lg min-w-[200px] py-1">
+              <Link
+                to="/manage-categories"
+                onClick={() => setShowSettings(false)}
+                className="flex items-center justify-between px-4 py-3 hover:bg-bg transition-colors text-sm"
+              >
+                <span>{i18n.language === 'he' ? 'ניהול קטגוריות' : 'Manage Categories'}</span>
+                <IconChevronRight className="w-4 h-4 text-text-secondary" />
+              </Link>
+              <Link
+                to="/manage-tags"
+                onClick={() => setShowSettings(false)}
+                className="flex items-center justify-between px-4 py-3 hover:bg-bg transition-colors text-sm"
+              >
+                <span>{i18n.language === 'he' ? 'ניהול תגיות' : 'Manage Tags'}</span>
+                <IconChevronRight className="w-4 h-4 text-text-secondary" />
+              </Link>
+            </div>
+          </>
         )}
       </div>
 
-      {/* Tag filter chips */}
-      {tags.length > 0 && !search && (
-        <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
-          {activeTag && (
+      {/* Search bar + Select toggle */}
+      <div className="flex items-center gap-2 mb-4">
+        <div className="relative flex-1">
+          <IconSearch className="absolute start-3 top-1/2 -translate-y-1/2 w-5 h-5 text-text-secondary" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder={t('items.search')}
+            className="w-full ps-10 pe-4 py-3 rounded-xl border border-neutral bg-surface text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+          />
+          {search && (
             <button
-              onClick={() => setActiveTag(null)}
-              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold bg-neutral/30 text-text-secondary"
+              onClick={() => setSearch('')}
+              className="absolute end-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-neutral/50 flex items-center justify-center text-text-secondary hover:text-text"
             >
-              ✕ {i18n.language === 'he' ? 'הצג הכל' : 'Clear'}
+              ×
             </button>
           )}
-          {tags.map((tag) => (
+        </div>
+        <button
+          onClick={() => {
+            if (selectMode) {
+              setSelectMode(false)
+              setSelectedItems(new Map())
+            } else {
+              setSelectMode(true)
+            }
+          }}
+          className={`flex-shrink-0 px-3 py-3 rounded-xl text-xs font-medium transition-colors ${
+            selectMode ? 'bg-primary text-white' : 'bg-surface border border-neutral text-text-secondary'
+          }`}
+        >
+          {selectMode
+            ? (i18n.language === 'he' ? 'ביטול' : 'Cancel')
+            : (i18n.language === 'he' ? 'בחירה' : 'Select')}
+        </button>
+      </div>
+
+      {/* Filter row: Categories + Tag types */}
+      {!search && (
+        <div className="flex flex-wrap gap-2 mb-4 relative">
+          {/* Categories filter */}
+          <div ref={categoryDropdownRef} className="relative flex-shrink-0">
             <button
-              key={tag.id}
-              onClick={() => setActiveTag(activeTag === tag.id ? null : tag.id)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                activeTag === tag.id
-                  ? 'text-white'
+              onMouseDown={(e) => { e.preventDefault(); setShowCategoryDropdown((v) => !v); setExpandedTagType(null) }}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                activeCategory
+                  ? 'bg-primary text-white'
                   : 'bg-surface border border-neutral text-text-secondary'
               }`}
-              style={activeTag === tag.id ? { backgroundColor: tag.color } : {}}
             >
-              {tag.type === 'recipe' ? '🍽️' : tag.type === 'store' ? '🏪' : '🏷️'} {tag.name}
+              {activeCategory
+                ? `${categories.find((c) => c.id === activeCategory)?.emoji || '📁'} ${getCategoryName(categories.find((c) => c.id === activeCategory))}`
+                : `📁 ${i18n.language === 'he' ? 'קטגוריות' : 'Categories'}`}
+              <IconChevronDown className="w-3 h-3" />
             </button>
-          ))}
+            {showCategoryDropdown && (
+              <>
+                <div className="absolute start-0 top-full mt-1 z-20 bg-surface rounded-xl border border-neutral shadow-lg min-w-[200px] max-h-[60vh] overflow-y-auto py-1">
+                  <button
+                    onClick={() => { setActiveCategory(null); setShowCategoryDropdown(false) }}
+                    className={`w-full flex items-center gap-2 px-4 py-2.5 hover:bg-bg transition-colors text-sm text-start ${!activeCategory ? 'text-primary font-medium' : ''}`}
+                  >
+                    {i18n.language === 'he' ? 'הצג הכל' : 'Show All'}
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => { setActiveCategory(cat.id); setShowCategoryDropdown(false) }}
+                      className={`w-full flex items-center gap-2 px-4 py-2.5 hover:bg-bg transition-colors text-sm text-start ${activeCategory === cat.id ? 'bg-primary/10 text-primary font-medium' : ''}`}
+                    >
+                      <span>{cat.emoji}</span>
+                      <span>{getCategoryName(cat)}</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Tag type chips */}
+          {tagGroups.map((group) => {
+            const activeTagInGroup = tags.find((t) => t.id === activeTag && t.type === group.type)
+            return (
+              <div key={group.type} ref={expandedTagType === group.type ? tagDropdownRef : undefined} className="relative flex-shrink-0">
+                <button
+                  onMouseDown={(e) => { e.preventDefault(); setExpandedTagType((v) => v === group.type ? null : group.type); setShowCategoryDropdown(false) }}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                    activeTagInGroup
+                      ? 'text-white'
+                      : 'bg-surface border border-neutral text-text-secondary'
+                  }`}
+                  style={activeTagInGroup ? { backgroundColor: activeTagInGroup.color } : {}}
+                >
+                  {activeTagInGroup
+                    ? `${group.emoji} ${activeTagInGroup.name}`
+                    : `${group.emoji} ${group.label}`}
+                  <IconChevronDown className="w-3 h-3" />
+                </button>
+                {expandedTagType === group.type && (
+                  <>
+                    <div className="absolute start-0 top-full mt-1 z-20 bg-surface rounded-xl border border-neutral shadow-lg min-w-[180px] max-h-[50vh] overflow-y-auto py-1">
+                      {group.items.map((tag) => (
+                        <button
+                          key={tag.id}
+                          onClick={() => {
+                            setActiveTag(activeTag === tag.id ? null : tag.id)
+                            setExpandedTagType(null)
+                          }}
+                          className={`w-full flex items-center gap-2 px-4 py-2.5 hover:bg-bg transition-colors text-sm text-start ${activeTag === tag.id ? 'font-medium' : ''}`}
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }} />
+                          <span className={activeTag === tag.id ? 'text-primary' : ''}>{tag.name}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )
+          })}
+
+          {/* Add Tag chip (if no tags exist) */}
+          {tags.length === 0 && (
+            <Link
+              to="/manage-tags"
+              className="flex-shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-primary/30 text-primary"
+            >
+              + {i18n.language === 'he' ? 'הוסף תגית' : 'Add Tag'}
+            </Link>
+          )}
+
+          {/* Select all / deselect all (visible in select mode with filtered items) */}
+          {selectMode && (activeTag || activeCategory) && (
+            <button
+              onClick={() => {
+                const currentItems = activeTag && taggedItemData
+                  ? allItems.filter((i) => taggedItemData.has(i.id))
+                  : categoryFilteredItems || []
+                if (selectedItems.size === currentItems.length) {
+                  setSelectedItems(new Map())
+                } else {
+                  const all = new Map()
+                  currentItems.forEach((i) => all.set(i.id, i))
+                  setSelectedItems(all)
+                }
+              }}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium text-primary"
+            >
+              {i18n.language === 'he' ? 'בחר הכל' : 'Select all'}
+            </button>
+          )}
         </div>
       )}
 
@@ -332,59 +516,6 @@ export default function Home() {
                     {tag.description}
                   </p>
                 )}
-
-                {/* Tag toolbar: Select mode + Edit tag */}
-                {filtered.length > 0 && (
-                  <div className="flex items-center justify-between mb-3 py-2 px-3 rounded-xl bg-surface border border-neutral/30">
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          if (selectMode) {
-                            setSelectMode(false)
-                            setSelectedItems(new Map())
-                          } else {
-                            setSelectMode(true)
-                          }
-                        }}
-                        className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                          selectMode ? 'bg-primary text-white' : 'bg-white border border-neutral/50 text-text-secondary'
-                        }`}
-                      >
-                        {selectMode
-                          ? (i18n.language === 'he' ? 'ביטול' : 'Cancel')
-                          : (i18n.language === 'he' ? 'בחירה מרובה' : 'Select')}
-                      </button>
-                      {selectMode && (
-                        <button
-                          onClick={() => {
-                            if (selectedItems.size === filtered.length) {
-                              setSelectedItems(new Map())
-                            } else {
-                              const all = new Map()
-                              filtered.forEach((i) => all.set(i.id, i))
-                              setSelectedItems(all)
-                            }
-                          }}
-                          className="px-3 py-1.5 rounded-full text-xs font-semibold text-primary"
-                        >
-                          {selectedItems.size === filtered.length
-                            ? (i18n.language === 'he' ? 'בטל הכל' : 'Deselect all')
-                            : (i18n.language === 'he' ? 'בחר הכל' : 'Select all')}
-                        </button>
-                      )}
-                    </div>
-                    {!selectMode && (
-                      <Link
-                        to="/manage-tags"
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-semibold bg-white border border-neutral/50 text-text-secondary hover:text-primary transition-colors"
-                      >
-                        <IconEdit className="w-3.5 h-3.5" />
-                        {i18n.language === 'he' ? 'ערוך תגיות' : 'Edit tags'}
-                      </Link>
-                    )}
-                  </div>
-                )}
-
                 {filtered.length === 0 ? (
                   <p className="text-center text-text-secondary py-6">
                     {i18n.language === 'he' ? 'אין פריטים עם תגית זו' : 'No items with this tag'}
@@ -400,8 +531,23 @@ export default function Home() {
         </div>
       )}
 
+      {/* Category filter results */}
+      {activeCategory && !activeTag && !search && categoryFilteredItems && (
+        <div className="mb-6">
+          {categoryFilteredItems.length === 0 ? (
+            <p className="text-center text-text-secondary py-6">
+              {i18n.language === 'he' ? 'אין פריטים בקטגוריה זו' : 'No items in this category'}
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {categoryFilteredItems.map((item) => renderItemCard(item, null))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Search results */}
-      {searchResults ? (
+      {searchResults && (
         <div className="space-y-2">
           {searchResults.length === 0 ? (
             <div className="text-center py-8">
@@ -412,9 +558,11 @@ export default function Home() {
             searchResults.map((item) => renderItemCard(item, null))
           )}
         </div>
-      ) : (
+      )}
+
+      {/* Default view: horizontal rows + category grid */}
+      {!searchResults && !activeTag && !activeCategory && (
         <>
-          {/* Need to Buy */}
           <HorizontalItemRow
             title={i18n.language === 'he' ? 'צריך לקנות' : 'Need to Buy'}
             icon="🔴"
@@ -424,7 +572,6 @@ export default function Home() {
             itemsInList={itemsInList}
           />
 
-          {/* Frequently Bought */}
           <HorizontalItemRow
             title={i18n.language === 'he' ? 'קונים הרבה' : 'Frequently Bought'}
             icon="⭐"
@@ -434,7 +581,6 @@ export default function Home() {
             itemsInList={itemsInList}
           />
 
-          {/* Category grid */}
           {categories.length === 0 ? (
             <div className="text-center py-12">
               <div className="flex justify-center mb-4"><IllustrationNoItems className="w-28 h-28" /></div>

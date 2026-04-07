@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
@@ -156,22 +156,6 @@ export default function Profile() {
             ))}
           </div>
         )}
-      </div>
-
-      {/* Management links */}
-      <div className="bg-surface rounded-2xl border border-neutral divide-y divide-neutral">
-        <Link to="/manage-categories" className="w-full px-5 py-4 text-start font-semibold text-text flex items-center justify-between">
-          {t('profile.manageCategories')}
-          <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </svg>
-        </Link>
-        <Link to="/manage-tags" className="w-full px-5 py-4 text-start font-semibold text-text flex items-center justify-between">
-          {t('profile.manageTags')}
-          <svg className="w-5 h-5 text-text-secondary" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5" />
-          </svg>
-        </Link>
       </div>
 
       {/* Sign out */}
