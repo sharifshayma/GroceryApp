@@ -9,7 +9,7 @@ import AddItemModal from '../components/AddItemModal'
 import AddToListModal from '../components/AddToListModal'
 import ItemCard from '../components/ItemCard'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { IconBack } from '../components/Icons'
+import { IconBack, IconSettings } from '../components/Icons'
 
 export default function Category() {
   const { categoryId } = useParams()
@@ -21,6 +21,7 @@ export default function Category() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [addToListItem, setAddToListItem] = useState(null)
+  const [manageMode, setManageMode] = useState(false)
   const pillsRef = useRef(null)
   const activePillRef = useRef(null)
 
@@ -49,10 +50,18 @@ export default function Category() {
           >
             <IconBack />
           </button>
-          <h1 className="text-xl font-semibold flex items-center gap-2">
+          <h1 className="text-xl font-semibold flex-1 flex items-center gap-2">
             <span>{activeCategory?.emoji}</span>
             <span>{getCategoryName(activeCategory)}</span>
           </h1>
+          <button
+            onClick={() => setManageMode(!manageMode)}
+            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-colors ${
+              manageMode ? 'bg-primary text-white' : 'bg-surface border border-neutral text-text-secondary hover:text-text'
+            }`}
+          >
+            <IconSettings />
+          </button>
         </div>
 
         {/* Horizontal category pills */}
@@ -99,10 +108,20 @@ export default function Category() {
           </div>
         ) : (
           <div className="space-y-2">
+            {/* Dotted add item card — only in manage mode */}
+            {manageMode && (
+              <button
+                onClick={() => setShowAddModal(true)}
+                className="w-full flex items-center justify-center gap-2 p-4 rounded-xl border-2 border-dashed border-primary/30 text-primary font-medium text-sm hover:bg-primary/5 transition-colors min-h-[56px]"
+              >
+                + {i18n.language === 'he' ? 'הוסף פריט חדש' : 'Add New Item'}
+              </button>
+            )}
             {items.map((item) => (
               <ItemCard
                 key={item.id}
                 item={item}
+                showActions={manageMode}
                 onAddToList={(i) => setAddToListItem(i)}
                 onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item)}
@@ -111,15 +130,6 @@ export default function Category() {
           </div>
         )}
       </div>
-
-      {/* FAB - Add item */}
-      <button
-        onClick={() => setShowAddModal(true)}
-        className="fixed bottom-20 end-4 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center text-2xl font-medium hover:bg-primary-light active:bg-primary-dark transition-all active:scale-90 z-20"
-        style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
-      >
-        +
-      </button>
 
       {/* Add to list modal */}
       {addToListItem && (

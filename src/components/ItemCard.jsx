@@ -4,7 +4,7 @@ import { supabase } from '../lib/supabase'
 import TagPicker from './TagPicker'
 import { IconCart, IconTag, IconEdit, IconTrash } from './Icons'
 
-export default function ItemCard({ item, onEdit, onDelete, onAddToList }) {
+export default function ItemCard({ item, onEdit, onDelete, onAddToList, showActions = true }) {
   const { t } = useTranslation()
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [itemTags, setItemTags] = useState([])
@@ -43,25 +43,29 @@ export default function ItemCard({ item, onEdit, onDelete, onAddToList }) {
                 <IconCart />
               </button>
             )}
-            <button
-              onClick={() => setShowTagPicker(true)}
-              className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
-              title="Tags"
-            >
-              <IconTag />
-            </button>
-            <button
-              onClick={onEdit}
-              className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
-            >
-              <IconEdit />
-            </button>
-            <button
-              onClick={onDelete}
-              className="w-10 h-10 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors"
-            >
-              <IconTrash />
-            </button>
+            {showActions && (
+              <>
+                <button
+                  onClick={() => setShowTagPicker(true)}
+                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
+                  title="Tags"
+                >
+                  <IconTag />
+                </button>
+                <button
+                  onClick={onEdit}
+                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
+                >
+                  <IconEdit />
+                </button>
+                <button
+                  onClick={onDelete}
+                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors"
+                >
+                  <IconTrash />
+                </button>
+              </>
+            )}
           </div>
         </div>
 
