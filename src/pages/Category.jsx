@@ -122,7 +122,7 @@ export default function Category() {
                 key={item.id}
                 item={item}
                 showActions={manageMode}
-                onAddToList={(i) => setAddToListItem(i)}
+                onAddToList={manageMode ? undefined : (i) => setAddToListItem(i)}
                 onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item)}
               />
