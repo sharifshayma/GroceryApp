@@ -588,6 +588,8 @@ export default function Home() {
               <p className="text-text-secondary">{t('empty.welcomeDesc')}</p>
             </div>
           ) : (
+            <>
+            <h2 className="text-lg font-semibold mb-3">{i18n.language === 'he' ? 'פריטים' : 'Items'}</h2>
             <div className="grid grid-cols-3 gap-3">
               {categories.map((cat) => (
                 <Link
@@ -602,6 +604,7 @@ export default function Home() {
                 </Link>
               ))}
             </div>
+            </>
           )}
         </>
       )}
