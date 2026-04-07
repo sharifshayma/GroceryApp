@@ -1,4 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="14" fill="#F28B30"/>
-  <text x="32" y="44" font-size="36" text-anchor="middle" font-family="sans-serif">🛒</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <rect width="64" height="64" rx="14" fill="#FFF8E7"/>
+  <g transform="translate(30, 33) scale(0.043)">
+    <g transform="translate(0, 50)">
+      <path d="M-190 -85 L-172 270 C-168 298 -146 318 -118 318 L118 318 C146 318 168 298 172 270 L190 -85 C192 -103 178 -118 158 -118 L-158 -118 C-178 -118 -192 -103 -190 -85Z" fill="#F28B30"/>
+      <path d="M-75 -118 L-75 -195 C-75 -242 -45 -278 0 -278 C45 -278 75 -242 75 -195 L75 -118" fill="none" stroke="#E8611A" stroke-width="28" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(0, -240)">
+      <path d="M0 35 C-38 -30 -20 -115 24 -155 C48 -115 38 -30 0 35Z" fill="#8BC34A"/>
+      <path d="M5 25 C34 -18 72 -55 108 -75 C84 -38 45 -2 5 25Z" fill="#6DA83A" opacity="0.8"/>
+    </g>
+    <g transform="translate(148, -275)">
+      <path d="M0 -26 L7 -7 L26 0 L7 7 L0 26 L-7 7 L-26 0 L-7 -7 Z" fill="#E8C840"/>
+    </g>
+  </g>
 </svg>

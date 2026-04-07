@@ -17,6 +17,7 @@ import ManageCategories from './pages/ManageCategories'
 import ManageTags from './pages/ManageTags'
 import CreateList from './pages/CreateList'
 import EditList from './pages/EditList'
+// import IconPreview from './pages/IconPreview'
 
 export default function App() {
   useDirection()

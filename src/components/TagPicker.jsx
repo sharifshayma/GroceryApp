@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useTags } from '../hooks/useTags'
 import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
+import { IconCheck, IconClose } from './Icons'
 
 const TYPE_ICONS = { recipe: '🍽️', store: '🏪', custom: '🏷️' }
 
@@ -68,7 +69,7 @@ export default function TagPicker({ itemId, onClose }) {
   ]
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
       <div
         ref={scrollRef}
@@ -79,7 +80,9 @@ export default function TagPicker({ itemId, onClose }) {
           <h2 className="text-lg font-extrabold text-text">
             {i18n.language === 'he' ? 'תגיות' : 'Tags'}
           </h2>
-          <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
+          <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors">
+            <IconClose />
+          </button>
         </div>
 
         <div className="p-4 pb-20 space-y-4">
@@ -111,11 +114,7 @@ export default function TagPicker({ itemId, onClose }) {
                                 assigned ? 'bg-primary border-primary text-white' : 'border-neutral'
                               }`}
                             >
-                              {assigned && (
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                                </svg>
-                              )}
+                              {assigned && <IconCheck />}
                             </div>
                             <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color }} />
                             <span className="flex-1 text-sm font-medium text-start">{tag.name}</span>

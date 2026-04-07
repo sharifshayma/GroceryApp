@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
+import { IconCheck } from './Icons'
 
 export default function UpdateStockModal({ listItems, onUpdateStock, onClose }) {
   const { i18n } = useTranslation()
@@ -50,7 +51,7 @@ export default function UpdateStockModal({ listItems, onUpdateStock, onClose }) 
 
   if (eligibleItems.length === 0) {
     return (
-      <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+      <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
         <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
         <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md animate-slide-up sm:animate-fade-in"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
@@ -73,7 +74,7 @@ export default function UpdateStockModal({ listItems, onUpdateStock, onClose }) 
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
       <div className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[85vh] overflow-y-auto animate-slide-up sm:animate-fade-in"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
@@ -106,11 +107,7 @@ export default function UpdateStockModal({ listItems, onUpdateStock, onClose }) 
                     item.included ? 'bg-green border-green text-white' : 'border-neutral'
                   }`}
                 >
-                  {item.included && (
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                  )}
+                  {item.included && <IconCheck />}
                 </button>
                 <span className="text-lg">{item.emoji}</span>
                 <span className="flex-1 text-sm font-medium truncate">{item.name}</span>

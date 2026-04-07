@@ -3,19 +3,24 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useCategories } from '../hooks/useCategories'
 import { useItems } from '../hooks/useItems'
+import { useLists } from '../hooks/useLists'
 import { getCategoryName } from '../lib/categoryName'
 import AddItemModal from '../components/AddItemModal'
+import AddToListModal from '../components/AddToListModal'
 import ItemCard from '../components/ItemCard'
 import LoadingSpinner from '../components/LoadingSpinner'
+import { IconBack } from '../components/Icons'
 
 export default function Category() {
   const { categoryId } = useParams()
   const navigate = useNavigate()
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { categories, loading: catsLoading } = useCategories()
   const { items, loading: itemsLoading, refetch, addItem, updateItem, deleteItem } = useItems(categoryId)
+  const { lists, createList, addItemToList } = useLists()
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
+  const [addToListItem, setAddToListItem] = useState(null)
   const pillsRef = useRef(null)
   const activePillRef = useRef(null)
 
@@ -42,9 +47,7 @@ export default function Category() {
             onClick={() => navigate('/')}
             className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
-            </svg>
+            <IconBack />
           </button>
           <h1 className="text-xl font-extrabold flex items-center gap-2">
             <span>{activeCategory?.emoji}</span>
@@ -100,6 +103,7 @@ export default function Category() {
               <ItemCard
                 key={item.id}
                 item={item}
+                onAddToList={(i) => setAddToListItem(i)}
                 onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item)}
               />
@@ -116,6 +120,26 @@ export default function Category() {
       >
         +
       </button>
+
+      {/* Add to list modal */}
+      {addToListItem && (
+        <AddToListModal
+          item={addToListItem}
+          lists={lists}
+          onAddToList={async (listId, item) => {
+            await addItemToList(listId, item)
+          }}
+          onCreateAndAdd={async (item) => {
+            const today = new Date().toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', {
+              month: 'short',
+              day: 'numeric',
+            })
+            const name = `${t('nav.lists')} — ${today}`
+            return await createList(name, [item])
+          }}
+          onClose={() => setAddToListItem(null)}
+        />
+      )}
 
       {/* Add/Edit modal */}
       {(showAddModal || editingItem) && (
