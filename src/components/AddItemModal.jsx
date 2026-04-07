@@ -42,7 +42,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
 
@@ -52,7 +52,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
       >
         {/* Header */}
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
-          <h2 className="text-lg font-extrabold text-text">
+          <h2 className="text-lg font-semibold text-text">
             {isEdit ? t('items.editItem') : t('items.addItem')}
           </h2>
           <button
@@ -169,7 +169,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
           <button
             type="submit"
             disabled={saving || !name.trim()}
-            className="w-full py-3.5 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50 min-h-[48px]"
+            className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50 min-h-[48px]"
           >
             {saving
               ? t('items.saving')

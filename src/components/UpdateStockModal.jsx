@@ -58,7 +58,7 @@ export default function UpdateStockModal({ listItems, onUpdateStock, onClose }) 
         >
           <div className="p-5 text-center">
             <span className="text-4xl block mb-3">✅</span>
-            <p className="font-bold mb-1">
+            <p className="font-medium mb-1">
               {i18n.language === 'he' ? 'המלאי עודכן' : 'Stock Already Updated'}
             </p>
             <p className="text-sm text-text-secondary mb-4">
@@ -80,7 +80,7 @@ export default function UpdateStockModal({ listItems, onUpdateStock, onClose }) 
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
       >
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
-          <h2 className="text-lg font-extrabold text-text">
+          <h2 className="text-lg font-semibold text-text">
             {i18n.language === 'he' ? 'עדכון מלאי' : 'Update Stock'}
           </h2>
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
@@ -115,12 +115,12 @@ export default function UpdateStockModal({ listItems, onUpdateStock, onClose }) 
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => updateQty(idx, item.quantity - 1)}
-                      className="w-8 h-8 rounded-lg bg-neutral/30 flex items-center justify-center text-sm font-bold"
+                      className="w-8 h-8 rounded-lg bg-neutral/30 flex items-center justify-center text-sm font-medium"
                     >−</button>
-                    <span className="w-8 text-center font-bold text-sm">{item.quantity}</span>
+                    <span className="w-8 text-center font-medium text-sm">{item.quantity}</span>
                     <button
                       onClick={() => updateQty(idx, item.quantity + 1)}
-                      className="w-8 h-8 rounded-lg bg-green text-white flex items-center justify-center text-sm font-bold"
+                      className="w-8 h-8 rounded-lg bg-green text-white flex items-center justify-center text-sm font-medium"
                     >+</button>
                   </div>
                 )}
@@ -132,7 +132,7 @@ export default function UpdateStockModal({ listItems, onUpdateStock, onClose }) 
           <button
             onClick={handleUpdate}
             disabled={saving || items.every((i) => !i.included)}
-            className="w-full py-3.5 rounded-xl bg-green-dark text-white font-bold text-lg disabled:opacity-50 min-h-[48px]"
+            className="w-full py-3.5 rounded-xl bg-green-dark text-white font-medium text-lg disabled:opacity-50 min-h-[48px]"
           >
             {saving
               ? (i18n.language === 'he' ? 'מעדכן...' : 'Updating...')

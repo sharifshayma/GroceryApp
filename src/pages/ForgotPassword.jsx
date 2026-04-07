@@ -32,7 +32,7 @@ export default function ForgotPassword() {
         <LanguageToggle compact />
       </div>
       <div className="w-full max-w-sm animate-fade-in">
-        <h1 className="text-3xl font-extrabold text-text text-center mb-2">
+        <h1 className="text-3xl font-semibold text-text text-center mb-2">
           GroceryApp
         </h1>
         <p className="text-text-secondary text-center mb-8">
@@ -74,7 +74,7 @@ export default function ForgotPassword() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-primary text-white font-medium text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50"
             >
               {loading ? t('auth.sending') : t('auth.resetPassword')}
             </button>

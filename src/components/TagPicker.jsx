@@ -77,7 +77,7 @@ export default function TagPicker({ itemId, onClose }) {
         style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
       >
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
-          <h2 className="text-lg font-extrabold text-text">
+          <h2 className="text-lg font-semibold text-text">
             {i18n.language === 'he' ? 'תגיות' : 'Tags'}
           </h2>
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors">
@@ -95,7 +95,7 @@ export default function TagPicker({ itemId, onClose }) {
               if (group.items.length === 0) return null
               return (
                 <div key={group.label}>
-                  <h3 className="text-xs font-bold text-text-secondary mb-2">
+                  <h3 className="text-xs font-medium text-text-secondary mb-2">
                     {group.icon} {group.label}
                   </h3>
                   <div className="space-y-1.5">

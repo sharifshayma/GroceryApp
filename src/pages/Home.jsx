@@ -438,7 +438,7 @@ export default function Home() {
           {categories.length === 0 ? (
             <div className="text-center py-12">
               <div className="flex justify-center mb-4"><IllustrationNoItems className="w-28 h-28" /></div>
-              <h2 className="text-xl font-bold mb-2">{t('empty.welcome')}</h2>
+              <h2 className="text-xl font-medium mb-2">{t('empty.welcome')}</h2>
               <p className="text-text-secondary">{t('empty.welcomeDesc')}</p>
             </div>
           ) : (
@@ -465,7 +465,7 @@ export default function Home() {
         <div className="fixed bottom-20 inset-x-0 px-4 z-20" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
           <button
             onClick={() => handleBulkAdd(null)}
-            className="w-full max-w-lg mx-auto block py-3.5 rounded-xl bg-primary text-white font-bold text-lg shadow-lg active:scale-[0.98] transition-transform"
+            className="w-full max-w-lg mx-auto block py-3.5 rounded-xl bg-primary text-white font-medium text-lg shadow-lg active:scale-[0.98] transition-transform"
           >
             {i18n.language === 'he'
               ? `הוסף ${selectedItems.size} פריטים לרשימה`
@@ -494,7 +494,7 @@ export default function Home() {
             style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
           >
             <div className="px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between">
-              <h2 className="text-lg font-extrabold text-text">
+              <h2 className="text-lg font-semibold text-text">
                 {i18n.language === 'he' ? 'בחר רשימה' : 'Choose List'}
               </h2>
               <button onClick={() => setShowListPicker(false)} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>

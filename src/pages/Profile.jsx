@@ -64,7 +64,7 @@ export default function Profile() {
 
   return (
     <div className="px-4 pt-6 pb-8 max-w-lg mx-auto space-y-6 animate-fade-in">
-      <h1 className="text-2xl font-extrabold">{t('profile.title')}</h1>
+      <h1 className="text-2xl font-semibold">{t('profile.title')}</h1>
 
       {/* User info */}
       <div className="bg-surface rounded-2xl p-5 border border-neutral space-y-4">
@@ -97,7 +97,7 @@ export default function Profile() {
               </div>
             ) : (
               <div>
-                <p className="text-lg font-bold">{profile?.display_name}</p>
+                <p className="text-lg font-medium">{profile?.display_name}</p>
                 <p className="text-text-secondary text-sm">{user?.email}</p>
               </div>
             )}
@@ -143,7 +143,7 @@ export default function Profile() {
                 key={m.id}
                 className="flex items-center gap-3 py-1"
               >
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm">
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium text-sm">
                   {(m.display_name || m.email || '?')[0].toUpperCase()}
                 </div>
                 <div>
@@ -177,7 +177,7 @@ export default function Profile() {
       {/* Sign out */}
       <button
         onClick={signOut}
-        className="w-full py-3 rounded-xl bg-danger/10 text-danger font-bold text-lg transition-colors hover:bg-danger/20"
+        className="w-full py-3 rounded-xl bg-danger/10 text-danger font-medium text-lg transition-colors hover:bg-danger/20"
       >
         {t('auth.signOut')}
       </button>

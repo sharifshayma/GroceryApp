@@ -4,7 +4,7 @@ export default function HorizontalItemRow({ title, icon, items, accentClass = 'b
   return (
     <div className="mb-6">
       <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-bold flex items-center gap-1.5">
+        <h2 className="text-sm font-medium flex items-center gap-1.5">
           <span>{icon}</span>
           <span>{title}</span>
         </h2>

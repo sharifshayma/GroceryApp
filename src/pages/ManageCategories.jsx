@@ -109,7 +109,7 @@ export default function ManageCategories() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
         </button>
-        <h1 className="text-xl font-extrabold">{t('profile.manageCategories')}</h1>
+        <h1 className="text-xl font-semibold">{t('profile.manageCategories')}</h1>
       </div>
 
       <div className="px-4 pb-8 max-w-lg mx-auto">

@@ -6,10 +6,11 @@ import { useCategories } from '../hooks/useCategories'
 import { getCategoryName } from '../lib/categoryName'
 import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 import LoadingSpinner from '../components/LoadingSpinner'
+import ErrorBanner from '../components/ErrorBanner'
 
 export default function Stock() {
   const { t, i18n } = useTranslation()
-  const { stockItems, loading, addToStock, updateQuantity, updateThreshold, updateStock, removeFromStock, lowStockCount } = useStock()
+  const { stockItems, loading, error, addToStock, updateQuantity, updateThreshold, updateStock, removeFromStock, lowStockCount, refetch } = useStock()
   const { items: allItems } = useItems()
   const { categories } = useCategories()
   const [showAddModal, setShowAddModal] = useState(false)
@@ -18,6 +19,7 @@ export default function Stock() {
   const [editingThreshold, setEditingThreshold] = useState(null)
 
   if (loading) return <LoadingSpinner fullScreen={false} />
+  if (error) return <ErrorBanner error={error} onRetry={refetch} />
 
   // Group stock by category
   const displayItems = filterLow
@@ -48,11 +50,11 @@ export default function Stock() {
   return (
     <div className="px-4 pt-6 pb-8 max-w-lg mx-auto animate-fade-in">
       <div className="flex items-center justify-between mb-4">
-        <h1 className="text-2xl font-extrabold">{t('nav.stock')}</h1>
+        <h1 className="text-2xl font-semibold">{t('nav.stock')}</h1>
         {lowStockCount > 0 && (
           <button
             onClick={() => setFilterLow(!filterLow)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
               filterLow ? 'bg-danger text-white' : 'bg-danger/10 text-danger'
             }`}
           >
@@ -66,11 +68,11 @@ export default function Stock() {
       {stockItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[50vh]">
           <span className="text-6xl mb-4">📦</span>
-          <h2 className="text-xl font-bold mb-2">{t('empty.noStock')}</h2>
+          <h2 className="text-xl font-medium mb-2">{t('empty.noStock')}</h2>
           <p className="text-text-secondary text-center mb-6">{t('empty.noStockDesc')}</p>
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-lg"
+            className="px-6 py-3 rounded-xl bg-primary text-white font-medium text-lg"
           >
             + {t('common.add')}
           </button>
@@ -79,7 +81,7 @@ export default function Stock() {
         <>
           {sortedGroups.map(([catId, group]) => (
             <div key={catId} className="mb-5">
-              <h3 className="text-sm font-bold text-text-secondary mb-2 flex items-center gap-1.5">
+              <h3 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-1.5">
                 <span>{group.emoji}</span>
                 <span>{group.name}</span>
                 <span className="text-xs font-normal">({group.items.length})</span>
@@ -99,7 +101,7 @@ export default function Stock() {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold truncate">{s.items?.name}</p>
                           {isLow && (
-                            <span className="text-xs font-bold text-danger">
+                            <span className="text-xs font-medium text-danger">
                               {i18n.language === 'he' ? 'מלאי נמוך' : 'Low Stock'}
                             </span>
                           )}
@@ -109,16 +111,16 @@ export default function Stock() {
                         <div className="flex items-center gap-2 flex-shrink-0">
                           <button
                             onClick={() => updateQuantity(s.id, s.quantity - 1)}
-                            className="w-10 h-10 rounded-lg bg-neutral/30 flex items-center justify-center text-text font-bold text-lg active:scale-90 transition-transform"
+                            className="w-10 h-10 rounded-lg bg-neutral/30 flex items-center justify-center text-text font-medium text-lg active:scale-90 transition-transform"
                           >
                             −
                           </button>
-                          <span className={`w-10 text-center font-bold text-lg ${isLow ? 'text-danger' : 'text-green-dark'}`}>
+                          <span className={`w-10 text-center font-medium text-lg ${isLow ? 'text-danger' : 'text-green-dark'}`}>
                             {s.quantity}
                           </span>
                           <button
                             onClick={() => updateQuantity(s.id, s.quantity + 1)}
-                            className="w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-lg active:scale-90 transition-transform"
+                            className="w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
                           >
                             +
                           </button>
@@ -189,7 +191,7 @@ export default function Stock() {
       {/* FAB */}
       <button
         onClick={() => setShowAddModal(true)}
-        className="fixed bottom-20 end-4 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center text-2xl font-bold hover:bg-primary-light active:bg-primary-dark transition-all active:scale-90 z-20"
+        className="fixed bottom-20 end-4 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center text-2xl font-medium hover:bg-primary-light active:bg-primary-dark transition-all active:scale-90 z-20"
         style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         +
@@ -257,7 +259,7 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
         style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
       >
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
-          <h2 className="text-lg font-extrabold text-text">
+          <h2 className="text-lg font-semibold text-text">
             {i18n.language === 'he' ? 'הוסף למלאי' : 'Add to Stock'}
           </h2>
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
@@ -281,7 +283,7 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
               ) : (
                 Object.entries(grouped).map(([catId, group]) => (
                   <div key={catId} className="mb-3">
-                    <h3 className="text-xs font-bold text-text-secondary mb-1">{group.emoji} {group.name}</h3>
+                    <h3 className="text-xs font-medium text-text-secondary mb-1">{group.emoji} {group.name}</h3>
                     {group.items.map((item) => (
                       <button
                         key={item.id}
@@ -301,7 +303,7 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
               <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl border border-primary/30">
                 <span className="text-3xl">{selected.emoji}</span>
                 <div>
-                  <p className="font-bold">{selected.name}</p>
+                  <p className="font-medium">{selected.name}</p>
                   <p className="text-xs text-text-secondary">{selected.default_unit || 'pcs'}</p>
                 </div>
               </div>
@@ -311,14 +313,14 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
                   {i18n.language === 'he' ? 'כמות נוכחית' : 'Current Quantity'}
                 </label>
                 <div className="flex items-center gap-3">
-                  <button onClick={() => setQuantity(Math.max(0, quantity - 1))} className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-bold text-lg active:scale-90 transition-transform">−</button>
+                  <button onClick={() => setQuantity(Math.max(0, quantity - 1))} className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-medium text-lg active:scale-90 transition-transform">−</button>
                   <input
                     type="number"
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(0, Number(e.target.value)))}
-                    className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-bold"
+                    className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-medium"
                   />
-                  <button onClick={() => setQuantity(quantity + 1)} className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-lg active:scale-90 transition-transform">+</button>
+                  <button onClick={() => setQuantity(quantity + 1)} className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform">+</button>
                 </div>
               </div>
 
@@ -337,7 +339,7 @@ function AddToStockModal({ items, categories, onAdd, onClose }) {
               <button
                 onClick={handleSubmit}
                 disabled={saving}
-                className="w-full py-3.5 rounded-xl bg-primary text-white font-bold text-lg disabled:opacity-50 min-h-[48px]"
+                className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg disabled:opacity-50 min-h-[48px]"
               >
                 {saving ? t('items.saving') : t('common.add')}
               </button>
@@ -371,7 +373,7 @@ function EditStockModal({ stockItem, onSave, onClose }) {
         style={{ paddingBottom: isKeyboardVisible ? '40vh' : 'env(safe-area-inset-bottom, 16px)' }}
       >
         <div className="sticky top-0 bg-white rounded-t-3xl px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between z-10">
-          <h2 className="text-lg font-extrabold text-text">
+          <h2 className="text-lg font-semibold text-text">
             {i18n.language === 'he' ? 'עריכת מלאי' : 'Edit Stock'}
           </h2>
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
@@ -381,7 +383,7 @@ function EditStockModal({ stockItem, onSave, onClose }) {
           <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl border border-primary/30">
             <span className="text-3xl">{stockItem.items?.emoji || '🛒'}</span>
             <div>
-              <p className="font-bold">{stockItem.items?.name}</p>
+              <p className="font-medium">{stockItem.items?.name}</p>
               <p className="text-xs text-text-secondary">{stockItem.unit}</p>
             </div>
           </div>
@@ -391,14 +393,14 @@ function EditStockModal({ stockItem, onSave, onClose }) {
               {i18n.language === 'he' ? 'כמות נוכחית' : 'Current Quantity'}
             </label>
             <div className="flex items-center gap-3">
-              <button onClick={() => setQuantity(Math.max(0, quantity - 1))} className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-bold text-lg active:scale-90 transition-transform">−</button>
+              <button onClick={() => setQuantity(Math.max(0, quantity - 1))} className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-medium text-lg active:scale-90 transition-transform">−</button>
               <input
                 type="number"
                 value={quantity}
                 onChange={(e) => setQuantity(Math.max(0, Number(e.target.value)))}
-                className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-bold"
+                className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-medium"
               />
-              <button onClick={() => setQuantity(quantity + 1)} className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-lg active:scale-90 transition-transform">+</button>
+              <button onClick={() => setQuantity(quantity + 1)} className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform">+</button>
             </div>
           </div>
 
@@ -417,7 +419,7 @@ function EditStockModal({ stockItem, onSave, onClose }) {
           <button
             onClick={handleSubmit}
             disabled={saving}
-            className="w-full py-3.5 rounded-xl bg-primary text-white font-bold text-lg disabled:opacity-50 min-h-[48px]"
+            className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg disabled:opacity-50 min-h-[48px]"
           >
             {saving ? t('items.saving') : t('common.save')}
           </button>

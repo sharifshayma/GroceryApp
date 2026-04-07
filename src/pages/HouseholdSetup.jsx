@@ -120,14 +120,14 @@ export default function HouseholdSetup() {
           <div className="w-20 h-20 mx-auto rounded-full bg-green/10 flex items-center justify-center">
             <span className="text-4xl">🏠</span>
           </div>
-          <h2 className="text-2xl font-extrabold text-text">
+          <h2 className="text-2xl font-semibold text-text">
             {name}
           </h2>
           <div className="bg-surface rounded-2xl p-6 border border-neutral">
             <p className="text-text-secondary text-sm mb-2">
               {t('household.inviteCode')}
             </p>
-            <p className="text-3xl font-extrabold text-primary tracking-widest mb-4">
+            <p className="text-3xl font-semibold text-primary tracking-widest mb-4">
               {inviteCode}
             </p>
             <div className="flex gap-3">
@@ -147,7 +147,7 @@ export default function HouseholdSetup() {
           </div>
           <button
             onClick={() => navigate('/', { replace: true })}
-            className="w-full py-3 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary-light active:bg-primary-dark transition-colors"
+            className="w-full py-3 rounded-xl bg-primary text-white font-medium text-lg hover:bg-primary-light active:bg-primary-dark transition-colors"
           >
             {t('nav.home')} →
           </button>
@@ -159,7 +159,7 @@ export default function HouseholdSetup() {
   return (
     <div className="min-h-dvh bg-bg flex items-center justify-center px-6">
       <div className="w-full max-w-sm animate-fade-in">
-        <h1 className="text-2xl font-extrabold text-text text-center mb-2">
+        <h1 className="text-2xl font-semibold text-text text-center mb-2">
           {t('household.setup')}
         </h1>
         <p className="text-text-secondary text-center mb-8">🏠</p>
@@ -168,7 +168,7 @@ export default function HouseholdSetup() {
           <div className="space-y-4">
             <button
               onClick={() => setMode('create')}
-              className="w-full py-4 rounded-2xl bg-surface border border-neutral text-text font-bold text-lg hover:bg-bg transition-colors"
+              className="w-full py-4 rounded-2xl bg-surface border border-neutral text-text font-medium text-lg hover:bg-bg transition-colors"
             >
               {t('household.createTitle')}
             </button>
@@ -177,7 +177,7 @@ export default function HouseholdSetup() {
             </div>
             <button
               onClick={() => setMode('join')}
-              className="w-full py-4 rounded-2xl bg-surface border border-neutral text-text font-bold text-lg hover:bg-bg transition-colors"
+              className="w-full py-4 rounded-2xl bg-surface border border-neutral text-text font-medium text-lg hover:bg-bg transition-colors"
             >
               {t('household.joinTitle')}
             </button>
@@ -205,7 +205,7 @@ export default function HouseholdSetup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-primary text-white font-medium text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50"
             >
               {loading ? t('household.creating') : t('household.create')}
             </button>
@@ -240,7 +240,7 @@ export default function HouseholdSetup() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-primary text-white font-medium text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50"
             >
               {loading ? t('household.joining') : t('household.join')}
             </button>

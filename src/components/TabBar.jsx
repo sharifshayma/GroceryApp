@@ -58,12 +58,12 @@ export default function TabBar() {
               <div className="relative">
                 {tab.icon(isActive)}
                 {tab.path === '/stock' && lowStockCount > 0 && (
-                  <span className="absolute -top-1 -end-1 w-4 h-4 rounded-full bg-danger text-white text-[9px] font-bold flex items-center justify-center">
+                  <span className="absolute -top-1 -end-1 w-4 h-4 rounded-full bg-danger text-white text-[9px] font-medium flex items-center justify-center">
                     {lowStockCount}
                   </span>
                 )}
               </div>
-              <span className="text-[11px] font-bold">{t(tab.labelKey)}</span>
+              <span className="text-[11px] font-medium">{t(tab.labelKey)}</span>
             </Link>
           )
         })}

@@ -89,7 +89,7 @@ export default function Lists() {
           >
             <IconBack />
           </button>
-          <h1 className="text-lg font-extrabold flex-1 text-center truncate px-2">{shoppingList.name}</h1>
+          <h1 className="text-lg font-semibold flex-1 text-center truncate px-2">{shoppingList.name}</h1>
           {shoppingList.status !== 'completed' && (
             <button
               onClick={() => navigate(`/edit-list/${shoppingList.id}`)}
@@ -111,7 +111,7 @@ export default function Lists() {
         <div className="mb-4">
           <div className="flex justify-between text-sm mb-1">
             <span className="font-semibold text-text-secondary">{boughtCount}/{total}</span>
-            <span className="font-bold text-green-dark">{Math.round(progress)}%</span>
+            <span className="font-medium text-green-dark">{Math.round(progress)}%</span>
           </div>
           <div className="h-2.5 bg-neutral/30 rounded-full overflow-hidden">
             <div className="h-full bg-green rounded-full transition-all duration-300" style={{ width: `${progress}%` }} />
@@ -121,7 +121,7 @@ export default function Lists() {
         {/* Items by category */}
         {Object.entries(grouped).map(([cat, catItems]) => (
           <div key={cat} className="mb-4">
-            <h3 className="text-sm font-bold text-text-secondary mb-2">{cat}</h3>
+            <h3 className="text-sm font-medium text-text-secondary mb-2">{cat}</h3>
             <div className="space-y-1.5">
               {catItems.map((li) => (
                 <button
@@ -171,7 +171,7 @@ export default function Lists() {
         {/* Done button */}
         <button
           onClick={handleDone}
-          className={`w-full py-3.5 rounded-xl font-bold text-lg text-white transition-colors mt-2 ${
+          className={`w-full py-3.5 rounded-xl font-medium text-lg text-white transition-colors mt-2 ${
             boughtCount === total ? 'bg-green-dark hover:bg-green' : 'bg-primary hover:bg-primary-light'
           }`}
         >
@@ -199,16 +199,16 @@ export default function Lists() {
   // List overview
   return (
     <div className="px-4 pt-6 pb-8 max-w-lg mx-auto animate-fade-in">
-      <h1 className="text-2xl font-extrabold mb-4">{t('nav.lists')}</h1>
+      <h1 className="text-2xl font-semibold mb-4">{t('nav.lists')}</h1>
 
       {lists.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[50vh]">
           <IllustrationNoLists className="w-28 h-28 mb-4" />
-          <h2 className="text-xl font-bold mb-2">{t('empty.noLists')}</h2>
+          <h2 className="text-xl font-medium mb-2">{t('empty.noLists')}</h2>
           <p className="text-text-secondary text-center mb-6">{t('empty.noListsDesc')}</p>
           <Link
             to="/create-list"
-            className="px-6 py-3 rounded-xl bg-primary text-white font-bold text-lg"
+            className="px-6 py-3 rounded-xl bg-primary text-white font-medium text-lg"
           >
             + {t('items.addItem')}
           </Link>
@@ -219,14 +219,14 @@ export default function Lists() {
           {activeList && (
             <div className="bg-primary/5 border-2 border-primary rounded-2xl p-4">
               <div className="flex items-center justify-between mb-2">
-                <span className="text-xs font-bold text-primary uppercase">
+                <span className="text-xs font-medium text-primary uppercase">
                   {i18n.language === 'he' ? 'פעיל' : 'Active'}
                 </span>
                 <span className="text-xs text-text-secondary">
                   {formatDate(activeList.created_at, i18n.language)}
                 </span>
               </div>
-              <h3 className="font-bold text-lg mb-1">{activeList.name}</h3>
+              <h3 className="font-medium text-lg mb-1">{activeList.name}</h3>
               <p className="text-sm text-text-secondary mb-3">
                 {(activeList.list_items || []).filter((li) => li.is_bought).length}/
                 {(activeList.list_items || []).length} {i18n.language === 'he' ? 'פריטים' : 'items'}
@@ -266,14 +266,14 @@ export default function Lists() {
             return (
               <div key={list.id} className="bg-white rounded-2xl border border-neutral/20 shadow-sm p-4">
                 <div className="flex items-center justify-between mb-1">
-                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${statusColors[list.status] || ''}`}>
+                  <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${statusColors[list.status] || ''}`}>
                     {statusLabels[list.status] || list.status}
                   </span>
                   <span className="text-xs text-text-secondary">
                     {formatDate(list.created_at, i18n.language)}
                   </span>
                 </div>
-                <h3 className="font-bold mb-1">{list.name}</h3>
+                <h3 className="font-medium mb-1">{list.name}</h3>
                 <button
                   onClick={() => setExpandedListId(expandedListId === list.id ? null : list.id)}
                   className="flex items-center gap-1 text-sm text-text-secondary mb-1"
@@ -359,7 +359,7 @@ export default function Lists() {
       {/* FAB */}
       <Link
         to="/create-list"
-        className="fixed bottom-20 end-4 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center text-2xl font-bold hover:bg-primary-light active:bg-primary-dark transition-all active:scale-90 z-20"
+        className="fixed bottom-20 end-4 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center text-2xl font-medium hover:bg-primary-light active:bg-primary-dark transition-all active:scale-90 z-20"
         style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         +

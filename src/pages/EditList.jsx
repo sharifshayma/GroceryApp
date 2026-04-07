@@ -148,7 +148,7 @@ export default function EditList() {
             type="text"
             value={listName}
             onChange={(e) => setListName(e.target.value)}
-            className="flex-1 text-xl font-extrabold bg-transparent border-none outline-none"
+            className="flex-1 text-xl font-semibold bg-transparent border-none outline-none"
           />
         </div>
 
@@ -211,7 +211,7 @@ export default function EditList() {
           return (
             <div key={catId} className="mb-4">
               {!search && (
-                <h3 className="text-sm font-bold text-text-secondary mb-2">
+                <h3 className="text-sm font-medium text-text-secondary mb-2">
                   {cat ? `${cat.emoji} ${getCategoryName(cat)}` : 'Other'}
                 </h3>
               )}
@@ -245,14 +245,14 @@ export default function EditList() {
                         <div className="flex items-center gap-1.5 flex-shrink-0">
                           <button
                             onClick={() => updateQuantity(item.id, sel.quantity - 1)}
-                            className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center text-text font-bold text-base active:scale-90 transition-transform"
+                            className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center text-text font-medium text-base active:scale-90 transition-transform"
                           >
                             −
                           </button>
-                          <span className="w-8 text-center font-bold text-sm">{sel.quantity}</span>
+                          <span className="w-8 text-center font-medium text-sm">{sel.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.id, sel.quantity + 1)}
-                            className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-bold text-base active:scale-90 transition-transform"
+                            className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-medium text-base active:scale-90 transition-transform"
                           >
                             +
                           </button>
@@ -283,7 +283,7 @@ export default function EditList() {
           <button
             onClick={handleSave}
             disabled={saving || selectedCount === 0}
-            className="w-full py-3.5 rounded-xl bg-primary text-white font-bold text-lg shadow-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg shadow-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
             <span>
               {saving

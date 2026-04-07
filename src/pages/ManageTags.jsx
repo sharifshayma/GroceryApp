@@ -89,7 +89,7 @@ export default function ManageTags() {
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5" />
           </svg>
         </button>
-        <h1 className="text-xl font-extrabold">{t('profile.manageTags')}</h1>
+        <h1 className="text-xl font-semibold">{t('profile.manageTags')}</h1>
       </div>
 
       <div className="px-4 pb-8 max-w-lg mx-auto">
@@ -167,7 +167,7 @@ export default function ManageTags() {
         {/* Tags grouped by type */}
         {grouped.map((group) => (
           <div key={group.key} className="mb-5">
-            <h3 className="text-sm font-bold text-text-secondary mb-2 flex items-center gap-1.5">
+            <h3 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-1.5">
               <span>{group.icon}</span>
               <span>{group.label}</span>
               <span className="text-xs font-normal">({group.items.length})</span>

@@ -78,7 +78,7 @@ export default function ShareSheet({ list, onClose }) {
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
       >
         <div className="px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-text">
+          <h2 className="text-lg font-semibold text-text">
             {i18n.language === 'he' ? 'שתף רשימה' : 'Share List'}
           </h2>
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors">

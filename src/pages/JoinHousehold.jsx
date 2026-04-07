@@ -74,7 +74,7 @@ export default function JoinHousehold() {
             <p className="text-danger font-medium">{error}</p>
             <button
               onClick={() => navigate('/household-setup', { replace: true })}
-              className="w-full py-3 rounded-xl bg-primary text-white font-bold text-lg"
+              className="w-full py-3 rounded-xl bg-primary text-white font-medium text-lg"
             >
               {t('common.back')}
             </button>
@@ -84,13 +84,13 @@ export default function JoinHousehold() {
             <div className="w-20 h-20 mx-auto rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-4xl">🏠</span>
             </div>
-            <h2 className="text-2xl font-extrabold text-text">
+            <h2 className="text-2xl font-semibold text-text">
               {t('household.joinConfirm', { name: household.name })}
             </h2>
             <button
               onClick={handleJoin}
               disabled={joining}
-              className="w-full py-3 rounded-xl bg-primary text-white font-bold text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50"
+              className="w-full py-3 rounded-xl bg-primary text-white font-medium text-lg hover:bg-primary-light active:bg-primary-dark transition-colors disabled:opacity-50"
             >
               {joining ? t('household.joining') : t('household.join')}
             </button>

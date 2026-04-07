@@ -49,7 +49,7 @@ export default function Category() {
           >
             <IconBack />
           </button>
-          <h1 className="text-xl font-extrabold flex items-center gap-2">
+          <h1 className="text-xl font-semibold flex items-center gap-2">
             <span>{activeCategory?.emoji}</span>
             <span>{getCategoryName(activeCategory)}</span>
           </h1>
@@ -115,7 +115,7 @@ export default function Category() {
       {/* FAB - Add item */}
       <button
         onClick={() => setShowAddModal(true)}
-        className="fixed bottom-20 end-4 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center text-2xl font-bold hover:bg-primary-light active:bg-primary-dark transition-all active:scale-90 z-20"
+        className="fixed bottom-20 end-4 w-14 h-14 rounded-full bg-primary text-white shadow-lg flex items-center justify-center text-2xl font-medium hover:bg-primary-light active:bg-primary-dark transition-all active:scale-90 z-20"
         style={{ marginBottom: 'env(safe-area-inset-bottom, 0px)' }}
       >
         +

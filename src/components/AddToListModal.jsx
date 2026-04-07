@@ -10,6 +10,12 @@ export default function AddToListModal({ item, lists, onAddToList, onCreateAndAd
   // Only draft/active lists
   const openLists = lists.filter((l) => l.status === 'draft' || l.status === 'active')
 
+  // Check which lists already contain this item
+  const listHasItem = (list) =>
+    (list.list_items || []).some((li) => li.item_id === item.id)
+
+  const alreadyInAllLists = openLists.length > 0 && openLists.every(listHasItem)
+
   const handleAdd = async (listId) => {
     setSaving(true)
     if (listId) {
@@ -24,21 +30,22 @@ export default function AddToListModal({ item, lists, onAddToList, onCreateAndAd
     if (openLists.length === 0) {
       handleAdd(null) // create new
     } else if (openLists.length === 1) {
-      handleAdd(openLists[0].id) // add to only list
+      if (listHasItem(openLists[0])) return // already in list, button disabled
+      handleAdd(openLists[0].id)
     } else {
-      setStep('pickList') // let user choose
+      setStep('pickList')
     }
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
       <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
       <div
-        className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md animate-slide-up sm:animate-fade-in"
+        className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[85vh] overflow-y-auto animate-slide-up sm:animate-fade-in"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
       >
         <div className="px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between">
-          <h2 className="text-lg font-extrabold text-text">
+          <h2 className="text-lg font-semibold text-text">
             {step === 'quantity'
               ? (i18n.language === 'he' ? 'הוסף לרשימה' : 'Add to List')
               : (i18n.language === 'he' ? 'בחר רשימה' : 'Choose List')}
@@ -46,14 +53,14 @@ export default function AddToListModal({ item, lists, onAddToList, onCreateAndAd
           <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
         </div>
 
-        <div className="p-4 pb-6">
+        <div className="p-4 pb-20">
           {step === 'quantity' ? (
             <div className="space-y-4">
               {/* Item display */}
               <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl border border-primary/30">
                 <span className="text-3xl">{item.emoji || '🛒'}</span>
                 <div>
-                  <p className="font-bold">{item.name}</p>
+                  <p className="font-medium">{item.name}</p>
                   <p className="text-xs text-text-secondary">{item.default_unit || 'pcs'}</p>
                 </div>
               </div>
@@ -66,52 +73,71 @@ export default function AddToListModal({ item, lists, onAddToList, onCreateAndAd
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-bold text-lg active:scale-90 transition-transform"
+                    className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
                   >−</button>
                   <input
                     type="number"
                     value={quantity}
                     onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                    className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-bold"
+                    className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-medium"
                   />
                   <button
                     onClick={() => setQuantity(quantity + 1)}
-                    className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-bold text-lg active:scale-90 transition-transform"
+                    className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
                   >+</button>
                 </div>
               </div>
 
-              <button
-                onClick={handleNext}
-                disabled={saving}
-                className="w-full py-3.5 rounded-xl bg-primary text-white font-bold text-lg disabled:opacity-50 min-h-[48px]"
-              >
-                {saving
-                  ? (i18n.language === 'he' ? 'מוסיף...' : 'Adding...')
-                  : openLists.length === 0
-                    ? (i18n.language === 'he' ? 'צור רשימה והוסף' : 'Create List & Add')
-                    : (i18n.language === 'he' ? 'הוסף לרשימה' : 'Add to List')}
-              </button>
+              {openLists.length === 1 && listHasItem(openLists[0]) ? (
+                <p className="w-full py-3.5 rounded-xl bg-neutral/20 text-text-secondary font-semibold text-center text-sm">
+                  {i18n.language === 'he' ? 'הפריט כבר ברשימה' : 'Item already in list'}
+                </p>
+              ) : alreadyInAllLists ? (
+                <p className="w-full py-3.5 rounded-xl bg-neutral/20 text-text-secondary font-semibold text-center text-sm">
+                  {i18n.language === 'he' ? 'הפריט כבר בכל הרשימות' : 'Item already in all lists'}
+                </p>
+              ) : (
+                <button
+                  onClick={handleNext}
+                  disabled={saving}
+                  className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg disabled:opacity-50 min-h-[48px]"
+                >
+                  {saving
+                    ? (i18n.language === 'he' ? 'מוסיף...' : 'Adding...')
+                    : openLists.length === 0
+                      ? (i18n.language === 'he' ? 'צור רשימה והוסף' : 'Create List & Add')
+                      : (i18n.language === 'he' ? 'הוסף לרשימה' : 'Add to List')}
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-2">
-              {openLists.map((list) => (
-                <button
-                  key={list.id}
-                  onClick={() => handleAdd(list.id)}
-                  disabled={saving}
-                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-neutral/20 bg-white hover:bg-bg transition-colors min-h-[56px] disabled:opacity-50"
-                >
-                  <span className="text-lg">🛒</span>
-                  <div className="flex-1 text-start">
-                    <p className="font-semibold text-sm">{list.name}</p>
-                    <p className="text-xs text-text-secondary">
-                      {(list.list_items || []).length} {i18n.language === 'he' ? 'פריטים' : 'items'}
-                      {list.status === 'active' && ` • ${i18n.language === 'he' ? 'פעיל' : 'Active'}`}
-                    </p>
-                  </div>
-                </button>
-              ))}
+              {openLists.map((list) => {
+                const alreadyIn = listHasItem(list)
+                return (
+                  <button
+                    key={list.id}
+                    onClick={() => !alreadyIn && handleAdd(list.id)}
+                    disabled={saving || alreadyIn}
+                    className={`w-full flex items-center gap-3 p-4 rounded-xl border min-h-[56px] transition-colors ${
+                      alreadyIn
+                        ? 'border-neutral/10 bg-neutral/10 opacity-60'
+                        : 'border-neutral/20 bg-white hover:bg-bg disabled:opacity-50'
+                    }`}
+                  >
+                    <span className="text-lg">🛒</span>
+                    <div className="flex-1 text-start">
+                      <p className="font-semibold text-sm">{list.name}</p>
+                      <p className="text-xs text-text-secondary">
+                        {alreadyIn
+                          ? (i18n.language === 'he' ? 'הפריט כבר ברשימה' : 'Already added')
+                          : `${(list.list_items || []).length} ${i18n.language === 'he' ? 'פריטים' : 'items'}${list.status === 'active' ? ` • ${i18n.language === 'he' ? 'פעיל' : 'Active'}` : ''}`}
+                      </p>
+                    </div>
+                    {alreadyIn && <span className="text-xs">✓</span>}
+                  </button>
+                )
+              })}
               <button
                 onClick={() => handleAdd(null)}
                 disabled={saving}
