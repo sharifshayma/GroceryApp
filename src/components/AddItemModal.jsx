@@ -24,7 +24,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // Tags assignment (only for edit mode)
+  // Tags assignment
   const [assignedTagIds, setAssignedTagIds] = useState(new Set())
 
   useEffect(() => {
@@ -39,13 +39,23 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
   }, [item?.id])
 
   const toggleTag = async (tagId) => {
-    if (!item?.id) return
-    if (assignedTagIds.has(tagId)) {
-      await supabase.from('item_tags').delete().eq('item_id', item.id).eq('tag_id', tagId)
-      setAssignedTagIds((prev) => { const next = new Set(prev); next.delete(tagId); return next })
+    if (isEdit && item?.id) {
+      // For existing items, toggle immediately in DB
+      if (assignedTagIds.has(tagId)) {
+        await supabase.from('item_tags').delete().eq('item_id', item.id).eq('tag_id', tagId)
+        setAssignedTagIds((prev) => { const next = new Set(prev); next.delete(tagId); return next })
+      } else {
+        await supabase.from('item_tags').insert({ item_id: item.id, tag_id: tagId })
+        setAssignedTagIds((prev) => new Set(prev).add(tagId))
+      }
     } else {
-      await supabase.from('item_tags').insert({ item_id: item.id, tag_id: tagId })
-      setAssignedTagIds((prev) => new Set(prev).add(tagId))
+      // For new items, just track in state (will be assigned after creation)
+      setAssignedTagIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(tagId)) next.delete(tagId)
+        else next.add(tagId)
+        return next
+      })
     }
   }
 
@@ -56,12 +66,17 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
     setError('')
 
     try {
-      await onSave({
+      const result = await onSave({
         name: name.trim(),
         category_id: selectedCategory,
         emoji,
         default_unit: unit,
       })
+      // For new items, assign selected tags after creation
+      if (!isEdit && result?.id && assignedTagIds.size > 0) {
+        const inserts = [...assignedTagIds].map((tagId) => ({ item_id: result.id, tag_id: tagId }))
+        await supabase.from('item_tags').insert(inserts)
+      }
     } catch (err) {
       setError(err.message)
       setSaving(false)
@@ -148,8 +163,8 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
             </select>
           </div>
 
-          {/* Tags section (edit mode only) */}
-          {isEdit && tags.length > 0 && (
+          {/* Tags section */}
+          {tags.length > 0 && (
             <div>
               <label className="block text-xs font-medium text-text-secondary mb-1.5">
                 {i18n.language === 'he' ? 'תגיות' : 'Tags'}
@@ -168,7 +183,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
                       style={isAssigned ? { backgroundColor: tag.color || '#F28B30' } : {}}
                     >
                       {tag.type === 'recipe' ? '🍽️' : tag.type === 'store' ? '🏪' : '🏷️'}
-                      {tag.name}
+                      {' '}{tag.name}
                     </button>
                   )
                 })}

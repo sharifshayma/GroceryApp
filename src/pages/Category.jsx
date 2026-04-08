@@ -156,13 +156,15 @@ export default function Category() {
           categories={categories}
           item={editingItem}
           onSave={async (data) => {
+            let result
             if (editingItem) {
-              await updateItem(editingItem.id, data)
+              result = await updateItem(editingItem.id, data)
             } else {
-              await addItem(data)
+              result = await addItem(data)
             }
             setShowAddModal(false)
             setEditingItem(null)
+            return result
           }}
           onClose={() => {
             setShowAddModal(false)
