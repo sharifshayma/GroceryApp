@@ -166,26 +166,10 @@ export default function ManageTags() {
           ))}
         </div>
 
-        {/* Save / Cancel for new tags */}
-        {editingId === 'new' && (
-          <div className="flex gap-2">
-            <button
-              onClick={handleSave}
-              disabled={saving || !editName.trim()}
-              className="flex-1 py-2 rounded-xl bg-primary text-white font-medium text-sm disabled:opacity-50 min-h-[40px]"
-            >
-              {saving ? '...' : (i18n.language === 'he' ? 'צור תגית' : 'Create Tag')}
-            </button>
-            <button onClick={cancelEdit} className="px-4 py-2 rounded-xl text-text-secondary font-medium text-sm min-h-[40px]">
-              {t('common.cancel')}
-            </button>
-          </div>
-        )}
       </div>
 
-      {/* Items section (only for saved tags, not 'new') */}
-      {editingId !== 'new' && (
-        <div className="border-t border-neutral/20 px-3.5 py-3 bg-bg/50">
+      {/* Items section */}
+      <div className="border-t border-neutral/20 px-3.5 py-3 bg-bg/50">
           {assignedItems.length === 0 ? (
             <p className="text-xs text-text-secondary text-center py-2">
               {i18n.language === 'he' ? 'אין פריטים משויכים' : 'No items assigned'}
@@ -239,8 +223,16 @@ export default function ManageTags() {
             </div>
           )}
           <button
-            onClick={() => { setShowItemPicker(true); setPickerSearch('') }}
-            className="w-full py-2 rounded-lg border border-dashed border-primary/30 text-primary text-xs font-medium hover:bg-primary/5 transition-colors"
+            onClick={async () => {
+              if (editingId === 'new' && editName.trim()) {
+                // Auto-create the tag first, then open picker
+                await handleSave()
+              }
+              setShowItemPicker(true)
+              setPickerSearch('')
+            }}
+            disabled={!editName.trim()}
+            className="w-full py-2 rounded-lg border border-dashed border-primary/30 text-primary text-xs font-medium hover:bg-primary/5 transition-colors disabled:opacity-40"
           >
             + {i18n.language === 'he' ? 'הוסף פריטים' : 'Add Items'}
           </button>
@@ -253,7 +245,6 @@ export default function ManageTags() {
             {i18n.language === 'he' ? 'סיום' : 'Done'}
           </button>
         </div>
-      )}
     </div>
   )
 
