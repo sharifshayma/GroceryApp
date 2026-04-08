@@ -56,7 +56,7 @@ export default function Category() {
 
           <div
             ref={pillsRef}
-            className="flex-1 flex gap-2 overflow-x-auto no-scrollbar"
+            className="flex-1 flex gap-2 overflow-x-auto no-scrollbar ps-1"
           >
             {categories.map((cat) => {
               const isActive = cat.id === categoryId
