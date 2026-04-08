@@ -28,19 +28,29 @@ export default function ManageTags() {
 
   // Item assignment state for the active/editing tag
   const [tagItemIds, setTagItemIds] = useState(new Set())
+  const [tagItemNotes, setTagItemNotes] = useState(new Map()) // Map<item_id, notes>
+  const [editingNoteId, setEditingNoteId] = useState(null) // item_id being edited
+  const [noteText, setNoteText] = useState('')
   const [showItemPicker, setShowItemPicker] = useState(false)
   const [pickerSearch, setPickerSearch] = useState('')
 
-  // Fetch assigned items when editing a tag
+  // Fetch assigned items + notes when editing a tag
   useEffect(() => {
-    if (!editingId || editingId === 'new') { setTagItemIds(new Set()); return }
+    if (!editingId || editingId === 'new') { setTagItemIds(new Set()); setTagItemNotes(new Map()); return }
     supabase
       .from('item_tags')
-      .select('item_id')
+      .select('item_id, notes')
       .eq('tag_id', editingId)
       .then(({ data }) => {
-        if (data) setTagItemIds(new Set(data.map((d) => d.item_id)))
-        else setTagItemIds(new Set())
+        if (data) {
+          setTagItemIds(new Set(data.map((d) => d.item_id)))
+          const notes = new Map()
+          data.forEach((d) => { if (d.notes) notes.set(d.item_id, d.notes) })
+          setTagItemNotes(notes)
+        } else {
+          setTagItemIds(new Set())
+          setTagItemNotes(new Map())
+        }
       })
   }, [editingId])
 
@@ -97,10 +107,24 @@ export default function ManageTags() {
     if (tagItemIds.has(itemId)) {
       await supabase.from('item_tags').delete().eq('item_id', itemId).eq('tag_id', tagId)
       setTagItemIds((prev) => { const next = new Set(prev); next.delete(itemId); return next })
+      setTagItemNotes((prev) => { const next = new Map(prev); next.delete(itemId); return next })
     } else {
       await supabase.from('item_tags').insert({ item_id: itemId, tag_id: tagId })
       setTagItemIds((prev) => new Set(prev).add(itemId))
     }
+  }
+
+  const saveNote = async (tagId, itemId) => {
+    const noteValue = noteText.trim() || null
+    await supabase.from('item_tags').update({ notes: noteValue }).eq('item_id', itemId).eq('tag_id', tagId)
+    setTagItemNotes((prev) => {
+      const next = new Map(prev)
+      if (noteValue) next.set(itemId, noteValue)
+      else next.delete(itemId)
+      return next
+    })
+    setEditingNoteId(null)
+    setNoteText('')
   }
 
   const grouped = [
@@ -167,21 +191,51 @@ export default function ManageTags() {
               {i18n.language === 'he' ? 'אין פריטים משויכים' : 'No items assigned'}
             </p>
           ) : (
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              {assignedItems.map((item) => (
-                <span
-                  key={item.id}
-                  className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-white border border-neutral/30 text-xs font-medium"
-                >
-                  {item.emoji} {item.name}
+            <div className="space-y-1.5 mb-3">
+              {assignedItems.map((item) => {
+                const note = tagItemNotes.get(item.id)
+                return (
+                  <div key={item.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-neutral/30">
+                    <span className="text-base">{item.emoji}</span>
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-medium">{item.name}</span>
+                      {note && editingNoteId !== item.id && (
+                        <p className="text-[10px] text-primary italic truncate">{note}</p>
+                      )}
+                    </div>
+                    <button
+                      onClick={() => { setEditingNoteId(editingNoteId === item.id ? null : item.id); setNoteText(note || '') }}
+                      className="text-[10px] text-text-secondary hover:text-primary px-1.5 py-0.5 flex-shrink-0"
+                    >
+                      {note ? '📝' : (i18n.language === 'he' ? '+ הערה' : '+ note')}
+                    </button>
+                    <button
+                      onClick={() => toggleItemAssignment(tagId, item.id)}
+                      className="text-text-secondary hover:text-danger flex-shrink-0 text-sm"
+                    >
+                      ×
+                    </button>
+                  </div>
+                )
+              })}
+              {editingNoteId && (
+                <div className="flex gap-2 px-1">
+                  <input
+                    type="text"
+                    value={noteText}
+                    onChange={(e) => setNoteText(e.target.value)}
+                    placeholder={i18n.language === 'he' ? 'הערה...' : 'Note...'}
+                    autoFocus
+                    className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-neutral/40 bg-bg text-text text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                  />
                   <button
-                    onClick={() => toggleItemAssignment(tagId, item.id)}
-                    className="text-text-secondary hover:text-danger ms-0.5"
+                    onClick={() => saveNote(tagId, editingNoteId)}
+                    className="flex-shrink-0 px-3 py-2 rounded-lg bg-primary text-white text-xs font-medium"
                   >
-                    ×
+                    {t('common.save')}
                   </button>
-                </span>
-              ))}
+                </div>
+              )}
             </div>
           )}
           <button
@@ -302,22 +356,55 @@ export default function ManageTags() {
               />
               {pickerItems.map((item) => {
                 const isAssigned = tagItemIds.has(item.id)
+                const note = tagItemNotes.get(item.id)
                 return (
-                  <button
-                    key={item.id}
-                    onClick={() => toggleItemAssignment(editingId, item.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors min-h-[48px] ${
-                      isAssigned ? 'bg-primary/10' : 'hover:bg-bg'
-                    }`}
-                  >
-                    <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                      isAssigned ? 'bg-primary border-primary text-white' : 'border-neutral'
-                    }`}>
-                      {isAssigned && <span className="text-xs">✓</span>}
-                    </span>
-                    <span className="text-xl">{item.emoji}</span>
-                    <span className="text-sm font-medium">{item.name}</span>
-                  </button>
+                  <div key={item.id}>
+                    <button
+                      onClick={() => toggleItemAssignment(editingId, item.id)}
+                      className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors min-h-[48px] ${
+                        isAssigned ? 'bg-primary/10' : 'hover:bg-bg'
+                      }`}
+                    >
+                      <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
+                        isAssigned ? 'bg-primary border-primary text-white' : 'border-neutral'
+                      }`}>
+                        {isAssigned && <span className="text-xs">✓</span>}
+                      </span>
+                      <span className="text-xl">{item.emoji}</span>
+                      <div className="flex-1 text-start min-w-0">
+                        <span className="text-sm font-medium">{item.name}</span>
+                        {isAssigned && note && (
+                          <p className="text-[10px] text-primary italic truncate">{note}</p>
+                        )}
+                      </div>
+                      {isAssigned && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); setEditingNoteId(editingNoteId === item.id ? null : item.id); setNoteText(note || '') }}
+                          className="text-[10px] text-text-secondary hover:text-primary px-2 py-1 flex-shrink-0"
+                        >
+                          {note ? '📝' : (i18n.language === 'he' ? '+ הערה' : '+ note')}
+                        </button>
+                      )}
+                    </button>
+                    {editingNoteId === item.id && isAssigned && (
+                      <div className="flex gap-2 px-3 pb-2">
+                        <input
+                          type="text"
+                          value={noteText}
+                          onChange={(e) => setNoteText(e.target.value)}
+                          placeholder={i18n.language === 'he' ? 'הערה...' : 'Note...'}
+                          autoFocus
+                          className="flex-1 min-w-0 px-3 py-2 rounded-lg border border-neutral/40 bg-bg text-text text-xs focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                        />
+                        <button
+                          onClick={() => saveNote(editingId, item.id)}
+                          className="flex-shrink-0 px-3 py-2 rounded-lg bg-primary text-white text-xs font-medium"
+                        >
+                          {t('common.save')}
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 )
               })}
             </div>
