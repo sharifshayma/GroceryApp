@@ -308,7 +308,7 @@ export default function ManageTags() {
 
                   return (
                     <div key={tag.id} className="bg-white rounded-xl border border-neutral/20 shadow-sm p-3.5 flex items-center gap-3">
-                      <div className="w-4 h-4 rounded-full flex-shrink-0" style={{ backgroundColor: tag.color || '#3B82F6' }} />
+                      <span className="text-sm flex-shrink-0">{TYPE_ICONS[tag.type] || '🏷️'}</span>
                       <button
                         onClick={() => startEdit(tag)}
                         className="flex-1 min-w-0 text-start"
