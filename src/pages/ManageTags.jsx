@@ -156,7 +156,13 @@ export default function ManageTags() {
           {TAG_TYPES.map((tp) => (
             <button
               key={tp}
-              onClick={() => setEditType(tp)}
+              onClick={() => {
+                setEditType(tp)
+                // Auto-save type change for existing tags
+                if (editingId && editingId !== 'new' && editName.trim()) {
+                  setTimeout(() => updateTag(editingId, { name: editName.trim(), type: tp, color: DEFAULT_COLORS[tp] }), 0)
+                }
+              }}
               className={`flex-1 py-2 rounded-lg text-xs font-medium transition-colors min-h-[36px] ${
                 editType === tp ? 'bg-primary text-white' : 'bg-bg border border-neutral/40 text-text-secondary'
               }`}
@@ -239,7 +245,12 @@ export default function ManageTags() {
 
           {/* Done button */}
           <button
-            onClick={cancelEdit}
+            onClick={async () => {
+              if (editingId && editingId !== 'new' && editName.trim()) {
+                await handleSave()
+              }
+              cancelEdit()
+            }}
             className="w-full mt-2 py-2 rounded-lg text-text-secondary text-xs font-medium hover:bg-neutral/10 transition-colors"
           >
             {i18n.language === 'he' ? 'סיום' : 'Done'}
