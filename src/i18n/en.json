@@ -99,6 +99,15 @@
     "done": "Done",
     "close": "Close"
   },
+  "lists": {
+    "unboughtTitle": "Unbought Items",
+    "unboughtMessage": "You have {{count}} unbought items. What would you like to do?",
+    "carryOver": "Done — Move Unbought to New List",
+    "completeAnyway": "Done — Discard Unbought",
+    "keepShopping": "Keep Shopping",
+    "carriedOver": "(carried over)",
+    "saving": "Saving..."
+  },
   "empty": {
     "welcome": "Welcome to GroceryApp!",
     "welcomeDesc": "Start by adding items to your catalog from the categories below.",

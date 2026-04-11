@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, withTimeout } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { useRefreshOnFocus } from './useRefreshOnFocus'
 import { emit, on } from '../lib/events'
@@ -8,22 +8,33 @@ export function useStock() {
   const { profile } = useAuth()
   const [stockItems, setStockItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
     if (!profile?.household_id) {
       setLoading(false)
       return
     }
+    console.log('[useStock] Fetching...')
     setLoading(true)
+    setError(null)
 
-    const { data, error } = await supabase
-      .from('stock')
-      .select('*, items(id, name, name_he, emoji, default_unit, category_id, categories(id, name, name_he, emoji, sort_order))')
-      .eq('household_id', profile.household_id)
-      .order('updated_at', { ascending: false })
+    const { data, error: fetchErr } = await withTimeout(
+      supabase
+        .from('stock')
+        .select('*, items(id, name, name_he, emoji, default_unit, category_id, categories(id, name, name_he, emoji, sort_order))')
+        .eq('household_id', profile.household_id)
+        .order('updated_at', { ascending: false })
+    )
 
-    if (data) setStockItems(data)
-    if (error) console.error('Failed to fetch stock:', error)
+    if (data) {
+      console.log(`[useStock] Loaded ${data.length} stock items`)
+      setStockItems(data)
+    }
+    if (fetchErr) {
+      console.error('[useStock] Failed:', fetchErr)
+      setError(fetchErr.message || 'Failed to load stock')
+    }
     setLoading(false)
   }, [profile?.household_id])
 
@@ -120,6 +131,7 @@ export function useStock() {
   return {
     stockItems,
     loading,
+    error,
     refetch: fetch,
     addToStock,
     updateQuantity,

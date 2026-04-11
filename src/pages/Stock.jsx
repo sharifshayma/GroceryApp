@@ -238,7 +238,7 @@ function AddToStockModal({ mode, items, categories, onBatchAdd, onClose }) {
   const [selectedItems, setSelectedItems] = useState(new Map())
   const [singleQty, setSingleQty] = useState(1)
   const [saving, setSaving] = useState(false)
-  const isKeyboardVisible = useKeyboardVisible()
+  const { isKeyboardVisible } = useKeyboardVisible()
 
   const isInStock = mode === 'in-stock'
 
@@ -393,7 +393,7 @@ function EditStockModal({ stockItem, onSave, onClose }) {
   const [quantity, setQuantity] = useState(stockItem.quantity)
   const [threshold, setThreshold] = useState(stockItem.low_threshold)
   const [saving, setSaving] = useState(false)
-  const isKeyboardVisible = useKeyboardVisible()
+  const { isKeyboardVisible } = useKeyboardVisible()
 
   const handleSubmit = async () => {
     setSaving(true)

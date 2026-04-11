@@ -4,14 +4,16 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import LanguageToggle from '../components/LanguageToggle'
+import FeedbackModal from '../components/FeedbackModal'
 
 export default function Profile() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { user, profile, signOut, refreshProfile } = useAuth()
   const [displayName, setDisplayName] = useState(profile?.display_name || '')
   const [editingName, setEditingName] = useState(false)
   const [members, setMembers] = useState([])
   const [saving, setSaving] = useState(false)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   useEffect(() => {
     if (profile?.display_name) setDisplayName(profile.display_name)
@@ -158,6 +160,17 @@ export default function Profile() {
         )}
       </div>
 
+      {/* Feedback */}
+      <button
+        onClick={() => setShowFeedback(true)}
+        className="w-full flex items-center gap-3 py-3.5 px-5 rounded-2xl bg-surface border border-neutral transition-colors hover:bg-bg"
+      >
+        <span className="text-xl">💬</span>
+        <span className="font-semibold text-text">
+          {i18n.language === 'he' ? 'שלח משוב' : 'Send Feedback'}
+        </span>
+      </button>
+
       {/* Sign out */}
       <button
         onClick={signOut}
@@ -165,6 +178,8 @@ export default function Profile() {
       >
         {t('auth.signOut')}
       </button>
+
+      {showFeedback && <FeedbackModal onClose={() => setShowFeedback(false)} />}
     </div>
   )
 }

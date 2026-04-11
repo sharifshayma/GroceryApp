@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getCategoryName } from '../lib/categoryName'
 import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
@@ -8,13 +8,19 @@ import { IconClose } from './Icons'
 
 const UNITS = ['pcs', 'kg', 'g', 'L', 'mL', 'pack', 'box', 'bottle', 'bag', 'bunch']
 
-const EMOJI_OPTIONS = ['🛒', '🥛', '🍞', '🧀', '🥩', '🍗', '🐟', '🥚', '🥬', '🍅', '🥕', '🍌', '🍎', '🫒', '🧈', '🍝', '🍚', '🫘', '🥜', '🍫', '🍪', '🍦', '☕', '🧃', '🥤', '🍷', '🧴', '🧹', '🧼', '💊']
+const EMOJI_SUGGESTIONS = [
+  '🛒', '🥛', '🍞', '🧀', '🥩', '🍗', '🐟', '🥚',
+  '🥬', '🍅', '🥕', '🍌', '🍎', '🫒', '🧈', '🍝',
+  '🍚', '🫘', '🥜', '🍫', '🍪', '🍦', '☕', '🧃',
+  '🥤', '🍷', '🧴', '🧹', '🧼', '💊', '🍕', '🌽',
+  '🥑', '🍓', '🫐', '🍋', '🧅', '🥔', '🌶️', '🍯',
+]
 
 export default function AddItemModal({ categoryId, categories, item, onSave, onClose }) {
   const { t, i18n } = useTranslation()
   const isEdit = !!item
   const { tags } = useTags()
-  const isKeyboardVisible = useKeyboardVisible()
+  const { isKeyboardVisible, viewportHeight } = useKeyboardVisible()
 
   const [name, setName] = useState(item?.name || '')
   const [selectedCategory, setSelectedCategory] = useState(item?.category_id || categoryId)
@@ -22,6 +28,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
   const [unit, setUnit] = useState(item?.default_unit || 'pcs')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [saving, setSaving] = useState(false)
+  const hiddenEmojiRef = useRef(null)
   const [error, setError] = useState('')
 
   // Tags assignment
@@ -85,8 +92,8 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
 
   return (
     <div
-      className="fixed inset-x-0 top-0 z-[60] flex items-end sm:items-center justify-center"
-      style={{ bottom: isKeyboardVisible ? 0 : 'calc(4rem + env(safe-area-inset-bottom, 0px))' }}
+      className="fixed inset-x-0 bottom-0 z-[60] flex items-end sm:items-center justify-center"
+      style={{ height: isKeyboardVisible ? `${viewportHeight}px` : `calc(100% - 4rem - env(safe-area-inset-bottom, 0px))` }}
     >
       <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={onClose} />
 
@@ -104,13 +111,15 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Emoji + Name */}
           <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-              className="w-14 h-14 rounded-2xl bg-bg border border-neutral text-3xl flex items-center justify-center hover:border-primary/50 transition-colors flex-shrink-0"
-            >
-              {emoji}
-            </button>
+            <div className="relative flex-shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                className="w-14 h-14 rounded-2xl bg-bg border border-neutral text-3xl flex items-center justify-center hover:border-primary/50 transition-colors"
+              >
+                {emoji}
+              </button>
+            </div>
             <div className="flex-1">
               <label className="block text-xs font-medium text-text-secondary mb-1">
                 {t('items.name')}
@@ -127,21 +136,51 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
             </div>
           </div>
 
-          {/* Emoji grid */}
+          {/* Emoji picker — tap to pick, or use keyboard for custom */}
           {showEmojiPicker && (
-            <div className="grid grid-cols-8 gap-1.5 p-3 bg-bg rounded-xl border border-neutral/30">
-              {EMOJI_OPTIONS.map((e) => (
+            <div className="p-3 bg-bg rounded-xl border border-neutral/30">
+              <div className="grid grid-cols-8 gap-1.5">
+                {EMOJI_SUGGESTIONS.map((e) => (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => { setEmoji(e); setShowEmojiPicker(false) }}
+                    className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center hover:bg-white transition-colors ${
+                      emoji === e ? 'bg-white ring-2 ring-primary' : ''
+                    }`}
+                  >
+                    {e}
+                  </button>
+                ))}
+                {/* "Other" button — opens native keyboard for any emoji */}
                 <button
-                  key={e}
                   type="button"
-                  onClick={() => { setEmoji(e); setShowEmojiPicker(false) }}
-                  className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center hover:bg-white transition-colors ${
-                    emoji === e ? 'bg-white ring-2 ring-primary' : ''
-                  }`}
+                  onClick={() => hiddenEmojiRef.current?.focus()}
+                  className="w-10 h-10 rounded-lg text-xs font-medium text-primary flex items-center justify-center hover:bg-white transition-colors border border-dashed border-primary/30"
                 >
-                  {e}
+                  ⌨️
                 </button>
-              ))}
+              </div>
+              {/* Hidden input — only focused when user taps keyboard button */}
+              <input
+                ref={hiddenEmojiRef}
+                type="text"
+                value=""
+                onChange={(e) => {
+                  const val = e.target.value
+                  const emojis = [...val].filter(ch => /\p{Emoji_Presentation}|\p{Extended_Pictographic}/u.test(ch))
+                  if (emojis.length > 0) {
+                    setEmoji(emojis[emojis.length - 1])
+                    setShowEmojiPicker(false)
+                  }
+                }}
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="off"
+                spellCheck={false}
+                className="w-0 h-0 opacity-0 absolute"
+                aria-hidden="true"
+              />
             </div>
           )}
 

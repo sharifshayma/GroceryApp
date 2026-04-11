@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, withTimeout } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { useRefreshOnFocus } from './useRefreshOnFocus'
 import { emit, on } from '../lib/events'
@@ -8,23 +8,34 @@ export function useTags() {
   const { profile } = useAuth()
   const [tags, setTags] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
     if (!profile?.household_id) {
       setLoading(false)
       return
     }
+    console.log('[useTags] Fetching...')
     setLoading(true)
+    setError(null)
 
-    const { data, error } = await supabase
-      .from('tags')
-      .select('*')
-      .eq('household_id', profile.household_id)
-      .order('type', { ascending: true })
-      .order('name', { ascending: true })
+    const { data, error: fetchErr } = await withTimeout(
+      supabase
+        .from('tags')
+        .select('*')
+        .eq('household_id', profile.household_id)
+        .order('type', { ascending: true })
+        .order('name', { ascending: true })
+    )
 
-    if (data) setTags(data)
-    if (error) console.error('Failed to fetch tags:', error)
+    if (data) {
+      console.log(`[useTags] Loaded ${data.length} tags`)
+      setTags(data)
+    }
+    if (fetchErr) {
+      console.error('[useTags] Failed:', fetchErr)
+      setError(fetchErr.message || 'Failed to load tags')
+    }
     setLoading(false)
   }, [profile?.household_id])
 
@@ -79,7 +90,7 @@ export function useTags() {
   const storeTags = tags.filter((t) => t.type === 'store')
   const customTags = tags.filter((t) => t.type === 'custom')
 
-  return { tags, recipeTags, storeTags, customTags, loading, refetch: fetch, createTag, updateTag, deleteTag, getTagUsageCount }
+  return { tags, recipeTags, storeTags, customTags, loading, error, refetch: fetch, createTag, updateTag, deleteTag, getTagUsageCount }
 }
 
 export function useItemTags(itemId) {

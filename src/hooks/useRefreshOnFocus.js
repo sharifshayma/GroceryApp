@@ -1,16 +1,9 @@
 import { useEffect } from 'react'
+import { on } from '../lib/events'
 
 export function useRefreshOnFocus(refetchFn) {
   useEffect(() => {
     if (!refetchFn) return
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refetchFn()
-      }
-    }
-
-    document.addEventListener('visibilitychange', onVisibilityChange)
-    return () => document.removeEventListener('visibilitychange', onVisibilityChange)
+    return on('app-resumed', refetchFn)
   }, [refetchFn])
 }

@@ -14,7 +14,7 @@ export default function TagPicker({ itemId, onClose }) {
   const [loading, setLoading] = useState(true)
   const [editingNotes, setEditingNotes] = useState(null)
   const [noteText, setNoteText] = useState('')
-  const isKeyboardVisible = useKeyboardVisible()
+  const { isKeyboardVisible } = useKeyboardVisible()
   const scrollRef = useRef(null)
 
   useEffect(() => {

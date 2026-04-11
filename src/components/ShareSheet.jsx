@@ -57,15 +57,35 @@ export default function ShareSheet({ list, onClose }) {
     setTimeout(() => setCopied(null), 2000)
   }
 
+  const buildShareLinkText = () => {
+    const itemNames = items.map((li) => li.items?.name || '?')
+    const total = itemNames.length
+    const preview = itemNames.slice(0, 3).join(', ')
+    const more = total > 3
+    const isHe = i18n.language === 'he'
+
+    let message
+    if (isHe) {
+      message = `🛒 שיתפתי איתך רשימת קניות — ${total} פריטים`
+      if (total > 0) message += ` כולל ${preview}${more ? ' ועוד' : ''}`
+    } else {
+      message = `🛒 I shared a grocery list with you — ${total} item${total !== 1 ? 's' : ''}`
+      if (total > 0) message += ` including ${preview}${more ? ' & more' : ''}`
+    }
+
+    return `${message}\ngrocerylist.shayma.me/lists/${list.id}`
+  }
+
   const handleShareLink = async () => {
+    const text = buildShareLinkText()
     if (navigator.share) {
       try {
-        await navigator.share({ url: listLink, title: list.name })
+        await navigator.share({ text })
         onClose()
         return
       } catch {}
     }
-    await navigator.clipboard.writeText(listLink)
+    await navigator.clipboard.writeText(text)
     setCopied('link')
     setTimeout(() => setCopied(null), 2000)
   }

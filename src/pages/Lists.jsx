@@ -8,6 +8,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import ShareSheet from '../components/ShareSheet'
 import UpdateStockModal from '../components/UpdateStockModal'
+import CarryOverModal from '../components/CarryOverModal'
 import { IconBack, IconEdit, IconShare, IconCheck, IconChevronDown, IconCopy, IconTrash, IllustrationNoLists } from '../components/Icons'
 
 function formatDate(dateStr, lang) {
@@ -25,12 +26,14 @@ export default function Lists() {
   const { t, i18n } = useTranslation()
   const { listId: paramListId } = useParams()
   const navigate = useNavigate()
-  const { lists, loading, error, updateListStatus, deleteList, duplicateList, toggleBought, refetch } = useLists()
+  const { lists, loading, error, updateListStatus, deleteList, duplicateList, completeAndCarryOver, toggleBought, refetch } = useLists()
   const [shoppingListId, setShoppingListId] = useState(null)
   const [dismissedActiveList, setDismissedActiveList] = useState(false)
   const [shareList, setShareList] = useState(null)
   const [expandedListId, setExpandedListId] = useState(null)
   const [showUpdateStock, setShowUpdateStock] = useState(false)
+  const [showCarryOver, setShowCarryOver] = useState(false)
+  const [carryOverSaving, setCarryOverSaving] = useState(false)
   const { addToStock } = useStock()
 
   // Handle deep link: open list from URL param
@@ -74,9 +77,42 @@ export default function Lists() {
       arr.sort((a, b) => (a.is_bought === b.is_bought ? 0 : a.is_bought ? 1 : -1))
     })
 
+    const unboughtItems = items.filter((li) => !li.is_bought)
+
     const handleDone = async () => {
-      await updateListStatus(shoppingList.id, 'completed')
-      setShoppingListId(null)
+      // If all bought or none bought, complete directly (no modal)
+      if (boughtCount === total || boughtCount === 0) {
+        await updateListStatus(shoppingList.id, 'completed')
+        setShoppingListId(null)
+        return
+      }
+      // Some items unbought — show carry-over modal
+      setShowCarryOver(true)
+    }
+
+    const handleCarryOver = async () => {
+      setCarryOverSaving(true)
+      try {
+        const carryOverName = `${shoppingList.name} ${t('lists.carriedOver')}`
+        await completeAndCarryOver(shoppingList, carryOverName)
+        setShowCarryOver(false)
+        setShoppingListId(null)
+      } catch (err) {
+        console.error('[Lists] Carry over failed:', err)
+      } finally {
+        setCarryOverSaving(false)
+      }
+    }
+
+    const handleCompleteAnyway = async () => {
+      setCarryOverSaving(true)
+      try {
+        await updateListStatus(shoppingList.id, 'completed')
+        setShowCarryOver(false)
+        setShoppingListId(null)
+      } finally {
+        setCarryOverSaving(false)
+      }
     }
 
     return (
@@ -179,6 +215,16 @@ export default function Lists() {
         </button>
 
         {shareList && <ShareSheet list={shareList} onClose={() => setShareList(null)} />}
+
+        {showCarryOver && (
+          <CarryOverModal
+            unboughtItems={unboughtItems}
+            onCarryOver={handleCarryOver}
+            onCompleteAnyway={handleCompleteAnyway}
+            onKeepShopping={() => setShowCarryOver(false)}
+            saving={carryOverSaving}
+          />
+        )}
 
         {showUpdateStock && (
           <UpdateStockModal
@@ -284,9 +330,12 @@ export default function Lists() {
                 {expandedListId === list.id && (list.list_items || []).length > 0 && (
                   <div className="mb-2 space-y-1">
                     {(list.list_items || []).map((li) => (
-                      <div key={li.id} className="flex items-center gap-2 text-sm text-text-secondary ps-1">
+                      <div key={li.id} className={`flex items-center gap-2 text-sm ps-1 ${li.is_bought ? 'text-text-secondary' : 'text-danger'}`}>
+                        {list.status === 'completed' && (
+                          <span className="text-xs flex-shrink-0">{li.is_bought ? '✅' : '❌'}</span>
+                        )}
                         <span className="text-base">{li.items?.emoji || '🛒'}</span>
-                        <span className="truncate">
+                        <span className={`truncate ${li.is_bought && list.status === 'completed' ? 'line-through' : ''}`}>
                           {li.items?.name || '?'} <span className="text-xs">× {li.quantity} {li.unit}</span>
                         </span>
                         {li.notes && <span className="text-xs text-primary italic truncate">({li.notes})</span>}

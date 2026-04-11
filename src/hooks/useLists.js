@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, withTimeout } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { useRefreshOnFocus } from './useRefreshOnFocus'
 
@@ -7,30 +7,48 @@ export function useLists() {
   const { profile } = useAuth()
   const [lists, setLists] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
-    if (!profile?.household_id) return
+    if (!profile?.household_id) {
+      console.log('[useLists] Skipping fetch — no household_id')
+      setLoading(false)
+      return
+    }
+    console.log('[useLists] Fetching lists for household:', profile.household_id)
     setLoading(true)
+    setError(null)
 
     // Try with extended columns first, fall back if migrations not applied yet
-    let { data, error } = await supabase
-      .from('grocery_lists')
-      .select('*, list_items(id, item_id, quantity, unit, is_bought, notes, stock_updated, items(name, name_he, emoji, default_unit, category_id, categories(name, name_he, emoji)))')
-      .eq('household_id', profile.household_id)
-      .order('created_at', { ascending: false })
-
-    if (error) {
-      const fallback = await supabase
+    let { data, error: fetchErr } = await withTimeout(
+      supabase
         .from('grocery_lists')
-        .select('*, list_items(id, item_id, quantity, unit, is_bought, items(name, name_he, emoji, default_unit, category_id, categories(name, name_he, emoji)))')
+        .select('*, list_items(id, item_id, quantity, unit, is_bought, notes, stock_updated, items(name, name_he, emoji, default_unit, category_id, categories(name, name_he, emoji)))')
         .eq('household_id', profile.household_id)
         .order('created_at', { ascending: false })
+    )
+
+    if (fetchErr) {
+      console.warn('[useLists] Primary query failed, trying fallback:', fetchErr.message)
+      const fallback = await withTimeout(
+        supabase
+          .from('grocery_lists')
+          .select('*, list_items(id, item_id, quantity, unit, is_bought, items(name, name_he, emoji, default_unit, category_id, categories(name, name_he, emoji)))')
+          .eq('household_id', profile.household_id)
+          .order('created_at', { ascending: false })
+      )
       data = fallback.data
-      error = fallback.error
+      fetchErr = fallback.error
     }
 
-    if (data) setLists(data)
-    if (error) console.error('Failed to fetch lists:', error)
+    if (data) {
+      console.log(`[useLists] Loaded ${data.length} lists`)
+      setLists(data)
+    }
+    if (fetchErr) {
+      console.error('[useLists] Failed to fetch lists:', fetchErr)
+      setError(fetchErr.message || 'Failed to load lists')
+    }
     setLoading(false)
   }, [profile?.household_id])
 
@@ -104,6 +122,27 @@ export function useLists() {
     return createList(newName, items)
   }
 
+  const completeAndCarryOver = async (list, carryOverName) => {
+    const unboughtItems = (list.list_items || [])
+      .filter((li) => !li.is_bought)
+      .map((li) => ({
+        item_id: li.item_id,
+        quantity: li.quantity,
+        unit: li.unit,
+        ...(li.notes ? { notes: li.notes } : {}),
+      }))
+
+    // Complete the current list first (more important action)
+    await updateListStatus(list.id, 'completed')
+
+    // Create new draft with unbought items
+    if (unboughtItems.length > 0) {
+      const newList = await createList(carryOverName, unboughtItems)
+      return newList
+    }
+    return null
+  }
+
   const addItemToList = async (listId, item) => {
     // item: { item_id, quantity, unit, notes? }
     const { error } = await supabase
@@ -166,11 +205,13 @@ export function useLists() {
   return {
     lists,
     loading,
+    error,
     refetch: fetch,
     createList,
     updateListStatus,
     deleteList,
     duplicateList,
+    completeAndCarryOver,
     toggleBought,
     addItemToList,
     removeItemFromList,

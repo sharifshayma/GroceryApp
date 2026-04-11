@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
-import { IconPlus, IconEdit, IconTrash } from './Icons'
+import { IconPlus, IconCheckCircle, IconEdit, IconTrash } from './Icons'
 
-export default function ItemCard({ item, onEdit, onDelete, onAddToList, showActions = true }) {
+export default function ItemCard({ item, onEdit, onDelete, onAddToList, isInList = false, showActions = true, selectMode = false, isSelected = false, onSelect }) {
   const { t } = useTranslation()
   const [itemTags, setItemTags] = useState([])
 
@@ -17,9 +17,33 @@ export default function ItemCard({ item, onEdit, onDelete, onAddToList, showActi
       })
   }, [item.id])
 
+  const handleClick = () => {
+    if (selectMode && onSelect) {
+      onSelect(item)
+    } else if (onAddToList && !isInList) {
+      onAddToList(item)
+    }
+  }
+
   return (
-    <div className="bg-white rounded-xl p-4 border border-neutral/20 shadow-sm hover:border-primary/30 transition-colors">
+    <div
+      onClick={selectMode ? handleClick : undefined}
+      className={`bg-white rounded-xl p-4 border shadow-sm transition-colors ${
+        selectMode
+          ? isSelected
+            ? 'border-primary bg-primary/5 cursor-pointer'
+            : 'border-neutral/20 cursor-pointer hover:border-primary/30'
+          : 'border-neutral/20 hover:border-primary/30'
+      }`}
+    >
       <div className="flex items-center gap-3">
+        {selectMode && (
+          <span className={`w-5 h-5 rounded-md border-2 flex items-center justify-center flex-shrink-0 ${
+            isSelected ? 'bg-primary border-primary text-white' : 'border-neutral'
+          }`}>
+            {isSelected && <span className="text-xs">✓</span>}
+          </span>
+        )}
         <span className="text-2xl flex-shrink-0">{item.emoji}</span>
         <div className="flex-1 min-w-0">
           <p className="font-semibold text-text truncate">{item.name}</p>
@@ -27,33 +51,41 @@ export default function ItemCard({ item, onEdit, onDelete, onAddToList, showActi
             {t(`units.${item.default_unit}`, item.default_unit)}
           </p>
         </div>
-        <div className="flex items-center gap-0.5 flex-shrink-0">
-          {onAddToList && (
-            <button
-              onClick={() => onAddToList(item)}
-              className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
-              title="Add to list"
-            >
-              <IconPlus />
-            </button>
-          )}
-          {showActions && (
-            <>
-              <button
-                onClick={onEdit}
-                className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
-              >
-                <IconEdit />
-              </button>
-              <button
-                onClick={onDelete}
-                className="w-10 h-10 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors"
-              >
-                <IconTrash />
-              </button>
-            </>
-          )}
-        </div>
+        {!selectMode && (
+          <div className="flex items-center gap-0.5 flex-shrink-0">
+            {onAddToList && (
+              isInList ? (
+                <span className="w-10 h-10 rounded-lg text-green flex items-center justify-center">
+                  <IconCheckCircle />
+                </span>
+              ) : (
+                <button
+                  onClick={() => onAddToList(item)}
+                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
+                  title="Add to list"
+                >
+                  <IconPlus />
+                </button>
+              )
+            )}
+            {showActions && (
+              <>
+                <button
+                  onClick={onEdit}
+                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
+                >
+                  <IconEdit />
+                </button>
+                <button
+                  onClick={onDelete}
+                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors"
+                >
+                  <IconTrash />
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Tag pills */}

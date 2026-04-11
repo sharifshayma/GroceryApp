@@ -22,6 +22,9 @@ export default function Category() {
   const [editingItem, setEditingItem] = useState(null)
   const [addToListItem, setAddToListItem] = useState(null)
   const [manageMode, setManageMode] = useState(false)
+  const [selectMode, setSelectMode] = useState(false)
+  const [selectedItems, setSelectedItems] = useState(new Map())
+  const [showListPicker, setShowListPicker] = useState(false)
   const pillsRef = useRef(null)
   const activePillRef = useRef(null)
 
@@ -41,6 +44,58 @@ export default function Category() {
   if (catsLoading) return <LoadingSpinner fullScreen={false} />
 
   const activeCategory = categories.find((c) => c.id === categoryId)
+  const openLists = lists.filter((l) => l.status === 'draft' || l.status === 'active')
+  const itemIdsInLists = new Set(
+    openLists.flatMap((l) => (l.list_items || []).map((li) => li.item_id))
+  )
+
+  const toggleSelect = (item) => {
+    setSelectedItems((prev) => {
+      const next = new Map(prev)
+      if (next.has(item.id)) next.delete(item.id)
+      else next.set(item.id, item)
+      return next
+    })
+  }
+
+  const handleBulkAdd = async (listId) => {
+    const allSelected = [...selectedItems.values()].map((item) => ({
+      item_id: item.id,
+      quantity: 1,
+      unit: item.default_unit || 'pcs',
+    }))
+
+    const targetList = listId ? lists.find((l) => l.id === listId) : null
+    const existingItemIds = new Set((targetList?.list_items || []).map((li) => li.item_id))
+    const toAdd = allSelected.filter((i) => !existingItemIds.has(i.item_id))
+
+    if (toAdd.length === 0) {
+      setSelectedItems(new Map())
+      setSelectMode(false)
+      return
+    }
+
+    if (listId) {
+      for (const item of toAdd) {
+        await addItemToList(listId, item)
+      }
+    } else if (openLists.length === 0) {
+      const today = new Date().toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { month: 'short', day: 'numeric' })
+      await createList(`${t('nav.lists')} — ${today}`, toAdd)
+    } else if (openLists.length === 1) {
+      const existingIds = new Set((openLists[0].list_items || []).map((li) => li.item_id))
+      const filtered = toAdd.filter((i) => !existingIds.has(i.item_id))
+      for (const item of filtered) {
+        await addItemToList(openLists[0].id, item)
+      }
+    } else {
+      setShowListPicker(true)
+      return
+    }
+
+    setSelectedItems(new Map())
+    setSelectMode(false)
+  }
 
   return (
     <div className="min-h-dvh bg-bg">
@@ -89,8 +144,49 @@ export default function Category() {
         <div className="border-b border-neutral/50" />
       </div>
 
+      {/* Select controls — only when items exist and not in manage mode */}
+      {!manageMode && items.length > 0 && !itemsLoading && (
+        <div className="flex gap-2 px-4 pt-3 max-w-lg mx-auto justify-end">
+          <button
+            onClick={() => {
+              if (selectMode) {
+                setSelectMode(false)
+                setSelectedItems(new Map())
+              } else {
+                setSelectMode(true)
+              }
+            }}
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+              selectMode ? 'bg-primary text-white' : 'bg-surface border border-neutral text-text-secondary'
+            }`}
+          >
+            {selectMode
+              ? (i18n.language === 'he' ? 'נקה' : 'Clear')
+              : (i18n.language === 'he' ? 'בחירה' : 'Select')}
+          </button>
+          {selectMode && (
+            <button
+              onClick={() => {
+                if (selectedItems.size === items.length) {
+                  setSelectedItems(new Map())
+                } else {
+                  const all = new Map()
+                  items.forEach((i) => all.set(i.id, i))
+                  setSelectedItems(all)
+                }
+              }}
+              className="flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium text-primary"
+            >
+              {selectedItems.size === items.length
+                ? (i18n.language === 'he' ? 'בטל הכל' : 'Deselect all')
+                : (i18n.language === 'he' ? 'בחר הכל' : 'Select all')}
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Items list */}
-      <div className="px-4 py-4 max-w-lg mx-auto">
+      <div className="px-4 py-3 max-w-lg mx-auto">
         {itemsLoading ? (
           <LoadingSpinner fullScreen={false} />
         ) : items.length === 0 ? (
@@ -120,6 +216,10 @@ export default function Category() {
                 key={item.id}
                 item={item}
                 showActions={manageMode}
+                isInList={itemIdsInLists.has(item.id)}
+                selectMode={selectMode && !manageMode}
+                isSelected={selectedItems.has(item.id)}
+                onSelect={toggleSelect}
                 onAddToList={manageMode ? undefined : (i) => setAddToListItem(i)}
                 onEdit={() => setEditingItem(item)}
                 onDelete={() => handleDelete(item)}
@@ -171,6 +271,78 @@ export default function Category() {
             setEditingItem(null)
           }}
         />
+      )}
+
+      {/* Floating bulk add button */}
+      {selectMode && selectedItems.size > 0 && (
+        <div className="fixed bottom-20 inset-x-0 px-4 z-20" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
+          <button
+            onClick={() => handleBulkAdd(null)}
+            className="w-full max-w-lg mx-auto block py-3.5 rounded-xl bg-primary text-white font-medium text-lg shadow-lg active:scale-[0.98] transition-transform"
+          >
+            {i18n.language === 'he'
+              ? `הוסף ${selectedItems.size} פריטים לרשימה`
+              : `Add ${selectedItems.size} item${selectedItems.size > 1 ? 's' : ''} to list`}
+          </button>
+        </div>
+      )}
+
+      {/* List picker for bulk add (when multiple lists exist) */}
+      {showListPicker && (
+        <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center">
+          <div className="absolute inset-0 bg-black/50 animate-backdrop" onClick={() => setShowListPicker(false)} />
+          <div
+            className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[85vh] overflow-y-auto animate-slide-up sm:animate-fade-in"
+            style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
+          >
+            <div className="px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-text">
+                {i18n.language === 'he' ? 'בחר רשימה' : 'Choose List'}
+              </h2>
+              <button onClick={() => setShowListPicker(false)} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
+            </div>
+            <div className="p-4 pb-20 space-y-2">
+              {openLists.map((list) => (
+                <button
+                  key={list.id}
+                  onClick={async () => {
+                    setShowListPicker(false)
+                    await handleBulkAdd(list.id)
+                  }}
+                  className="w-full flex items-center gap-3 p-4 rounded-xl border border-neutral/20 bg-white hover:bg-bg transition-colors min-h-[56px]"
+                >
+                  <span className="text-lg">🛒</span>
+                  <div className="flex-1 text-start">
+                    <p className="font-semibold text-sm">{list.name}</p>
+                    <p className="text-xs text-text-secondary">
+                      {(list.list_items || []).length} {i18n.language === 'he' ? 'פריטים' : 'items'}
+                    </p>
+                  </div>
+                </button>
+              ))}
+              <button
+                onClick={async () => {
+                  setShowListPicker(false)
+                  const toAdd = [...selectedItems.values()].map((item) => ({
+                    item_id: item.id,
+                    quantity: 1,
+                    unit: item.default_unit || 'pcs',
+                  }))
+                  const today = new Date().toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', { month: 'short', day: 'numeric' })
+                  await createList(`${t('nav.lists')} — ${today}`, toAdd)
+                  setSelectedItems(new Map())
+                  setSelectMode(false)
+                }}
+                className="w-full flex items-center gap-3 p-4 rounded-xl border border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-colors min-h-[56px]"
+              >
+                <span className="text-lg">+</span>
+                <p className="font-semibold text-sm text-primary">
+                  {i18n.language === 'he' ? 'רשימה חדשה' : 'New List'}
+                </p>
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

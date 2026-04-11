@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase } from '../lib/supabase'
+import { supabase, withTimeout } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { useRefreshOnFocus } from './useRefreshOnFocus'
 
@@ -7,10 +7,16 @@ export function useItems(categoryId = null) {
   const { profile } = useAuth()
   const [items, setItems] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const fetch = useCallback(async () => {
-    if (!profile?.household_id) return
+    if (!profile?.household_id) {
+      setLoading(false)
+      return
+    }
+    console.log('[useItems] Fetching...')
     setLoading(true)
+    setError(null)
 
     let query = supabase
       .from('items')
@@ -22,10 +28,16 @@ export function useItems(categoryId = null) {
       query = query.eq('category_id', categoryId)
     }
 
-    const { data, error } = await query
+    const { data, error: fetchErr } = await withTimeout(query)
 
-    if (data) setItems(data)
-    if (error) console.error('Failed to fetch items:', error)
+    if (data) {
+      console.log(`[useItems] Loaded ${data.length} items`)
+      setItems(data)
+    }
+    if (fetchErr) {
+      console.error('[useItems] Failed:', fetchErr)
+      setError(fetchErr.message || 'Failed to load items')
+    }
     setLoading(false)
   }, [profile?.household_id, categoryId])
 
@@ -70,5 +82,5 @@ export function useItems(categoryId = null) {
     setItems((prev) => prev.filter((i) => i.id !== id))
   }
 
-  return { items, loading, refetch: fetch, addItem, updateItem, deleteItem }
+  return { items, loading, error, refetch: fetch, addItem, updateItem, deleteItem }
 }

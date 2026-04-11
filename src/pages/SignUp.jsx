@@ -14,6 +14,7 @@ export default function SignUp() {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [confirmationSent, setConfirmationSent] = useState(false)
 
   if (user) {
     return <Navigate to="/" replace />
@@ -24,20 +25,52 @@ export default function SignUp() {
     setError('')
     setLoading(true)
 
-    const { error: err } = await supabase.auth.signUp({
+    const { data, error: err } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: { display_name: displayName },
+        emailRedirectTo: `${window.location.origin}/`,
       },
     })
 
     if (err) {
       setError(err.message)
       setLoading(false)
+    } else if (data?.user?.identities?.length === 0) {
+      setError(t('auth.emailAlreadyUsed', 'An account with this email already exists.'))
+      setLoading(false)
     } else {
-      navigate('/', { replace: true })
+      setConfirmationSent(true)
+      setLoading(false)
     }
+  }
+
+  if (confirmationSent) {
+    return (
+      <div className="min-h-dvh bg-bg flex items-center justify-center px-6">
+        <div className="w-full max-w-sm animate-fade-in text-center">
+          <span className="text-5xl mb-4 block">📬</span>
+          <h1 className="text-2xl font-semibold text-text mb-2">
+            {t('auth.checkEmail', 'Check your email')}
+          </h1>
+          <p className="text-text-secondary mb-6">
+            {t('auth.confirmationSent', "We've sent a confirmation link to")}
+            <br />
+            <span className="font-semibold text-text">{email}</span>
+          </p>
+          <p className="text-text-secondary text-sm mb-8">
+            {t('auth.clickToConfirm', 'Click the link in the email to activate your account, then come back and sign in.')}
+          </p>
+          <Link
+            to="/signin"
+            className="inline-block w-full py-3 rounded-xl bg-primary text-white font-medium text-lg hover:bg-primary-light active:bg-primary-dark transition-colors text-center"
+          >
+            {t('auth.goToSignIn', 'Go to Sign In')}
+          </Link>
+        </div>
+      </div>
+    )
   }
 
   return (

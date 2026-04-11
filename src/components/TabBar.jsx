@@ -31,7 +31,7 @@ export default function TabBar() {
   const location = useLocation()
   const { t } = useTranslation()
   const { lowStockCount } = useStock()
-  const isKeyboardVisible = useKeyboardVisible()
+  const { isKeyboardVisible } = useKeyboardVisible()
 
   if (isKeyboardVisible) return null
 

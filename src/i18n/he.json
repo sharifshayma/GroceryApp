@@ -99,6 +99,15 @@
     "done": "סיום",
     "close": "סגור"
   },
+  "lists": {
+    "unboughtTitle": "פריטים שלא נקנו",
+    "unboughtMessage": "יש לך {{count}} פריטים שלא נקנו. מה תרצה לעשות?",
+    "carryOver": "סיום — העבר פריטים לרשימה חדשה",
+    "completeAnyway": "סיום — ויתור על פריטים",
+    "keepShopping": "המשך לקנות",
+    "carriedOver": "(הועבר)",
+    "saving": "שומר..."
+  },
   "empty": {
     "welcome": "!ברוכים הבאים ל-GroceryApp",
     "welcomeDesc": "התחילו להוסיף מוצרים לקטלוג שלכם מהקטגוריות למטה.",
