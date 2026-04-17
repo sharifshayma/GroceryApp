@@ -101,7 +101,7 @@ export default function Home() {
         .from('list_items')
         .select('item_id, items(id, name, name_he, emoji, default_unit), grocery_lists!inner(status, household_id)')
         .eq('is_bought', false)
-        .eq('grocery_lists.status', 'completed')
+        .in('grocery_lists.status', ['draft', 'active'])
         .eq('grocery_lists.household_id', profile.household_id)
         .not('items', 'is', null)
 
