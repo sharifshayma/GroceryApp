@@ -1,3 +1,5 @@
+import ItemImage from './ItemImage'
+
 export default function HorizontalItemRow({ title, icon, items, accentClass = 'border-t-primary/30', onItemClick, itemsInList }) {
   if (!items || items.length === 0) return null
 
@@ -23,7 +25,7 @@ export default function HorizontalItemRow({ title, icon, items, accentClass = 'b
               {inList && (
                 <span className="absolute top-1 end-1 text-xs">🛒</span>
               )}
-              <span className="text-2xl mb-1">{item.emoji || '🛒'}</span>
+              <ItemImage item={item} size="sm" className="mb-1" />
               <span className="text-xs font-semibold text-center leading-tight line-clamp-2">
                 {item.name}
               </span>

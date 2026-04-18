@@ -9,6 +9,7 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import { IllustrationNoItems, IconSettings } from '../components/Icons'
 import Toggle from '../components/Toggle'
+import ItemImage from '../components/ItemImage'
 
 export default function Stock() {
   const { t, i18n } = useTranslation()
@@ -127,7 +128,7 @@ export default function Stock() {
                   {group.items.map((item) => (
                     <div key={item.id} className="flex items-center justify-between py-2 border-b border-neutral/10 last:border-0">
                       <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-lg flex-shrink-0">{item.emoji}</span>
+                        <ItemImage item={item} size="md" />
                         <span className="text-sm font-medium truncate">{item.name}</span>
                       </div>
                       <Toggle
@@ -188,7 +189,7 @@ export default function Stock() {
                       }`}
                     >
                       <div className="flex items-center gap-3">
-                        <span className="text-2xl flex-shrink-0">{s.items?.emoji || '🛒'}</span>
+                        <ItemImage item={s.items} size="md" />
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold truncate">{s.items?.name}</p>
                           {isLow && (
@@ -412,7 +413,7 @@ function AddToStockModal({ mode, items, categories, onBatchAdd, onClose }) {
                       }`}>
                         {isSelected && <span className="text-xs">{isInStock ? '✓' : '✗'}</span>}
                       </span>
-                      <span className="text-xl">{item.emoji}</span>
+                      <ItemImage item={item} size="md" />
                       <span className="text-sm font-medium">{item.name}</span>
                     </button>
                   )
@@ -496,7 +497,7 @@ function EditStockModal({ stockItem, onSave, onClose }) {
 
         <div className="p-4 pb-20 space-y-4">
           <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl border border-primary/30">
-            <span className="text-3xl">{stockItem.items?.emoji || '🛒'}</span>
+            <ItemImage item={stockItem.items} size="lg" />
             <div>
               <p className="font-medium">{stockItem.items?.name}</p>
               <p className="text-xs text-text-secondary">{stockItem.unit}</p>

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { getCategoryName } from '../lib/categoryName'
 import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 import { useTags } from '../hooks/useTags'
+import { useItemPhotoUpload } from '../hooks/useItemPhotoUpload'
 import { supabase } from '../lib/supabase'
 import { IconClose } from './Icons'
 import Toggle from './Toggle'
@@ -31,7 +32,33 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
   const [autoTrackStock, setAutoTrackStock] = useState(item?.auto_track_stock ?? true)
   const [saving, setSaving] = useState(false)
   const hiddenEmojiRef = useRef(null)
+  const fileInputRef = useRef(null)
   const [error, setError] = useState('')
+
+  const [photoUrl, setPhotoUrl] = useState(item?.photo_url || null)
+  const [photoPath, setPhotoPath] = useState(item?.photo_path || null)
+  const { uploading: uploadingPhoto, upload: uploadPhoto, remove: removePhoto } = useItemPhotoUpload()
+
+  const handlePhotoPick = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setError('')
+    try {
+      const { photo_url, photo_path } = await uploadPhoto(file, photoPath)
+      setPhotoUrl(photo_url)
+      setPhotoPath(photo_path)
+    } catch (err) {
+      setError(err.message || 'Upload failed')
+    }
+  }
+
+  const handlePhotoRemove = async () => {
+    const prev = photoPath
+    setPhotoUrl(null)
+    setPhotoPath(null)
+    if (prev) removePhoto(prev)
+  }
 
   // Tags assignment
   const [assignedTagIds, setAssignedTagIds] = useState(new Set())
@@ -81,6 +108,8 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
         emoji,
         default_unit: unit,
         auto_track_stock: autoTrackStock,
+        photo_url: photoUrl,
+        photo_path: photoPath,
       })
       // For new items, assign selected tags after creation
       if (!isEdit && result?.id && assignedTagIds.size > 0) {
@@ -112,16 +141,42 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
         </div>
 
         <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-5 space-y-4">
-          {/* Emoji + Name */}
+          {/* Photo/Emoji + Name */}
           <div className="flex items-center gap-3">
             <div className="relative flex-shrink-0">
               <button
                 type="button"
-                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-                className="w-14 h-14 rounded-2xl bg-bg border border-neutral text-3xl flex items-center justify-center hover:border-primary/50 transition-colors"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploadingPhoto}
+                aria-label={i18n.language === 'he' ? 'העלה תמונה' : 'Upload photo'}
+                className="w-14 h-14 rounded-2xl bg-bg border border-neutral overflow-hidden flex items-center justify-center hover:border-primary/50 transition-colors disabled:opacity-60"
               >
-                {emoji}
+                {uploadingPhoto ? (
+                  <span className="w-5 h-5 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                ) : photoUrl ? (
+                  <img src={photoUrl} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-3xl">{emoji}</span>
+                )}
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={handlePhotoPick}
+                className="hidden"
+              />
+              {photoUrl && (
+                <button
+                  type="button"
+                  onClick={handlePhotoRemove}
+                  aria-label={i18n.language === 'he' ? 'הסר תמונה' : 'Remove photo'}
+                  className="absolute -top-1 -end-1 w-5 h-5 rounded-full bg-danger text-white text-xs flex items-center justify-center shadow-sm"
+                >
+                  ×
+                </button>
+              )}
             </div>
             <div className="flex-1">
               <label className="block text-xs font-medium text-text-secondary mb-1">
@@ -136,6 +191,15 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
                 autoFocus
                 className="w-full px-3 py-2.5 rounded-xl border border-neutral/40 bg-bg text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
               />
+              {!photoUrl && (
+                <button
+                  type="button"
+                  onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+                  className="mt-1 text-xs text-text-secondary hover:text-primary"
+                >
+                  {i18n.language === 'he' ? 'או בחר אימוג\u2019י' : 'Or pick an emoji'}
+                </button>
+              )}
             </div>
           </div>
 

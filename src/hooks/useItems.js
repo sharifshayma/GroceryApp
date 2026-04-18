@@ -77,9 +77,15 @@ export function useItems(categoryId = null) {
   }
 
   const deleteItem = async (id) => {
+    const photoPath = items.find((i) => i.id === id)?.photo_path
     const { error } = await supabase.from('items').delete().eq('id', id)
     if (error) throw error
     setItems((prev) => prev.filter((i) => i.id !== id))
+    if (photoPath) {
+      supabase.storage.from('item-photos').remove([photoPath]).then(({ error: e }) => {
+        if (e) console.warn('[useItems] failed to remove photo blob:', e.message)
+      })
+    }
   }
 
   return { items, loading, error, refetch: fetch, addItem, updateItem, deleteItem }

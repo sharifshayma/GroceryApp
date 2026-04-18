@@ -22,7 +22,7 @@ export function useStock() {
     const { data, error: fetchErr } = await withTimeout(
       supabase
         .from('stock')
-        .select('*, items(id, name, name_he, emoji, default_unit, auto_track_stock, category_id, categories(id, name, name_he, emoji, sort_order))')
+        .select('*, items(id, name, name_he, emoji, photo_url, default_unit, auto_track_stock, category_id, categories(id, name, name_he, emoji, sort_order))')
         .eq('household_id', profile.household_id)
         .order('updated_at', { ascending: false })
     )
