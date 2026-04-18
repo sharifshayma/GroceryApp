@@ -27,14 +27,13 @@ export default function Lists() {
   const { t, i18n } = useTranslation()
   const { listId: paramListId } = useParams()
   const navigate = useNavigate()
-  const { lists, loading, error, updateListStatus, deleteList, duplicateList, completeAndCarryOver, toggleBought, refetch } = useLists()
+  const { lists, loading, error, updateListStatus, deleteList, duplicateList, completeAndCarryOver, toggleBought, updateListItem, refetch } = useLists()
   const [shoppingListId, setShoppingListId] = useState(null)
   const [dismissedActiveList, setDismissedActiveList] = useState(false)
   const [shareList, setShareList] = useState(null)
   const [expandedListId, setExpandedListId] = useState(null)
   const [showCarryOver, setShowCarryOver] = useState(false)
   const [carryOverSaving, setCarryOverSaving] = useState(false)
-  const [buyingItem, setBuyingItem] = useState(null)
   const { addToStockIncremental, removeFromStockByItemId, refetch: refetchStock } = useStock()
 
   // Handle deep link: open list from URL param
@@ -181,8 +180,6 @@ export default function Lists() {
             <h3 className="text-sm font-medium text-text-secondary mb-2">{cat}</h3>
             <div className="space-y-1.5">
               {catItems.map((li) => {
-                const isBuying = buyingItem?.listItemId === li.id
-
                 if (li.is_bought) {
                   return (
                     <button
@@ -209,67 +206,41 @@ export default function Lists() {
                   )
                 }
 
-                if (isBuying) {
-                  return (
-                    <div key={li.id} className="bg-white rounded-xl p-3.5 border-2 border-primary shadow-sm min-h-[52px]">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-lg">{li.items?.emoji || '🛒'}</span>
-                        <span className="text-sm font-medium flex-1">{li.items?.name || '?'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-text-secondary">
-                            {i18n.language === 'he' ? 'כמות:' : 'Qty:'}
-                          </span>
-                          <button
-                            onClick={() => setBuyingItem({ ...buyingItem, quantity: Math.max(1, buyingItem.quantity - 1) })}
-                            className="w-8 h-8 rounded-lg bg-neutral/30 flex items-center justify-center font-medium"
-                          >−</button>
-                          <span className="w-8 text-center font-medium">{buyingItem.quantity}</span>
-                          <button
-                            onClick={() => setBuyingItem({ ...buyingItem, quantity: buyingItem.quantity + 1 })}
-                            className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-medium"
-                          >+</button>
-                          <span className="text-xs text-text-secondary">{li.unit}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => setBuyingItem(null)}
-                            className="px-3 py-1.5 rounded-lg text-xs text-text-secondary"
-                          >
-                            {i18n.language === 'he' ? 'ביטול' : 'Cancel'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              toggleBought(li.id, true, buyingItem.quantity)
-                              setBuyingItem(null)
-                            }}
-                            className="px-4 py-1.5 rounded-lg bg-green text-white text-xs font-medium"
-                          >✓</button>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                }
-
                 return (
-                  <button
+                  <div
                     key={li.id}
-                    onClick={() => setBuyingItem({ listItemId: li.id, quantity: li.quantity, unit: li.unit })}
-                    className="w-full bg-white rounded-xl p-3.5 flex items-center gap-3 border shadow-sm transition-all min-h-[52px] border-neutral/20"
+                    className="w-full bg-white rounded-xl p-3.5 flex items-center gap-2 border shadow-sm transition-all min-h-[52px] border-neutral/20"
                   >
-                    <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 border-neutral" />
-                    <span className="text-lg">{li.items?.emoji || '🛒'}</span>
-                    <div className="flex-1 text-start min-w-0">
-                      <span className="text-sm font-medium block">{li.items?.name || '?'}</span>
-                      {li.notes && (
-                        <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
-                      )}
+                    <button
+                      onClick={() => toggleBought(li.id, true, li.quantity)}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-start"
+                      aria-label={i18n.language === 'he' ? `סמן ${li.items?.name || ''} כנקנה` : `Mark ${li.items?.name || ''} as bought`}
+                    >
+                      <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 border-neutral" />
+                      <span className="text-lg">{li.items?.emoji || '🛒'}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium block truncate">{li.items?.name || '?'}</span>
+                        {li.notes && (
+                          <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
+                        )}
+                      </div>
+                    </button>
+                    <div className="flex items-center gap-1 flex-shrink-0">
+                      <button
+                        onClick={() => updateListItem(li.id, { quantity: Math.max(1, li.quantity - 1) })}
+                        disabled={li.quantity <= 1}
+                        className="w-7 h-7 rounded-lg bg-neutral/30 flex items-center justify-center font-medium disabled:opacity-40"
+                        aria-label={i18n.language === 'he' ? 'הפחת' : 'Decrease'}
+                      >−</button>
+                      <span className="w-6 text-center text-sm font-medium">{li.quantity}</span>
+                      <button
+                        onClick={() => updateListItem(li.id, { quantity: li.quantity + 1 })}
+                        className="w-7 h-7 rounded-lg bg-primary text-white flex items-center justify-center font-medium"
+                        aria-label={i18n.language === 'he' ? 'הוסף' : 'Increase'}
+                      >+</button>
+                      <span className="text-xs text-text-secondary ms-1">{li.unit}</span>
                     </div>
-                    <span className="text-xs text-text-secondary flex-shrink-0">
-                      {li.quantity} {li.unit}
-                    </span>
-                  </button>
+                  </div>
                 )
               })}
             </div>
