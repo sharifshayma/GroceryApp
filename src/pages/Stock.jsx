@@ -144,6 +144,24 @@ export default function Stock() {
         </div>
       )}
 
+      {/* Add items buttons */}
+      {unstockedItems.length > 0 && (
+        <div className="mb-5 flex gap-3">
+          <button
+            onClick={() => setAddModalMode('in-stock')}
+            className="flex-1 py-3.5 rounded-xl bg-green text-white font-medium text-sm shadow-sm hover:bg-green-dark transition-colors active:scale-[0.98] min-h-[48px]"
+          >
+            + {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
+          </button>
+          <button
+            onClick={() => setAddModalMode('out-of-stock')}
+            className="flex-1 py-3.5 rounded-xl bg-white text-danger font-medium text-sm border border-danger/30 shadow-sm hover:bg-danger/5 transition-colors active:scale-[0.98] min-h-[48px]"
+          >
+            − {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
+          </button>
+        </div>
+      )}
+
       {stockItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[40vh]">
           <div className="flex justify-center mb-4"><IllustrationNoItems className="w-28 h-28" /></div>
@@ -259,24 +277,6 @@ export default function Stock() {
             </div>
           ))}
         </>
-      )}
-
-      {/* Add items buttons */}
-      {unstockedItems.length > 0 && (
-        <div className="mt-6 mb-20 flex gap-3">
-          <button
-            onClick={() => setAddModalMode('in-stock')}
-            className="flex-1 py-3.5 rounded-xl bg-green text-white font-medium text-sm shadow-sm hover:bg-green-dark transition-colors active:scale-[0.98] min-h-[48px]"
-          >
-            + {i18n.language === 'he' ? 'במלאי' : 'In Stock'}
-          </button>
-          <button
-            onClick={() => setAddModalMode('out-of-stock')}
-            className="flex-1 py-3.5 rounded-xl bg-white text-danger font-medium text-sm border border-danger/30 shadow-sm hover:bg-danger/5 transition-colors active:scale-[0.98] min-h-[48px]"
-          >
-            − {i18n.language === 'he' ? 'חסר במלאי' : 'Out of Stock'}
-          </button>
-        </div>
       )}
 
       {/* Add to stock modal */}
