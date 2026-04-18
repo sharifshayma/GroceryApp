@@ -7,7 +7,8 @@ import { getCategoryName } from '../lib/categoryName'
 import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
-import { IllustrationNoItems } from '../components/Icons'
+import { IllustrationNoItems, IconSettings } from '../components/Icons'
+import Toggle from '../components/Toggle'
 
 export default function Stock() {
   const { t, i18n } = useTranslation()
@@ -49,18 +50,41 @@ export default function Stock() {
   const stockItemIds = new Set(stockItems.map((s) => s.item_id))
   const unstockedItems = allItems.filter((i) => !stockItemIds.has(i.id))
 
+  // Group allItems by category for the settings panel, using the same order
+  // as the rest of the app (categories are already sorted by sort_order).
+  const itemsByCategory = new Map()
+  allItems.forEach((item) => {
+    const key = item.category_id || 'other'
+    if (!itemsByCategory.has(key)) itemsByCategory.set(key, [])
+    itemsByCategory.get(key).push(item)
+  })
+  const settingsGroups = categories
+    .filter((cat) => itemsByCategory.has(cat.id))
+    .map((cat) => ({ key: cat.id, name: getCategoryName(cat), emoji: cat.emoji, items: itemsByCategory.get(cat.id) }))
+  if (itemsByCategory.has('other')) {
+    settingsGroups.push({
+      key: 'other',
+      name: i18n.language === 'he' ? 'אחר' : 'Other',
+      emoji: '📦',
+      items: itemsByCategory.get('other'),
+    })
+  }
+
   return (
     <div className="px-4 pt-6 pb-8 max-w-lg mx-auto animate-fade-in">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">{t('nav.stock')}</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              showSettings ? 'bg-primary text-white' : 'bg-primary/10 text-primary'
+            onClick={() => setShowSettings((v) => !v)}
+            aria-label={i18n.language === 'he' ? 'הגדרות' : 'Settings'}
+            className={`w-10 h-10 rounded-xl border flex items-center justify-center transition-colors ${
+              showSettings
+                ? 'bg-primary text-white border-primary'
+                : 'bg-surface border-neutral text-text-secondary hover:text-text'
             }`}
           >
-            ⚙️ {i18n.language === 'he' ? 'הגדרות' : 'Settings'}
+            <IconSettings />
           </button>
           {lowStockCount > 0 && (
             <button
@@ -93,23 +117,26 @@ export default function Stock() {
               {i18n.language === 'he' ? 'אין פריטים' : 'No items'}
             </p>
           ) : (
-            <div className="max-h-64 overflow-y-auto space-y-0.5">
-              {allItems.map((item) => (
-                <div key={item.id} className="flex items-center justify-between py-2 border-b border-neutral/10 last:border-0">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className="text-lg flex-shrink-0">{item.emoji}</span>
-                    <span className="text-sm font-medium truncate">{item.name}</span>
-                  </div>
-                  <button
-                    onClick={() => updateItem(item.id, { auto_track_stock: !(item.auto_track_stock ?? true) })}
-                    className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${
-                      (item.auto_track_stock ?? true) ? 'bg-green' : 'bg-neutral/40'
-                    }`}
-                  >
-                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                      (item.auto_track_stock ?? true) ? 'translate-x-5' : 'translate-x-0.5'
-                    }`} />
-                  </button>
+            <div className="max-h-64 overflow-y-auto overflow-x-hidden">
+              {settingsGroups.map((group) => (
+                <div key={group.key} className="mb-3 last:mb-0">
+                  <h4 className="text-xs font-medium text-text-secondary mb-1 flex items-center gap-1.5">
+                    <span>{group.emoji}</span>
+                    <span>{group.name}</span>
+                  </h4>
+                  {group.items.map((item) => (
+                    <div key={item.id} className="flex items-center justify-between py-2 border-b border-neutral/10 last:border-0">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-lg flex-shrink-0">{item.emoji}</span>
+                        <span className="text-sm font-medium truncate">{item.name}</span>
+                      </div>
+                      <Toggle
+                        checked={item.auto_track_stock ?? true}
+                        onChange={() => updateItem(item.id, { auto_track_stock: !(item.auto_track_stock ?? true) })}
+                        ariaLabel={item.name}
+                      />
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>

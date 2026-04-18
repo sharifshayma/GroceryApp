@@ -5,6 +5,7 @@ import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 import { useTags } from '../hooks/useTags'
 import { supabase } from '../lib/supabase'
 import { IconClose } from './Icons'
+import Toggle from './Toggle'
 
 const UNITS = ['pcs', 'kg', 'g', 'L', 'mL', 'pack', 'box', 'bottle', 'bag', 'bunch']
 
@@ -242,17 +243,11 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
                 {i18n.language === 'he' ? 'עדכן כמות במלאי בעת קנייה' : 'Update stock quantity when bought'}
               </p>
             </div>
-            <button
-              type="button"
-              onClick={() => setAutoTrackStock(!autoTrackStock)}
-              className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${
-                autoTrackStock ? 'bg-green' : 'bg-neutral/40'
-              }`}
-            >
-              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
-                autoTrackStock ? 'translate-x-5' : 'translate-x-0.5'
-              }`} />
-            </button>
+            <Toggle
+              checked={autoTrackStock}
+              onChange={() => setAutoTrackStock(!autoTrackStock)}
+              ariaLabel="auto-track stock"
+            />
           </div>
 
           {/* Unit */}
