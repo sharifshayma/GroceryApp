@@ -22,7 +22,7 @@ export function useStock() {
     const { data, error: fetchErr } = await withTimeout(
       supabase
         .from('stock')
-        .select('*, items(id, name, name_he, emoji, default_unit, category_id, categories(id, name, name_he, emoji, sort_order))')
+        .select('*, items(id, name, name_he, emoji, default_unit, auto_track_stock, category_id, categories(id, name, name_he, emoji, sort_order))')
         .eq('household_id', profile.household_id)
         .order('updated_at', { ascending: false })
     )
@@ -118,6 +118,47 @@ export function useStock() {
     )
   }
 
+  const addToStockIncremental = async (itemId, boughtQuantity, unit) => {
+    // Query current stock directly from DB to avoid stale state when processing multiple items
+    const { data: existing } = await supabase
+      .from('stock')
+      .select('id, quantity')
+      .eq('household_id', profile.household_id)
+      .eq('item_id', itemId)
+      .single()
+
+    if (existing) {
+      const { error } = await supabase
+        .from('stock')
+        .update({
+          quantity: existing.quantity + boughtQuantity,
+          unit,
+          updated_by: profile.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+      if (error) throw error
+    } else {
+      const { error } = await supabase
+        .from('stock')
+        .upsert({
+          household_id: profile.household_id,
+          item_id: itemId,
+          quantity: boughtQuantity,
+          unit,
+          low_threshold: 1,
+          updated_by: profile.id,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'household_id,item_id' })
+      if (error) throw error
+    }
+  }
+
+  const removeFromStockByItemId = async (itemId) => {
+    const existing = stockItems.find((s) => s.item_id === itemId)
+    if (existing) await removeFromStock(existing.id)
+  }
+
   const removeFromStock = async (stockId) => {
     const { error } = await supabase.from('stock').delete().eq('id', stockId)
     if (error) throw error
@@ -134,6 +175,8 @@ export function useStock() {
     error,
     refetch: fetch,
     addToStock,
+    addToStockIncremental,
+    removeFromStockByItemId,
     updateQuantity,
     updateThreshold,
     updateStock,

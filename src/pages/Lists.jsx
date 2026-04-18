@@ -3,11 +3,12 @@ import { Link, useParams, useNavigate } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { useLists } from '../hooks/useLists'
 import { useStock } from '../hooks/useStock'
+import { supabase } from '../lib/supabase'
+import { emit } from '../lib/events'
 import { getCategoryName } from '../lib/categoryName'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import ShareSheet from '../components/ShareSheet'
-import UpdateStockModal from '../components/UpdateStockModal'
 import CarryOverModal from '../components/CarryOverModal'
 import { IconBack, IconEdit, IconShare, IconCheck, IconChevronDown, IconCopy, IconTrash, IllustrationNoLists } from '../components/Icons'
 
@@ -31,10 +32,10 @@ export default function Lists() {
   const [dismissedActiveList, setDismissedActiveList] = useState(false)
   const [shareList, setShareList] = useState(null)
   const [expandedListId, setExpandedListId] = useState(null)
-  const [showUpdateStock, setShowUpdateStock] = useState(false)
   const [showCarryOver, setShowCarryOver] = useState(false)
   const [carryOverSaving, setCarryOverSaving] = useState(false)
-  const { addToStock } = useStock()
+  const [buyingItem, setBuyingItem] = useState(null)
+  const { addToStockIncremental, removeFromStockByItemId, refetch: refetchStock } = useStock()
 
   // Handle deep link: open list from URL param
   useEffect(() => {
@@ -79,7 +80,27 @@ export default function Lists() {
 
     const unboughtItems = items.filter((li) => !li.is_bought)
 
+    const autoUpdateStock = async (list) => {
+      const boughtItems = (list.list_items || []).filter((li) => li.is_bought)
+      for (const li of boughtItems) {
+        const autoTrack = li.items?.auto_track_stock ?? true
+        if (autoTrack) {
+          await addToStockIncremental(li.item_id, li.quantity, li.unit)
+        } else {
+          await removeFromStockByItemId(li.item_id)
+        }
+      }
+      const ids = boughtItems.map((li) => li.id)
+      if (ids.length > 0) {
+        await supabase.from('list_items').update({ stock_updated: true }).in('id', ids)
+      }
+      emit('stock-changed')
+    }
+
     const handleDone = async () => {
+      // Auto-update stock for all bought items
+      await autoUpdateStock(shoppingList)
+
       // If all bought or none bought, complete directly (no modal)
       if (boughtCount === total || boughtCount === 0) {
         await updateListStatus(shoppingList.id, 'completed')
@@ -159,50 +180,101 @@ export default function Lists() {
           <div key={cat} className="mb-4">
             <h3 className="text-sm font-medium text-text-secondary mb-2">{cat}</h3>
             <div className="space-y-1.5">
-              {catItems.map((li) => (
-                <button
-                  key={li.id}
-                  onClick={() => toggleBought(li.id, !li.is_bought)}
-                  className={`w-full bg-white rounded-xl p-3.5 flex items-center gap-3 border shadow-sm transition-all min-h-[52px] ${
-                    li.is_bought ? 'border-green/30 opacity-60' : 'border-neutral/20'
-                  }`}
-                >
-                  <div className={`w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 transition-colors ${
-                    li.is_bought ? 'bg-green border-green text-white' : 'border-neutral'
-                  }`}>
-                    {li.is_bought && (
-                      <IconCheck />
-                    )}
-                  </div>
-                  <span className="text-lg">{li.items?.emoji || '🛒'}</span>
-                  <div className="flex-1 text-start min-w-0">
-                    <span className={`text-sm font-medium block ${li.is_bought ? 'line-through text-text-secondary' : ''}`}>
-                      {li.items?.name || '?'}
-                    </span>
-                    {li.notes && (
-                      <span className="text-xs text-text-secondary block truncate">
-                        📝 {li.notes}
+              {catItems.map((li) => {
+                const isBuying = buyingItem?.listItemId === li.id
+
+                if (li.is_bought) {
+                  return (
+                    <button
+                      key={li.id}
+                      onClick={() => toggleBought(li.id, false)}
+                      className="w-full bg-white rounded-xl p-3.5 flex items-center gap-3 border shadow-sm transition-all min-h-[52px] border-green/30 opacity-60"
+                    >
+                      <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 bg-green border-green text-white">
+                        <IconCheck />
+                      </div>
+                      <span className="text-lg">{li.items?.emoji || '🛒'}</span>
+                      <div className="flex-1 text-start min-w-0">
+                        <span className="text-sm font-medium block line-through text-text-secondary">
+                          {li.items?.name || '?'}
+                        </span>
+                        {li.notes && (
+                          <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
+                        )}
+                      </div>
+                      <span className="text-xs text-text-secondary flex-shrink-0">
+                        {li.quantity} {li.unit}
                       </span>
-                    )}
-                  </div>
-                  <span className="text-xs text-text-secondary flex-shrink-0">
-                    {li.quantity} {li.unit}
-                  </span>
-                </button>
-              ))}
+                    </button>
+                  )
+                }
+
+                if (isBuying) {
+                  return (
+                    <div key={li.id} className="bg-white rounded-xl p-3.5 border-2 border-primary shadow-sm min-h-[52px]">
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-lg">{li.items?.emoji || '🛒'}</span>
+                        <span className="text-sm font-medium flex-1">{li.items?.name || '?'}</span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-text-secondary">
+                            {i18n.language === 'he' ? 'כמות:' : 'Qty:'}
+                          </span>
+                          <button
+                            onClick={() => setBuyingItem({ ...buyingItem, quantity: Math.max(1, buyingItem.quantity - 1) })}
+                            className="w-8 h-8 rounded-lg bg-neutral/30 flex items-center justify-center font-medium"
+                          >−</button>
+                          <span className="w-8 text-center font-medium">{buyingItem.quantity}</span>
+                          <button
+                            onClick={() => setBuyingItem({ ...buyingItem, quantity: buyingItem.quantity + 1 })}
+                            className="w-8 h-8 rounded-lg bg-primary text-white flex items-center justify-center font-medium"
+                          >+</button>
+                          <span className="text-xs text-text-secondary">{li.unit}</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => setBuyingItem(null)}
+                            className="px-3 py-1.5 rounded-lg text-xs text-text-secondary"
+                          >
+                            {i18n.language === 'he' ? 'ביטול' : 'Cancel'}
+                          </button>
+                          <button
+                            onClick={() => {
+                              toggleBought(li.id, true, buyingItem.quantity)
+                              setBuyingItem(null)
+                            }}
+                            className="px-4 py-1.5 rounded-lg bg-green text-white text-xs font-medium"
+                          >✓</button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                }
+
+                return (
+                  <button
+                    key={li.id}
+                    onClick={() => setBuyingItem({ listItemId: li.id, quantity: li.quantity, unit: li.unit })}
+                    className="w-full bg-white rounded-xl p-3.5 flex items-center gap-3 border shadow-sm transition-all min-h-[52px] border-neutral/20"
+                  >
+                    <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 border-neutral" />
+                    <span className="text-lg">{li.items?.emoji || '🛒'}</span>
+                    <div className="flex-1 text-start min-w-0">
+                      <span className="text-sm font-medium block">{li.items?.name || '?'}</span>
+                      {li.notes && (
+                        <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
+                      )}
+                    </div>
+                    <span className="text-xs text-text-secondary flex-shrink-0">
+                      {li.quantity} {li.unit}
+                    </span>
+                  </button>
+                )
+              })}
             </div>
           </div>
         ))}
-
-        {/* Update Stock button — shown when items have been bought */}
-        {boughtCount > 0 && (
-          <button
-            onClick={() => setShowUpdateStock(true)}
-            className="w-full py-3 rounded-xl font-semibold text-sm border-2 border-green text-green-dark hover:bg-green/10 transition-colors mt-4 min-h-[48px]"
-          >
-            📦 {i18n.language === 'he' ? 'עדכן מלאי' : 'Update Stock'}
-          </button>
-        )}
 
         {/* Done button */}
         <button
@@ -226,18 +298,6 @@ export default function Lists() {
           />
         )}
 
-        {showUpdateStock && (
-          <UpdateStockModal
-            listItems={items}
-            onUpdateStock={async (stockUpdates) => {
-              for (const item of stockUpdates) {
-                await addToStock(item.itemId, item.quantity, item.unit, 0)
-              }
-              await refetch()
-            }}
-            onClose={() => setShowUpdateStock(false)}
-          />
-        )}
       </div>
     )
   }

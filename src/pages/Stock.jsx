@@ -12,12 +12,13 @@ import { IllustrationNoItems } from '../components/Icons'
 export default function Stock() {
   const { t, i18n } = useTranslation()
   const { stockItems, loading, error, addToStock, updateQuantity, updateThreshold, updateStock, removeFromStock, lowStockCount, refetch } = useStock()
-  const { items: allItems } = useItems()
+  const { items: allItems, updateItem } = useItems()
   const { categories } = useCategories()
   const [addModalMode, setAddModalMode] = useState(null) // null | 'in-stock' | 'out-of-stock'
   const [editingStock, setEditingStock] = useState(null) // stock item to edit
   const [filterLow, setFilterLow] = useState(false)
   const [editingThreshold, setEditingThreshold] = useState(null)
+  const [showSettings, setShowSettings] = useState(false)
 
   if (loading) return <LoadingSpinner fullScreen={false} />
   if (error) return <ErrorBanner error={error} onRetry={refetch} />
@@ -52,19 +53,69 @@ export default function Stock() {
     <div className="px-4 pt-6 pb-8 max-w-lg mx-auto animate-fade-in">
       <div className="flex items-center justify-between mb-4">
         <h1 className="text-2xl font-semibold">{t('nav.stock')}</h1>
-        {lowStockCount > 0 && (
+        <div className="flex items-center gap-2">
           <button
-            onClick={() => setFilterLow(!filterLow)}
+            onClick={() => setShowSettings(!showSettings)}
             className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-              filterLow ? 'bg-danger text-white' : 'bg-danger/10 text-danger'
+              showSettings ? 'bg-primary text-white' : 'bg-primary/10 text-primary'
             }`}
           >
-            {filterLow
-              ? (i18n.language === 'he' ? 'הצג הכל' : 'Show All')
-              : `${lowStockCount} ${i18n.language === 'he' ? 'מלאי נמוך' : 'Low Stock'}`}
+            ⚙️ {i18n.language === 'he' ? 'הגדרות' : 'Settings'}
           </button>
-        )}
+          {lowStockCount > 0 && (
+            <button
+              onClick={() => setFilterLow(!filterLow)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                filterLow ? 'bg-danger text-white' : 'bg-danger/10 text-danger'
+              }`}
+            >
+              {filterLow
+                ? (i18n.language === 'he' ? 'הצג הכל' : 'Show All')
+                : `${lowStockCount} ${i18n.language === 'he' ? 'מלאי נמוך' : 'Low Stock'}`}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Auto-track settings panel */}
+      {showSettings && (
+        <div className="mb-6 bg-surface rounded-2xl border border-neutral/20 p-4">
+          <h3 className="text-sm font-semibold mb-1">
+            {i18n.language === 'he' ? 'מעקב מלאי אוטומטי' : 'Auto Stock Tracking'}
+          </h3>
+          <p className="text-xs text-text-secondary mb-3">
+            {i18n.language === 'he'
+              ? 'פריטים מופעלים יעודכנו אוטומטית במלאי כשנקנים'
+              : 'Enabled items will auto-update stock when bought'}
+          </p>
+          {allItems.length === 0 ? (
+            <p className="text-xs text-text-secondary text-center py-2">
+              {i18n.language === 'he' ? 'אין פריטים' : 'No items'}
+            </p>
+          ) : (
+            <div className="max-h-64 overflow-y-auto space-y-0.5">
+              {allItems.map((item) => (
+                <div key={item.id} className="flex items-center justify-between py-2 border-b border-neutral/10 last:border-0">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-lg flex-shrink-0">{item.emoji}</span>
+                    <span className="text-sm font-medium truncate">{item.name}</span>
+                  </div>
+                  <button
+                    onClick={() => updateItem(item.id, { auto_track_stock: !(item.auto_track_stock ?? true) })}
+                    className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${
+                      (item.auto_track_stock ?? true) ? 'bg-green' : 'bg-neutral/40'
+                    }`}
+                  >
+                    <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                      (item.auto_track_stock ?? true) ? 'translate-x-5' : 'translate-x-0.5'
+                    }`} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {stockItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[40vh]">

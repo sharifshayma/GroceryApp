@@ -23,7 +23,7 @@ export function useLists() {
     let { data, error: fetchErr } = await withTimeout(
       supabase
         .from('grocery_lists')
-        .select('*, list_items(id, item_id, quantity, unit, is_bought, notes, stock_updated, items(name, name_he, emoji, default_unit, category_id, categories(name, name_he, emoji)))')
+        .select('*, list_items(id, item_id, quantity, unit, is_bought, notes, stock_updated, items(name, name_he, emoji, default_unit, auto_track_stock, category_id, categories(name, name_he, emoji)))')
         .eq('household_id', profile.household_id)
         .order('created_at', { ascending: false })
     )
@@ -33,7 +33,7 @@ export function useLists() {
       const fallback = await withTimeout(
         supabase
           .from('grocery_lists')
-          .select('*, list_items(id, item_id, quantity, unit, is_bought, items(name, name_he, emoji, default_unit, category_id, categories(name, name_he, emoji)))')
+          .select('*, list_items(id, item_id, quantity, unit, is_bought, items(name, name_he, emoji, default_unit, auto_track_stock, category_id, categories(name, name_he, emoji)))')
           .eq('household_id', profile.household_id)
           .order('created_at', { ascending: false })
       )
@@ -186,11 +186,14 @@ export function useLists() {
     await fetch()
   }
 
-  const toggleBought = async (listItemId, isBought) => {
+  const toggleBought = async (listItemId, isBought, boughtQuantity = null) => {
     const updates = {
       is_bought: isBought,
       bought_by: isBought ? profile.id : null,
       bought_at: isBought ? new Date().toISOString() : null,
+    }
+    if (isBought && boughtQuantity !== null) {
+      updates.quantity = boughtQuantity
     }
 
     const { error } = await supabase

@@ -27,6 +27,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
   const [emoji, setEmoji] = useState(item?.emoji || '🛒')
   const [unit, setUnit] = useState(item?.default_unit || 'pcs')
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+  const [autoTrackStock, setAutoTrackStock] = useState(item?.auto_track_stock ?? true)
   const [saving, setSaving] = useState(false)
   const hiddenEmojiRef = useRef(null)
   const [error, setError] = useState('')
@@ -78,6 +79,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
         category_id: selectedCategory,
         emoji,
         default_unit: unit,
+        auto_track_stock: autoTrackStock,
       })
       // For new items, assign selected tags after creation
       if (!isEdit && result?.id && assignedTagIds.size > 0) {
@@ -229,6 +231,29 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
               </div>
             </div>
           )}
+
+          {/* Auto-track stock */}
+          <div className="flex items-center justify-between py-1">
+            <div>
+              <label className="block text-xs font-medium text-text-secondary">
+                {i18n.language === 'he' ? 'עדכון מלאי אוטומטי' : 'Auto-update stock'}
+              </label>
+              <p className="text-xs text-text-secondary/70 mt-0.5">
+                {i18n.language === 'he' ? 'עדכן כמות במלאי בעת קנייה' : 'Update stock quantity when bought'}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAutoTrackStock(!autoTrackStock)}
+              className={`w-11 h-6 rounded-full transition-colors relative flex-shrink-0 ${
+                autoTrackStock ? 'bg-green' : 'bg-neutral/40'
+              }`}
+            >
+              <span className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform ${
+                autoTrackStock ? 'translate-x-5' : 'translate-x-0.5'
+              }`} />
+            </button>
+          </div>
 
           {/* Unit */}
           <div>
