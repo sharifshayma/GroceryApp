@@ -163,7 +163,6 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
-                capture="environment"
                 onChange={handlePhotoPick}
                 className="hidden"
               />
