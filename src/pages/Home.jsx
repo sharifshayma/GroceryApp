@@ -9,6 +9,7 @@ import { useTags } from '../hooks/useTags'
 import { useLists } from '../hooks/useLists'
 import { useStock } from '../hooks/useStock'
 import { on } from '../lib/events'
+import * as grocery from '../lib/grocery'
 import { getCategoryName } from '../lib/categoryName'
 import HorizontalItemRow from '../components/HorizontalItemRow'
 import AddToListModal from '../components/AddToListModal'
@@ -122,41 +123,21 @@ export default function Home() {
     }
 
     async function fetchNeedToBuy() {
-      const unique = {}
-
-      const { data: unbought } = await supabase
-        .from('list_items')
-        .select('item_id, items(id, name, name_he, emoji, default_unit), grocery_lists!inner(status, household_id)')
-        .eq('is_bought', false)
-        .in('grocery_lists.status', ['draft', 'active'])
-        .eq('grocery_lists.household_id', profile.household_id)
-        .not('items', 'is', null)
-
-      if (unbought) {
-        unbought.forEach((li) => {
-          if (li.items) unique[li.items.id] = li.items
+      try {
+        const result = await grocery.fetchNeedToBuy(supabase, {
+          householdId: profile.household_id,
+          userId: profile.id,
         })
+        setNeedToBuy(result.entries.map((e) => e.item))
+      } catch (e) {
+        console.error('[Home] fetchNeedToBuy failed:', e)
+        setNeedToBuy([])
       }
-
-      const { data: lowStock } = await supabase
-        .from('stock')
-        .select('item_id, quantity, low_threshold, items(id, name, name_he, emoji, default_unit)')
-        .eq('household_id', profile.household_id)
-
-      if (lowStock) {
-        lowStock
-          .filter((s) => s.quantity <= s.low_threshold)
-          .forEach((s) => {
-            if (s.items) unique[s.items.id] = s.items
-          })
-      }
-
-      setNeedToBuy(Object.values(unique))
     }
 
     fetchFrequent()
     fetchNeedToBuy()
-  }, [profile?.household_id, needToBuyRefresh, lists])
+  }, [profile?.household_id, profile?.id, needToBuyRefresh, lists])
 
   // Refresh Need-to-Buy when stock mutates anywhere in the app
   useEffect(() => on('stock-changed', bumpNeedToBuy), [])

@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase, withTimeout } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { useRefreshOnFocus } from './useRefreshOnFocus'
+import * as grocery from '../lib/grocery'
 
 export function useLists() {
   const { profile } = useAuth()
@@ -9,8 +10,10 @@ export function useLists() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const ctx = profile?.household_id ? { householdId: profile.household_id, userId: profile.id } : null
+
   const fetch = useCallback(async () => {
-    if (!profile?.household_id) {
+    if (!ctx) {
       console.log('[useLists] Skipping fetch — no household_id')
       setLoading(false)
       return
@@ -18,39 +21,17 @@ export function useLists() {
     console.log('[useLists] Fetching lists for household:', profile.household_id)
     setLoading(true)
     setError(null)
-
-    // Try with extended columns first, fall back if migrations not applied yet
-    let { data, error: fetchErr } = await withTimeout(
-      supabase
-        .from('grocery_lists')
-        .select('*, list_items(id, item_id, quantity, unit, is_bought, notes, stock_updated, items(name, name_he, emoji, default_unit, auto_track_stock, category_id, categories(name, name_he, emoji)))')
-        .eq('household_id', profile.household_id)
-        .order('created_at', { ascending: false })
-    )
-
-    if (fetchErr) {
-      console.warn('[useLists] Primary query failed, trying fallback:', fetchErr.message)
-      const fallback = await withTimeout(
-        supabase
-          .from('grocery_lists')
-          .select('*, list_items(id, item_id, quantity, unit, is_bought, items(name, name_he, emoji, default_unit, auto_track_stock, category_id, categories(name, name_he, emoji)))')
-          .eq('household_id', profile.household_id)
-          .order('created_at', { ascending: false })
-      )
-      data = fallback.data
-      fetchErr = fallback.error
-    }
-
-    if (data) {
+    try {
+      const data = await grocery.fetchLists(supabase, ctx)
       console.log(`[useLists] Loaded ${data.length} lists`)
       setLists(data)
-    }
-    if (fetchErr) {
-      console.error('[useLists] Failed to fetch lists:', fetchErr)
-      setError(fetchErr.message || 'Failed to load lists')
+    } catch (e) {
+      console.error('[useLists] Failed to fetch lists:', e)
+      setError(e.message || 'Failed to load lists')
     }
     setLoading(false)
-  }, [profile?.household_id])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.household_id, profile?.id])
 
   useEffect(() => {
     fetch()
@@ -59,149 +40,61 @@ export function useLists() {
   useRefreshOnFocus(fetch)
 
   const createList = async (name, items) => {
-    // items: [{ item_id, quantity, unit }]
-    const { data: list, error: listErr } = await supabase
-      .from('grocery_lists')
-      .insert({
-        household_id: profile.household_id,
-        name,
-        status: 'draft',
-        created_by: profile.id,
-      })
-      .select()
-      .single()
-
-    if (listErr) throw listErr
-
-    if (items.length > 0) {
-      const listItems = items.map((item) => ({
-        list_id: list.id,
-        item_id: item.item_id,
-        quantity: item.quantity,
-        unit: item.unit,
-        ...(item.notes ? { notes: item.notes } : {}),
-      }))
-
-      const { error: itemsErr } = await supabase
-        .from('list_items')
-        .insert(listItems)
-
-      if (itemsErr) throw itemsErr
-    }
-
+    const list = await grocery.createList(supabase, ctx, { name, items })
     await fetch()
     return list
   }
 
   const updateListStatus = async (id, status) => {
-    const updates = { status }
-    if (status === 'completed') updates.completed_at = new Date().toISOString()
-
-    const { error } = await supabase
-      .from('grocery_lists')
-      .update(updates)
-      .eq('id', id)
-
-    if (error) throw error
+    await grocery.updateListStatus(supabase, ctx, { listId: id, status })
     await fetch()
   }
 
   const deleteList = async (id) => {
-    const { error } = await supabase.from('grocery_lists').delete().eq('id', id)
-    if (error) throw error
+    await grocery.deleteList(supabase, ctx, { listId: id })
     setLists((prev) => prev.filter((l) => l.id !== id))
   }
 
   const duplicateList = async (list) => {
-    const newName = `${list.name} (copy)`
-    const items = (list.list_items || []).map((li) => ({
-      item_id: li.item_id,
-      quantity: li.quantity,
-      unit: li.unit,
-    }))
-    return createList(newName, items)
+    const newList = await grocery.duplicateList(supabase, ctx, { list })
+    await fetch()
+    return newList
   }
 
   const completeAndCarryOver = async (list, carryOverName) => {
-    const unboughtItems = (list.list_items || [])
-      .filter((li) => !li.is_bought)
-      .map((li) => ({
-        item_id: li.item_id,
-        quantity: li.quantity,
-        unit: li.unit,
-        ...(li.notes ? { notes: li.notes } : {}),
-      }))
-
-    // Complete the current list first (more important action)
-    await updateListStatus(list.id, 'completed')
-
-    // Create new draft with unbought items
-    if (unboughtItems.length > 0) {
-      const newList = await createList(carryOverName, unboughtItems)
-      return newList
-    }
-    return null
+    const newList = await grocery.completeAndCarryOver(supabase, ctx, { list, carryOverName })
+    await fetch()
+    return newList
   }
 
   const addItemToList = async (listId, item) => {
-    // item: { item_id, quantity, unit, notes? }
-    const { error } = await supabase
-      .from('list_items')
-      .insert({
-        list_id: listId,
-        item_id: item.item_id,
-        quantity: item.quantity,
-        unit: item.unit,
-        ...(item.notes ? { notes: item.notes } : {}),
-      })
-    if (error) throw error
+    await grocery.addItemToList(supabase, ctx, {
+      listId,
+      itemId: item.item_id,
+      quantity: item.quantity,
+      unit: item.unit,
+      notes: item.notes,
+    })
     await fetch()
   }
 
   const removeItemFromList = async (listItemId) => {
-    const { error } = await supabase
-      .from('list_items')
-      .delete()
-      .eq('id', listItemId)
-    if (error) throw error
+    await grocery.removeItemFromList(supabase, ctx, { listItemId })
     await fetch()
   }
 
   const updateListItem = async (listItemId, updates) => {
-    // updates: { quantity?, unit?, notes? }
-    const { error } = await supabase
-      .from('list_items')
-      .update(updates)
-      .eq('id', listItemId)
-    if (error) throw error
+    await grocery.updateListItemFields(supabase, ctx, { listItemId, updates })
     await fetch()
   }
 
   const updateListName = async (listId, name) => {
-    const { error } = await supabase
-      .from('grocery_lists')
-      .update({ name })
-      .eq('id', listId)
-    if (error) throw error
+    await grocery.updateListName(supabase, ctx, { listId, name })
     await fetch()
   }
 
   const toggleBought = async (listItemId, isBought, boughtQuantity = null) => {
-    const updates = {
-      is_bought: isBought,
-      bought_by: isBought ? profile.id : null,
-      bought_at: isBought ? new Date().toISOString() : null,
-    }
-    if (isBought && boughtQuantity !== null) {
-      updates.quantity = boughtQuantity
-    }
-
-    const { error } = await supabase
-      .from('list_items')
-      .update(updates)
-      .eq('id', listItemId)
-
-    if (error) throw error
+    await grocery.setListItemBought(supabase, ctx, { listItemId, isBought, boughtQuantity })
     await fetch()
   }
 
