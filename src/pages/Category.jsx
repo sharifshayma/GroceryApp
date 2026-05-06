@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useCategories } from '../hooks/useCategories'
 import { useItems } from '../hooks/useItems'
 import { useLists } from '../hooks/useLists'
+import { useStock } from '../hooks/useStock'
 import { getCategoryName } from '../lib/categoryName'
 import AddItemModal from '../components/AddItemModal'
 import AddToListModal from '../components/AddToListModal'
@@ -17,7 +18,14 @@ export default function Category() {
   const { t, i18n } = useTranslation()
   const { categories, loading: catsLoading } = useCategories()
   const { items, loading: itemsLoading, refetch, addItem, updateItem, deleteItem } = useItems(categoryId)
-  const { lists, createList, addItemToList } = useLists()
+  const { lists, createList, addItemToList, removeItemFromList } = useLists()
+  const {
+    stockItems,
+    addToStock,
+    updateQuantity: updateStockQuantity,
+    updateThreshold: updateStockThreshold,
+    removeFromStock,
+  } = useStock()
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
   const [addToListItem, setAddToListItem] = useState(null)
@@ -234,6 +242,7 @@ export default function Category() {
         <AddToListModal
           item={addToListItem}
           lists={lists}
+          stockRow={stockItems.find((s) => s.item_id === addToListItem.id) || null}
           onAddToList={async (listId, item) => {
             await addItemToList(listId, item)
           }}
@@ -244,6 +253,21 @@ export default function Category() {
             })
             const name = `${t('nav.lists')} — ${today}`
             return await createList(name, [item])
+          }}
+          onRemoveFromList={async (_listId, listItemId) => {
+            await removeItemFromList(listItemId)
+          }}
+          onAddToStock={async (itemId, qty, unit, low) => {
+            await addToStock(itemId, qty, unit, low)
+          }}
+          onUpdateStockQuantity={async (id, qty) => {
+            await updateStockQuantity(id, qty)
+          }}
+          onUpdateStockThreshold={async (id, low) => {
+            await updateStockThreshold(id, low)
+          }}
+          onRemoveFromStock={async (id) => {
+            await removeFromStock(id)
           }}
           onClose={() => setAddToListItem(null)}
         />

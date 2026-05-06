@@ -7,6 +7,8 @@ import { useCategories } from '../hooks/useCategories'
 import { useItems } from '../hooks/useItems'
 import { useTags } from '../hooks/useTags'
 import { useLists } from '../hooks/useLists'
+import { useStock } from '../hooks/useStock'
+import { on } from '../lib/events'
 import { getCategoryName } from '../lib/categoryName'
 import HorizontalItemRow from '../components/HorizontalItemRow'
 import AddToListModal from '../components/AddToListModal'
@@ -20,8 +22,17 @@ export default function Home() {
   const { categories, loading, error: categoriesError, refetch: refetchCategories } = useCategories()
   const { items: allItems } = useItems()
   const { tags, recipeTags, storeTags, customTags } = useTags()
-  const { lists, createList, addItemToList } = useLists()
+  const { lists, createList, addItemToList, removeItemFromList } = useLists()
+  const {
+    stockItems,
+    addToStock,
+    updateQuantity: updateStockQuantity,
+    updateThreshold: updateStockThreshold,
+    removeFromStock,
+  } = useStock()
   const [search, setSearch] = useState('')
+  const [needToBuyRefresh, setNeedToBuyRefresh] = useState(0)
+  const bumpNeedToBuy = () => setNeedToBuyRefresh((k) => k + 1)
   const [activeTag, setActiveTag] = useState(null)
   const [taggedItemData, setTaggedItemData] = useState(null) // Map<item_id, notes>
   const [frequentItems, setFrequentItems] = useState([])
@@ -129,7 +140,10 @@ export default function Home() {
 
     fetchFrequent()
     fetchNeedToBuy()
-  }, [profile?.household_id])
+  }, [profile?.household_id, needToBuyRefresh, lists])
+
+  // Refresh Need-to-Buy when stock mutates anywhere in the app
+  useEffect(() => on('stock-changed', bumpNeedToBuy), [])
 
   // Fetch items + notes for active tag filter
   useEffect(() => {
@@ -649,8 +663,29 @@ export default function Home() {
         <AddToListModal
           item={addToListItem}
           lists={lists}
+          stockRow={stockItems.find((s) => s.item_id === addToListItem.id) || null}
           onAddToList={handleAddToList}
           onCreateAndAdd={handleCreateAndAdd}
+          onRemoveFromList={async (_listId, listItemId) => {
+            await removeItemFromList(listItemId)
+            bumpNeedToBuy()
+          }}
+          onAddToStock={async (itemId, qty, unit, low) => {
+            await addToStock(itemId, qty, unit, low)
+            bumpNeedToBuy()
+          }}
+          onUpdateStockQuantity={async (id, qty) => {
+            await updateStockQuantity(id, qty)
+            bumpNeedToBuy()
+          }}
+          onUpdateStockThreshold={async (id, low) => {
+            await updateStockThreshold(id, low)
+            bumpNeedToBuy()
+          }}
+          onRemoveFromStock={async (id) => {
+            await removeFromStock(id)
+            bumpNeedToBuy()
+          }}
           onClose={() => setAddToListItem(null)}
         />
       )}
