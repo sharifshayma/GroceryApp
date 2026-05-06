@@ -32,6 +32,23 @@ export default function Home() {
   const [search, setSearch] = useState('')
   const [needToBuyRefresh, setNeedToBuyRefresh] = useState(0)
   const bumpNeedToBuy = () => setNeedToBuyRefresh((k) => k + 1)
+
+  const [collapsed, setCollapsed] = useState(() => {
+    try {
+      const saved = localStorage.getItem('homeCollapsedSections')
+      return saved ? new Set(JSON.parse(saved)) : new Set()
+    } catch { return new Set() }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem('homeCollapsedSections', JSON.stringify([...collapsed]))
+    } catch { /* ignore */ }
+  }, [collapsed])
+  const toggleCollapse = (key) => setCollapsed((prev) => {
+    const next = new Set(prev)
+    if (next.has(key)) next.delete(key); else next.add(key)
+    return next
+  })
   const [activeTag, setActiveTag] = useState(null)
   const [taggedItemData, setTaggedItemData] = useState(null) // Map<item_id, notes>
   const [frequentItems, setFrequentItems] = useState([])
@@ -605,6 +622,8 @@ export default function Home() {
             accentClass="border-t-danger"
             onItemClick={(item) => setAddToListItem(item)}
             itemsInList={itemsInList}
+            collapsed={collapsed.has('needToBuy')}
+            onToggleCollapse={() => toggleCollapse('needToBuy')}
           />
 
           <HorizontalItemRow
@@ -614,6 +633,8 @@ export default function Home() {
             accentClass="border-t-secondary"
             onItemClick={(item) => setAddToListItem(item)}
             itemsInList={itemsInList}
+            collapsed={collapsed.has('frequent')}
+            onToggleCollapse={() => toggleCollapse('frequent')}
           />
 
           {categories.length === 0 ? (
@@ -624,24 +645,33 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <h2 className="text-sm font-medium flex items-center gap-1.5 mb-2">
+              <button
+                type="button"
+                onClick={() => toggleCollapse('categories')}
+                className="flex items-center gap-1.5 text-sm font-medium mb-2 py-1 -my-1"
+              >
                 <span>📁</span>
                 <span>{i18n.language === 'he' ? 'קטגוריות' : 'Categories'}</span>
-              </h2>
-              <div className="grid grid-cols-3 gap-3">
-                {categories.map((cat) => (
-                  <Link
-                    key={cat.id}
-                    to={`/category/${cat.id}`}
-                    className="bg-surface rounded-2xl border-b-2 border-primary/30 p-3 flex flex-col items-center justify-center aspect-square shadow-sm hover:shadow-md hover:border-primary/60 transition-all active:scale-95"
-                  >
-                    <span className="text-3xl mb-1">{cat.emoji}</span>
-                    <span className="text-xs font-semibold text-center leading-tight">
-                      {getCategoryName(cat)}
-                    </span>
-                  </Link>
-                ))}
-              </div>
+                <IconChevronDown
+                  className={`w-3 h-3 text-text-secondary transition-transform ${collapsed.has('categories') ? '-rotate-90' : ''}`}
+                />
+              </button>
+              {!collapsed.has('categories') && (
+                <div className="grid grid-cols-3 gap-3">
+                  {categories.map((cat) => (
+                    <Link
+                      key={cat.id}
+                      to={`/category/${cat.id}`}
+                      className="bg-surface rounded-2xl border-b-2 border-primary/30 p-3 flex flex-col items-center justify-center aspect-square shadow-sm hover:shadow-md hover:border-primary/60 transition-all active:scale-95"
+                    >
+                      <span className="text-3xl mb-1">{cat.emoji}</span>
+                      <span className="text-xs font-semibold text-center leading-tight">
+                        {getCategoryName(cat)}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </>
