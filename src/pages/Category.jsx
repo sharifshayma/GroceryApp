@@ -24,7 +24,6 @@ export default function Category() {
     addToStock,
     updateQuantity: updateStockQuantity,
     updateThreshold: updateStockThreshold,
-    removeFromStock,
   } = useStock()
   const [showAddModal, setShowAddModal] = useState(false)
   const [editingItem, setEditingItem] = useState(null)
@@ -265,9 +264,6 @@ export default function Category() {
           }}
           onUpdateStockThreshold={async (id, low) => {
             await updateStockThreshold(id, low)
-          }}
-          onRemoveFromStock={async (id) => {
-            await removeFromStock(id)
           }}
           onClose={() => setAddToListItem(null)}
         />
