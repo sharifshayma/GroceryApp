@@ -132,16 +132,14 @@ export function AuthProvider({ children }) {
         // Skip if profile already exists to avoid re-triggering all data hooks
         // (SIGNED_IN re-fires on tab return after getSession()).
         if (event === 'INITIAL_SESSION' || (event === 'SIGNED_IN' && !profileRef.current)) {
-          // On fresh login, INITIAL_SESSION fires with no user (sets loading=false),
-          // then SIGNED_IN fires. Re-set loading so HouseholdGuard waits for profile.
-          if (event === 'SIGNED_IN' && initialized.current) {
-            setLoading(true)
-          }
+          // Re-arm loading regardless of the event so HouseholdGuard waits for
+          // the profile. Without this, if the safety timeout below already
+          // flipped loading=false, the synchronous setUser above would render
+          // user=set+profile=null and the guard would briefly redirect to
+          // /household-setup.
+          setLoading(true)
           await loadProfile(s.user.id)
-          // Mark loading done after profile is loaded (for SIGNED_IN after init)
-          if (event === 'SIGNED_IN' && initialized.current) {
-            setLoading(false)
-          }
+          setLoading(false)
         }
       }
 
@@ -157,14 +155,16 @@ export function AuthProvider({ children }) {
       }
     })
 
-    // Safety timeout — if onAuthStateChange never fires (rare), unblock UI
+    // Safety timeout — if onAuthStateChange never fires (rare), unblock UI.
+    // Set generously: a premature timeout flips loading=false with user=null,
+    // which briefly redirects through /signin before INITIAL_SESSION arrives.
     const timeout = setTimeout(() => {
       if (!initialized.current) {
-        console.warn('[Auth] Safety timeout triggered — onAuthStateChange did not fire within 3s')
+        console.warn('[Auth] Safety timeout triggered — onAuthStateChange did not fire within 8s')
         initialized.current = true
         setLoading(false)
       }
-    }, 3000)
+    }, 8000)
 
     return () => {
       subscription.unsubscribe()
