@@ -623,20 +623,26 @@ export default function Home() {
               <p className="text-text-secondary">{t('empty.welcomeDesc')}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-3">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  to={`/category/${cat.id}`}
-                  className="bg-surface rounded-2xl border-b-2 border-primary/30 p-3 flex flex-col items-center justify-center aspect-square shadow-sm hover:shadow-md hover:border-primary/60 transition-all active:scale-95"
-                >
-                  <span className="text-3xl mb-1">{cat.emoji}</span>
-                  <span className="text-xs font-semibold text-center leading-tight">
-                    {getCategoryName(cat)}
-                  </span>
-                </Link>
-              ))}
-            </div>
+            <>
+              <h2 className="text-sm font-medium flex items-center gap-1.5 mb-2">
+                <span>📁</span>
+                <span>{i18n.language === 'he' ? 'קטגוריות' : 'Categories'}</span>
+              </h2>
+              <div className="grid grid-cols-3 gap-3">
+                {categories.map((cat) => (
+                  <Link
+                    key={cat.id}
+                    to={`/category/${cat.id}`}
+                    className="bg-surface rounded-2xl border-b-2 border-primary/30 p-3 flex flex-col items-center justify-center aspect-square shadow-sm hover:shadow-md hover:border-primary/60 transition-all active:scale-95"
+                  >
+                    <span className="text-3xl mb-1">{cat.emoji}</span>
+                    <span className="text-xs font-semibold text-center leading-tight">
+                      {getCategoryName(cat)}
+                    </span>
+                  </Link>
+                ))}
+              </div>
+            </>
           )}
         </>
       )}
