@@ -21,9 +21,11 @@ export default function AddToListModal({
   // Local stock state, kept in sync with the prop
   const [stockQty, setStockQty] = useState(stockRow?.quantity ?? 0)
   const [stockThreshold, setStockThreshold] = useState(stockRow?.low_threshold ?? 1)
+  const [trackingExpanded, setTrackingExpanded] = useState(false)
   useEffect(() => {
     setStockQty(stockRow?.quantity ?? 0)
     setStockThreshold(stockRow?.low_threshold ?? 1)
+    if (stockRow) setTrackingExpanded(false)
   }, [stockRow?.id, stockRow?.quantity, stockRow?.low_threshold])
 
   const stockEnabled = typeof onAddToStock === 'function'
@@ -79,17 +81,36 @@ export default function AddToListModal({
   const commitStockQty = async (newQty) => {
     const safe = Math.max(0, newQty)
     setStockQty(safe)
-    if (stockRow) {
-      await onUpdateStockQuantity(stockRow.id, safe)
-    } else if (safe > 0) {
-      await onAddToStock(item.id, safe, item.default_unit || 'pcs', stockThreshold)
-    }
+    if (stockRow) await onUpdateStockQuantity(stockRow.id, safe)
+    // When untracked, just update local state — wait for Save in the tracking flow.
   }
 
   const commitThreshold = async (newT) => {
     const safe = Math.max(0, newT)
     setStockThreshold(safe)
     if (stockRow) await onUpdateStockThreshold(stockRow.id, safe)
+  }
+
+  const startTrackingFlow = () => {
+    setStockQty(0)
+    setStockThreshold(1)
+    setTrackingExpanded(true)
+  }
+
+  const cancelTrackingFlow = () => {
+    setTrackingExpanded(false)
+    setStockQty(0)
+    setStockThreshold(1)
+  }
+
+  const saveNewStock = async () => {
+    setSaving(true)
+    try {
+      await onAddToStock(item.id, stockQty, item.default_unit || 'pcs', stockThreshold || 1)
+      // Effect on stockRow change will collapse the form
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -139,47 +160,81 @@ export default function AddToListModal({
                           : `You have ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · running low' : ''}`)
                         : stockRow
                           ? (isHe ? 'אזל מהמלאי' : 'Out of stock')
-                          : (isHe ? 'עדיין לא במעקב מלאי' : 'Not tracked in stock yet')}
+                          : trackingExpanded
+                            ? (isHe ? 'הגדר מעקב מלאי' : 'Set up stock tracking')
+                            : (isHe ? 'עדיין לא במעקב מלאי' : 'Not tracked in stock yet')}
                     </p>
-                    <div className="space-y-2.5">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-text-secondary w-24">
-                          {isHe ? 'כמות בבית' : 'Quantity at home'}
-                        </span>
+
+                    {(stockRow || trackingExpanded) && (
+                      <div className="space-y-2.5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-text-secondary w-24">
+                            {isHe ? 'כמות בבית' : 'Quantity at home'}
+                          </span>
+                          <button
+                            onClick={() => commitStockQty(stockQty - 1)}
+                            disabled={saving || stockQty <= 0}
+                            className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center font-medium disabled:opacity-50 active:scale-90 transition-transform"
+                          >−</button>
+                          <input
+                            type="number"
+                            value={stockQty}
+                            onChange={(e) => setStockQty(Math.max(0, Number(e.target.value)))}
+                            onBlur={() => commitStockQty(stockQty)}
+                            className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm font-medium"
+                          />
+                          <button
+                            onClick={() => commitStockQty(stockQty + 1)}
+                            disabled={saving}
+                            className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-medium active:scale-90 transition-transform"
+                          >+</button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-xs text-text-secondary w-24">
+                            {isHe ? 'התראה כש-' : 'Alert me at'}
+                          </span>
+                          <input
+                            type="number"
+                            value={stockThreshold}
+                            onChange={(e) => setStockThreshold(Math.max(0, Number(e.target.value)))}
+                            onBlur={() => commitThreshold(stockThreshold)}
+                            className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm"
+                          />
+                          <span className="text-xs text-text-secondary">
+                            {isHe ? 'או פחות' : 'or below'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {!stockRow && !trackingExpanded && (
+                      <button
+                        onClick={startTrackingFlow}
+                        disabled={saving}
+                        className="w-full py-2.5 rounded-xl bg-white border border-primary/30 text-primary text-sm font-medium hover:bg-primary/10 disabled:opacity-50"
+                      >
+                        {isHe ? 'התחל מעקב מלאי' : 'Track stock'}
+                      </button>
+                    )}
+
+                    {!stockRow && trackingExpanded && (
+                      <div className="flex gap-2 mt-3">
                         <button
-                          onClick={() => commitStockQty(stockQty - 1)}
-                          disabled={saving || stockQty <= 0}
-                          className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center font-medium disabled:opacity-50 active:scale-90 transition-transform"
-                        >−</button>
-                        <input
-                          type="number"
-                          value={stockQty}
-                          onChange={(e) => setStockQty(Math.max(0, Number(e.target.value)))}
-                          onBlur={() => commitStockQty(stockQty)}
-                          className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm font-medium"
-                        />
-                        <button
-                          onClick={() => commitStockQty(stockQty + 1)}
+                          onClick={saveNewStock}
                           disabled={saving}
-                          className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-medium active:scale-90 transition-transform"
-                        >+</button>
+                          className="flex-1 py-2.5 rounded-xl bg-primary text-white text-sm font-medium disabled:opacity-50"
+                        >
+                          {saving ? (isHe ? 'שומר...' : 'Saving...') : (isHe ? 'שמור' : 'Save')}
+                        </button>
+                        <button
+                          onClick={cancelTrackingFlow}
+                          disabled={saving}
+                          className="px-4 py-2.5 rounded-xl bg-white border border-neutral text-text-secondary text-sm font-medium disabled:opacity-50"
+                        >
+                          {isHe ? 'ביטול' : 'Cancel'}
+                        </button>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs text-text-secondary w-24">
-                          {isHe ? 'התראה כש-' : 'Alert me at'}
-                        </span>
-                        <input
-                          type="number"
-                          value={stockThreshold}
-                          onChange={(e) => setStockThreshold(Math.max(0, Number(e.target.value)))}
-                          onBlur={() => commitThreshold(stockThreshold)}
-                          className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm"
-                        />
-                        <span className="text-xs text-text-secondary">
-                          {isHe ? 'או פחות' : 'or below'}
-                        </span>
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </section>
               )}
