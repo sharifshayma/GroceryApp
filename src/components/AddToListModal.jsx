@@ -123,48 +123,63 @@ export default function AddToListModal({
               {/* Stock section */}
               {stockEnabled && (
                 <section>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">📦</span>
-                    <h3 className="text-sm font-semibold">{isHe ? 'מלאי' : 'Stock'}</h3>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📦</span>
+                      <h3 className="text-sm font-semibold">{isHe ? 'מלאי בבית' : 'Stock at home'}</h3>
+                    </div>
+                    <p className="text-xs text-text-secondary">
+                      {isHe ? 'כמה יש לך' : 'How much you have'}
+                    </p>
                   </div>
                   <div className={`p-3 rounded-xl border ${isLowStock ? 'bg-primary/5 border-primary/30' : 'bg-bg border-neutral/30'}`}>
-                    <p className="text-sm font-medium text-text mb-2.5">
+                    <p className="text-sm font-medium text-text mb-3">
                       {hasStock
                         ? (isHe
-                          ? `במלאי: ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · מלאי נמוך' : ''}`
-                          : `In stock: ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · low' : ''}`)
+                          ? `יש לך ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · המלאי נמוך' : ''}`
+                          : `You have ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · running low' : ''}`)
                         : stockRow
                           ? (isHe ? 'אזל מהמלאי' : 'Out of stock')
-                          : (isHe ? 'לא במעקב' : 'Not tracked yet')}
+                          : (isHe ? 'עדיין לא במעקב מלאי' : 'Not tracked in stock yet')}
                     </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => commitStockQty(stockQty - 1)}
-                        disabled={saving || stockQty <= 0}
-                        className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center font-medium disabled:opacity-50 active:scale-90 transition-transform"
-                      >−</button>
-                      <input
-                        type="number"
-                        value={stockQty}
-                        onChange={(e) => setStockQty(Math.max(0, Number(e.target.value)))}
-                        onBlur={() => commitStockQty(stockQty)}
-                        className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm font-medium"
-                      />
-                      <button
-                        onClick={() => commitStockQty(stockQty + 1)}
-                        disabled={saving}
-                        className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-medium active:scale-90 transition-transform"
-                      >+</button>
-                      <span className="text-xs text-text-secondary ms-2">
-                        {isHe ? 'נמוך ב-' : 'Low at'}
-                      </span>
-                      <input
-                        type="number"
-                        value={stockThreshold}
-                        onChange={(e) => setStockThreshold(Math.max(0, Number(e.target.value)))}
-                        onBlur={() => commitThreshold(stockThreshold)}
-                        className="w-12 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm"
-                      />
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-text-secondary w-24">
+                          {isHe ? 'כמות בבית' : 'Quantity at home'}
+                        </span>
+                        <button
+                          onClick={() => commitStockQty(stockQty - 1)}
+                          disabled={saving || stockQty <= 0}
+                          className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center font-medium disabled:opacity-50 active:scale-90 transition-transform"
+                        >−</button>
+                        <input
+                          type="number"
+                          value={stockQty}
+                          onChange={(e) => setStockQty(Math.max(0, Number(e.target.value)))}
+                          onBlur={() => commitStockQty(stockQty)}
+                          className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm font-medium"
+                        />
+                        <button
+                          onClick={() => commitStockQty(stockQty + 1)}
+                          disabled={saving}
+                          className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-medium active:scale-90 transition-transform"
+                        >+</button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-text-secondary w-24">
+                          {isHe ? 'התראה כש-' : 'Alert me at'}
+                        </span>
+                        <input
+                          type="number"
+                          value={stockThreshold}
+                          onChange={(e) => setStockThreshold(Math.max(0, Number(e.target.value)))}
+                          onBlur={() => commitThreshold(stockThreshold)}
+                          className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm"
+                        />
+                        <span className="text-xs text-text-secondary">
+                          {isHe ? 'או פחות' : 'or below'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </section>
