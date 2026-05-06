@@ -1,5 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 
+export { withTimeout } from './withTimeout.js'
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY
 
@@ -11,29 +13,6 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     lock: async (name, acquireTimeout, fn) => await fn(),
   },
 })
-
-/**
- * Wraps a Supabase query promise with a timeout.
- * Returns { data, error } — on timeout, error is a synthetic timeout error.
- */
-export function withTimeout(queryPromise, ms = 10000) {
-  const start = Date.now()
-  return Promise.race([
-    Promise.resolve(queryPromise).then((result) => {
-      console.log(`[Supabase] Query resolved in ${Date.now() - start}ms`)
-      return result
-    }),
-    new Promise((resolve) =>
-      setTimeout(
-        () => {
-          console.warn(`[Supabase] TIMEOUT after ${ms}ms — query never resolved`)
-          resolve({ data: null, error: { message: `Request timed out after ${ms / 1000}s — check your connection or Supabase status` } })
-        },
-        ms
-      )
-    ),
-  ])
-}
 
 /**
  * Run on app startup to test raw connectivity to Supabase.

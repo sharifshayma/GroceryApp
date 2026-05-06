@@ -6,7 +6,7 @@
 // No React, no local state, no event emission — those concerns live in the
 // hooks that wrap these functions.
 
-import { withTimeout } from './supabase'
+import { withTimeout } from './withTimeout.js'
 
 // ============================================================================
 // Items + search
