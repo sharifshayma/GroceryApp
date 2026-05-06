@@ -28,7 +28,6 @@ export default function Home() {
     addToStock,
     updateQuantity: updateStockQuantity,
     updateThreshold: updateStockThreshold,
-    removeFromStock,
   } = useStock()
   const [search, setSearch] = useState('')
   const [needToBuyRefresh, setNeedToBuyRefresh] = useState(0)
@@ -680,10 +679,6 @@ export default function Home() {
           }}
           onUpdateStockThreshold={async (id, low) => {
             await updateStockThreshold(id, low)
-            bumpNeedToBuy()
-          }}
-          onRemoveFromStock={async (id) => {
-            await removeFromStock(id)
             bumpNeedToBuy()
           }}
           onClose={() => setAddToListItem(null)}
