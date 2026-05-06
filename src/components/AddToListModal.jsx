@@ -99,27 +99,26 @@ export default function AddToListModal({
         className="relative bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[85vh] overflow-y-auto animate-slide-up sm:animate-fade-in"
         style={{ paddingBottom: 'env(safe-area-inset-bottom, 16px)' }}
       >
-        <div className="px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-text">
-            {step === 'quantity'
-              ? (isHe ? 'הוסף לרשימה' : 'Add to List')
-              : (isHe ? 'בחר רשימה' : 'Choose List')}
-          </h2>
-          <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium">×</button>
+        <div className="px-5 pt-5 pb-3 border-b border-neutral/50 flex items-center justify-between gap-3">
+          {step === 'quantity' ? (
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="text-2xl flex-shrink-0">{item.emoji || '🛒'}</span>
+              <div className="min-w-0">
+                <h2 className="text-lg font-semibold text-text truncate">{item.name}</h2>
+                <p className="text-xs text-text-secondary">{item.default_unit || 'pcs'}</p>
+              </div>
+            </div>
+          ) : (
+            <h2 className="text-lg font-semibold text-text">
+              {isHe ? 'בחר רשימה' : 'Choose List'}
+            </h2>
+          )}
+          <button onClick={onClose} className="w-11 h-11 rounded-full bg-neutral/30 flex items-center justify-center text-text hover:bg-neutral/50 transition-colors text-xl font-medium flex-shrink-0">×</button>
         </div>
 
         <div className="p-4 pb-20">
           {step === 'quantity' ? (
             <div className="space-y-5">
-              {/* Item display */}
-              <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl border border-primary/30">
-                <span className="text-3xl">{item.emoji || '🛒'}</span>
-                <div>
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-xs text-text-secondary">{item.default_unit || 'pcs'}</p>
-                </div>
-              </div>
-
               {/* Stock section */}
               {stockEnabled && (
                 <section>

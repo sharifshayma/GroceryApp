@@ -14,7 +14,7 @@ import HorizontalItemRow from '../components/HorizontalItemRow'
 import AddToListModal from '../components/AddToListModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
-import { IconSearch, IconPlus, IconEdit, IconSettings, IconChevronDown, IconChevronRight, IllustrationNoResults, IllustrationNoItems } from '../components/Icons'
+import { IconSearch, IconEdit, IconSettings, IconChevronDown, IconChevronRight, IllustrationNoResults, IllustrationNoItems } from '../components/Icons'
 
 export default function Home() {
   const { t, i18n } = useTranslation()
@@ -305,8 +305,6 @@ export default function Home() {
         </div>
         {inList && !selectMode ? (
           <span className="w-6 h-6 rounded-full bg-green text-white flex items-center justify-center flex-shrink-0 text-xs">✓</span>
-        ) : !selectMode ? (
-          <IconPlus className="w-5 h-5 text-text-secondary flex-shrink-0" />
         ) : null}
       </button>
     )

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
-import { IconPlus, IconCheckCircle, IconEdit, IconTrash } from './Icons'
+import { IconCheckCircle, IconEdit, IconTrash } from './Icons'
 import ItemImage from './ItemImage'
 
 export default function ItemCard({ item, onEdit, onDelete, onAddToList, isInList = false, showActions = true, selectMode = false, isSelected = false, onSelect }) {
@@ -26,15 +26,20 @@ export default function ItemCard({ item, onEdit, onDelete, onAddToList, isInList
     }
   }
 
+  const cardIsClickable =
+    (selectMode && !!onSelect) || (!selectMode && !!onAddToList && !isInList)
+
   return (
     <div
-      onClick={selectMode ? handleClick : undefined}
+      onClick={cardIsClickable ? handleClick : undefined}
       className={`bg-white rounded-xl p-4 border shadow-sm transition-colors ${
         selectMode
           ? isSelected
             ? 'border-primary bg-primary/5 cursor-pointer'
             : 'border-neutral/20 cursor-pointer hover:border-primary/30'
-          : 'border-neutral/20 hover:border-primary/30'
+          : cardIsClickable
+            ? 'border-neutral/20 hover:border-primary/30 cursor-pointer'
+            : 'border-neutral/20'
       }`}
     >
       <div className="flex items-center gap-3">
@@ -54,31 +59,21 @@ export default function ItemCard({ item, onEdit, onDelete, onAddToList, isInList
         </div>
         {!selectMode && (
           <div className="flex items-center gap-0.5 flex-shrink-0">
-            {onAddToList && (
-              isInList ? (
-                <span className="w-10 h-10 rounded-lg text-green flex items-center justify-center">
-                  <IconCheckCircle />
-                </span>
-              ) : (
-                <button
-                  onClick={() => onAddToList(item)}
-                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
-                  title="Add to list"
-                >
-                  <IconPlus />
-                </button>
-              )
+            {onAddToList && isInList && (
+              <span className="w-10 h-10 rounded-lg text-green flex items-center justify-center">
+                <IconCheckCircle />
+              </span>
             )}
             {showActions && (
               <>
                 <button
-                  onClick={onEdit}
+                  onClick={(e) => { e.stopPropagation(); onEdit?.() }}
                   className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors"
                 >
                   <IconEdit />
                 </button>
                 <button
-                  onClick={onDelete}
+                  onClick={(e) => { e.stopPropagation(); onDelete?.() }}
                   className="w-10 h-10 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors"
                 >
                   <IconTrash />
