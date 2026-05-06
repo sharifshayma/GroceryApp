@@ -15,7 +15,6 @@ export default function AddToListModal({
 }) {
   const { i18n } = useTranslation()
   const isHe = i18n.language === 'he'
-  const [quantity, setQuantity] = useState(1)
   const [step, setStep] = useState('quantity') // 'quantity' | 'pickList'
   const [saving, setSaving] = useState(false)
 
@@ -44,10 +43,11 @@ export default function AddToListModal({
   const handleAdd = async (listId) => {
     setSaving(true)
     try {
+      const payload = { item_id: item.id, quantity: 1, unit: item.default_unit || 'pcs' }
       if (listId) {
-        await onAddToList(listId, { item_id: item.id, quantity, unit: item.default_unit || 'pcs' })
+        await onAddToList(listId, payload)
       } else {
-        await onCreateAndAdd({ item_id: item.id, quantity, unit: item.default_unit || 'pcs' })
+        await onCreateAndAdd(payload)
       }
       onClose()
     } finally {
@@ -123,46 +123,63 @@ export default function AddToListModal({
               {/* Stock section */}
               {stockEnabled && (
                 <section>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-base">📦</span>
-                    <h3 className="text-sm font-semibold">{isHe ? 'מלאי' : 'Stock'}</h3>
+                  <div className="flex items-baseline justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-base">📦</span>
+                      <h3 className="text-sm font-semibold">{isHe ? 'מלאי בבית' : 'Stock at home'}</h3>
+                    </div>
+                    <p className="text-xs text-text-secondary">
+                      {isHe ? 'כמה יש לך' : 'How much you have'}
+                    </p>
                   </div>
                   <div className={`p-3 rounded-xl border ${isLowStock ? 'bg-primary/5 border-primary/30' : 'bg-bg border-neutral/30'}`}>
-                    <p className="text-sm font-medium text-text mb-2.5">
+                    <p className="text-sm font-medium text-text mb-3">
                       {hasStock
                         ? (isHe
-                          ? `במלאי: ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · מלאי נמוך' : ''}`
-                          : `In stock: ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · low' : ''}`)
-                        : (isHe ? 'כרגע לא במלאי' : 'Currently not in stock')}
+                          ? `יש לך ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · המלאי נמוך' : ''}`
+                          : `You have ${stockRow.quantity} ${stockRow.unit}${isLowStock ? ' · running low' : ''}`)
+                        : stockRow
+                          ? (isHe ? 'אזל מהמלאי' : 'Out of stock')
+                          : (isHe ? 'עדיין לא במעקב מלאי' : 'Not tracked in stock yet')}
                     </p>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <button
-                        onClick={() => commitStockQty(stockQty - 1)}
-                        disabled={saving || stockQty <= 0}
-                        className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center font-medium disabled:opacity-50 active:scale-90 transition-transform"
-                      >−</button>
-                      <input
-                        type="number"
-                        value={stockQty}
-                        onChange={(e) => setStockQty(Math.max(0, Number(e.target.value)))}
-                        onBlur={() => commitStockQty(stockQty)}
-                        className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm font-medium"
-                      />
-                      <button
-                        onClick={() => commitStockQty(stockQty + 1)}
-                        disabled={saving}
-                        className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-medium active:scale-90 transition-transform"
-                      >+</button>
-                      <span className="text-xs text-text-secondary ms-2">
-                        {isHe ? 'נמוך ב-' : 'Low at'}
-                      </span>
-                      <input
-                        type="number"
-                        value={stockThreshold}
-                        onChange={(e) => setStockThreshold(Math.max(0, Number(e.target.value)))}
-                        onBlur={() => commitThreshold(stockThreshold)}
-                        className="w-12 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm"
-                      />
+                    <div className="space-y-2.5">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-text-secondary w-24">
+                          {isHe ? 'כמות בבית' : 'Quantity at home'}
+                        </span>
+                        <button
+                          onClick={() => commitStockQty(stockQty - 1)}
+                          disabled={saving || stockQty <= 0}
+                          className="w-9 h-9 rounded-lg bg-neutral/30 flex items-center justify-center font-medium disabled:opacity-50 active:scale-90 transition-transform"
+                        >−</button>
+                        <input
+                          type="number"
+                          value={stockQty}
+                          onChange={(e) => setStockQty(Math.max(0, Number(e.target.value)))}
+                          onBlur={() => commitStockQty(stockQty)}
+                          className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm font-medium"
+                        />
+                        <button
+                          onClick={() => commitStockQty(stockQty + 1)}
+                          disabled={saving}
+                          className="w-9 h-9 rounded-lg bg-primary text-white flex items-center justify-center font-medium active:scale-90 transition-transform"
+                        >+</button>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs text-text-secondary w-24">
+                          {isHe ? 'התראה כש-' : 'Alert me at'}
+                        </span>
+                        <input
+                          type="number"
+                          value={stockThreshold}
+                          onChange={(e) => setStockThreshold(Math.max(0, Number(e.target.value)))}
+                          onBlur={() => commitThreshold(stockThreshold)}
+                          className="w-14 px-2 py-1.5 rounded-lg border border-neutral bg-surface text-text text-center text-sm"
+                        />
+                        <span className="text-xs text-text-secondary">
+                          {isHe ? 'או פחות' : 'or below'}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </section>
@@ -206,45 +223,21 @@ export default function AddToListModal({
                   </div>
                 )}
 
-                {/* Quantity + CTA for adding (or adding to another list) */}
+                {/* CTA for adding (or adding to another list) */}
                 {!alreadyInAllOpen && (
-                  <div className="mt-3 space-y-3">
-                    <div>
-                      <label className="block text-xs text-text-secondary mb-1">
-                        {isHe ? 'כמות' : 'Quantity'}
-                      </label>
-                      <div className="flex items-center gap-3">
-                        <button
-                          onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                          className="w-12 h-12 rounded-xl bg-neutral/30 flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
-                        >−</button>
-                        <input
-                          type="number"
-                          value={quantity}
-                          onChange={(e) => setQuantity(Math.max(1, Number(e.target.value)))}
-                          className="w-20 px-3 py-2 rounded-xl border border-neutral bg-surface text-text text-center text-lg font-medium"
-                        />
-                        <button
-                          onClick={() => setQuantity(quantity + 1)}
-                          className="w-12 h-12 rounded-xl bg-primary text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
-                        >+</button>
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={handleNext}
-                      disabled={saving}
-                      className="w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg disabled:opacity-50 min-h-[48px]"
-                    >
-                      {saving
-                        ? (isHe ? 'מוסיף...' : 'Adding...')
-                        : openLists.length === 0
-                          ? (isHe ? 'צור רשימה והוסף' : 'Create List & Add')
-                          : listsContaining.length > 0
-                            ? (isHe ? 'הוסף לרשימה נוספת' : 'Add to another list')
-                            : (isHe ? 'הוסף לרשימה' : 'Add to List')}
-                    </button>
-                  </div>
+                  <button
+                    onClick={handleNext}
+                    disabled={saving}
+                    className="mt-3 w-full py-3.5 rounded-xl bg-primary text-white font-medium text-lg disabled:opacity-50 min-h-[48px]"
+                  >
+                    {saving
+                      ? (isHe ? 'מוסיף...' : 'Adding...')
+                      : openLists.length === 0
+                        ? (isHe ? 'צור רשימה והוסף' : 'Create List & Add')
+                        : listsContaining.length > 0
+                          ? (isHe ? 'הוסף לרשימה נוספת' : 'Add to another list')
+                          : (isHe ? 'הוסף לרשימה' : 'Add to List')}
+                  </button>
                 )}
               </section>
             </div>
