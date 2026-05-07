@@ -6,6 +6,7 @@ import AppLayout from './components/AppLayout'
 import SignIn from './pages/SignIn'
 import SignUp from './pages/SignUp'
 import ForgotPassword from './pages/ForgotPassword'
+import Authorize from './pages/Authorize'
 import HouseholdSetup from './pages/HouseholdSetup'
 import JoinHousehold from './pages/JoinHousehold'
 import Home from './pages/Home'
@@ -28,6 +29,7 @@ export default function App() {
       <Route path="/signin" element={<SignIn />} />
       <Route path="/signup" element={<SignUp />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/authorize" element={<Authorize />} />
 
       {/* Protected routes (auth required) */}
       <Route element={<ProtectedRoute />}>

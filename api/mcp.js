@@ -1,9 +1,16 @@
 // MCP server for the grocery app — Streamable HTTP transport on Vercel.
 //
-// Auth: callers send `Authorization: Bearer <token>`. The token is hashed
-// (SHA-256) and looked up in `mcp_tokens`, which gives us the household_id
-// and user_id to scope every query. The service-role key bypasses RLS;
-// every query in src/lib/grocery.js explicitly filters by household.
+// Auth: callers send `Authorization: Bearer <token>`. Two flows are supported:
+//   1. Supabase JWT (issued via the OAuth flow at /authorize → /api/oauth/*) —
+//      validated by supabase.auth.getUser(); household_id is resolved from
+//      the user's profile.
+//   2. Static personal token (Profile → Connect to Claude) — SHA-256-hashed
+//      and looked up in `mcp_tokens`, which carries household_id and user_id
+//      directly. JWT is tried first, static is the fallback.
+//
+// Either way we end up with a `ctx = { householdId, userId }` and the rest of
+// the request runs against a service-role client whose queries filter by
+// household_id explicitly (see src/lib/grocery.js).
 //
 // Each request creates a fresh server + transport (stateless mode) so the
 // function can scale horizontally without session state.
@@ -19,6 +26,7 @@ import * as grocery from '../src/lib/grocery.js'
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY
+const ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY
 
 let _supabase = null
 function getSupabase() {
@@ -48,7 +56,7 @@ function hashToken(token) {
   return createHash('sha256').update(token).digest('hex')
 }
 
-async function authenticate(token) {
+async function authenticateStatic(token) {
   const tokenHash = hashToken(token)
   const { data } = await supabase
     .from('mcp_tokens')
@@ -63,6 +71,38 @@ async function authenticate(token) {
     .eq('id', data.id)
     .then(() => {}, () => {})
   return { householdId: data.household_id, userId: data.user_id }
+}
+
+// Supabase JWTs always start with `eyJ` (base64-encoded "{...). We use this as
+// a cheap heuristic to decide which flow to try first — there's no reason to
+// hit Supabase's auth API for a static 64-hex-char personal token.
+function looksLikeJwt(token) {
+  return token.startsWith('eyJ') && token.split('.').length === 3
+}
+
+async function authenticateJwt(token) {
+  if (!ANON_KEY) return null
+  const userClient = createClient(SUPABASE_URL, ANON_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+    global: { headers: { Authorization: `Bearer ${token}` } },
+  })
+  const { data, error } = await userClient.auth.getUser()
+  if (error || !data?.user) return null
+  const { data: profile, error: profileError } = await supabase
+    .from('profiles')
+    .select('household_id')
+    .eq('id', data.user.id)
+    .maybeSingle()
+  if (profileError || !profile?.household_id) return null
+  return { householdId: profile.household_id, userId: data.user.id }
+}
+
+async function authenticate(token) {
+  if (looksLikeJwt(token)) {
+    const ctx = await authenticateJwt(token)
+    if (ctx) return ctx
+  }
+  return authenticateStatic(token)
 }
 
 // --- Result helper ----------------------------------------------------------
