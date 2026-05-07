@@ -101,7 +101,9 @@ Run migration `008_mcp_tokens.sql` against your Supabase project.
 
 ### Connect from Claude
 
-Add the MCP server to Claude Desktop's config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+The server speaks the MCP Streamable HTTP transport. It authenticates with a static bearer token, so connect via Claude Desktop's JSON config or the Claude Code CLI — both support arbitrary auth headers. (The claude.ai web/mobile custom-connector UI currently only supports OAuth-based MCPs, so it can't talk to this server until OAuth is added.)
+
+**Claude Desktop** — edit `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS:
 
 ```json
 {
@@ -117,6 +119,16 @@ Add the MCP server to Claude Desktop's config (`~/Library/Application Support/Cl
 ```
 
 Restart Claude Desktop. The 11 grocery tools should appear in the tool list.
+
+**Claude Code:**
+
+```bash
+claude mcp add --transport http --scope user grocery \
+  https://your-app.vercel.app/api/mcp \
+  --header "Authorization: Bearer <paste-your-token>"
+```
+
+Verify with `claude mcp get grocery` — status should be `✓ Connected`.
 
 ### Revoking tokens
 
