@@ -40,6 +40,11 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        // Routes that must hit the network instead of the cached SPA shell.
+        // /authorize is a public OAuth-flow page that needs the live bundle to
+        // be in sync with the OAuth endpoints; /api/* are serverless routes
+        // and must never be answered from the navigation fallback.
+        navigateFallbackDenylist: [/^\/authorize/, /^\/api\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
