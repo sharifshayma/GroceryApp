@@ -1,4 +1,9 @@
 {
+  "functions": {
+    "api/mcp.js": {
+      "includeFiles": "src/lib/**"
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
