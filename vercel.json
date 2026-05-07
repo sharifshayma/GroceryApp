@@ -2,9 +2,16 @@
   "functions": {
     "api/mcp.js": {
       "includeFiles": "src/lib/**"
+    },
+    "api/oauth/code.js": {
+      "includeFiles": "src/lib/**"
+    },
+    "api/oauth/token.js": {
+      "includeFiles": "src/lib/**"
     }
   },
   "rewrites": [
+    { "source": "/.well-known/oauth-authorization-server", "destination": "/api/oauth-authorization-server" },
     { "source": "/api/(.*)", "destination": "/api/$1" },
     { "source": "/(.*)", "destination": "/index.html" }
   ]
