@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
-import { supabase, withTimeout } from '../lib/supabase'
+import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { useRefreshOnFocus } from './useRefreshOnFocus'
 import { emit, on } from '../lib/events'
+import * as grocery from '../lib/grocery'
 
 export function useTags() {
   const { profile } = useAuth()
@@ -10,34 +11,27 @@ export function useTags() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
+  const ctx = profile?.household_id ? { householdId: profile.household_id, userId: profile.id } : null
+
   const fetch = useCallback(async () => {
-    if (!profile?.household_id) {
+    if (!ctx) {
       setLoading(false)
       return
     }
     console.log('[useTags] Fetching...')
     setLoading(true)
     setError(null)
-
-    const { data, error: fetchErr } = await withTimeout(
-      supabase
-        .from('tags')
-        .select('*')
-        .eq('household_id', profile.household_id)
-        .order('type', { ascending: true })
-        .order('name', { ascending: true })
-    )
-
-    if (data) {
+    try {
+      const data = await grocery.fetchTags(supabase, ctx)
       console.log(`[useTags] Loaded ${data.length} tags`)
       setTags(data)
-    }
-    if (fetchErr) {
-      console.error('[useTags] Failed:', fetchErr)
-      setError(fetchErr.message || 'Failed to load tags')
+    } catch (e) {
+      console.error('[useTags] Failed:', e)
+      setError(e.message || 'Failed to load tags')
     }
     setLoading(false)
-  }, [profile?.household_id])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.household_id, profile?.id])
 
   useEffect(() => {
     fetch()
@@ -46,42 +40,21 @@ export function useTags() {
   useRefreshOnFocus(fetch)
 
   const createTag = async (tag) => {
-    const { data, error } = await supabase
-      .from('tags')
-      .insert({ ...tag, household_id: profile.household_id })
-      .select()
-      .single()
-
-    if (error) throw error
+    const data = await grocery.createTag(supabase, ctx, tag)
     setTags((prev) => [...prev, data])
     return data
   }
 
   const updateTag = async (id, updates) => {
-    const { data, error } = await supabase
-      .from('tags')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single()
-
-    if (error) throw error
+    const data = await grocery.updateTag(supabase, ctx, { tagId: id, updates })
     setTags((prev) => prev.map((t) => (t.id === id ? data : t)))
     return data
   }
 
-  const getTagUsageCount = async (tagId) => {
-    const { count, error } = await supabase
-      .from('item_tags')
-      .select('*', { count: 'exact', head: true })
-      .eq('tag_id', tagId)
-    if (error) return 0
-    return count || 0
-  }
+  const getTagUsageCount = async (tagId) => grocery.getTagItemCount(supabase, ctx, { tagId })
 
   const deleteTag = async (id) => {
-    const { error } = await supabase.from('tags').delete().eq('id', id)
-    if (error) throw error
+    await grocery.deleteTag(supabase, ctx, { tagId: id })
     setTags((prev) => prev.filter((t) => t.id !== id))
     emit('tags-changed')
   }
@@ -97,17 +70,19 @@ export function useItemTags(itemId) {
   const [itemTags, setItemTags] = useState([])
   const [loading, setLoading] = useState(true)
 
+  // No household ctx needed: item_tags rows are scoped through items.
   const fetch = useCallback(async () => {
-    if (!itemId) { setLoading(false); return }
+    if (!itemId) {
+      setLoading(false)
+      return
+    }
     setLoading(true)
-
-    const { data, error } = await supabase
-      .from('item_tags')
-      .select('*, tags(*)')
-      .eq('item_id', itemId)
-
-    if (data) setItemTags(data)
-    if (error) console.error('Failed to fetch item tags:', error)
+    try {
+      const data = await grocery.fetchItemTags(supabase, null, { itemId })
+      setItemTags(data)
+    } catch (e) {
+      console.error('Failed to fetch item tags:', e)
+    }
     setLoading(false)
   }, [itemId])
 
@@ -115,31 +90,18 @@ export function useItemTags(itemId) {
     fetch()
   }, [fetch])
 
-  // Refetch when tags are deleted/changed elsewhere
   useEffect(() => {
     return on('tags-changed', fetch)
   }, [fetch])
 
   const assignTag = async (tagId, notes = null) => {
-    const { data, error } = await supabase
-      .from('item_tags')
-      .upsert({ item_id: itemId, tag_id: tagId, notes }, { onConflict: 'item_id,tag_id' })
-      .select('*, tags(*)')
-      .single()
-
-    if (error) throw error
+    const data = await grocery.assignTagToItem(supabase, null, { itemId, tagId, notes })
     await fetch()
     return data
   }
 
   const removeTag = async (tagId) => {
-    const { error } = await supabase
-      .from('item_tags')
-      .delete()
-      .eq('item_id', itemId)
-      .eq('tag_id', tagId)
-
-    if (error) throw error
+    await grocery.removeTagFromItem(supabase, null, { itemId, tagId })
     setItemTags((prev) => prev.filter((it) => it.tag_id !== tagId))
   }
 

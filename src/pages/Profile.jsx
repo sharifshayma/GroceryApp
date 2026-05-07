@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 import { useAuth } from '../hooks/useAuth'
 import LanguageToggle from '../components/LanguageToggle'
 import FeedbackModal from '../components/FeedbackModal'
+import McpTokensSection from '../components/McpTokensSection'
 
 export default function Profile() {
   const { t, i18n } = useTranslation()
@@ -159,6 +160,9 @@ export default function Profile() {
           </div>
         )}
       </div>
+
+      {/* MCP tokens (Connect to Claude) */}
+      <McpTokensSection />
 
       {/* Feedback */}
       <button
