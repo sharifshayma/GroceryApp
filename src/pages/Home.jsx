@@ -12,6 +12,7 @@ import { on } from '../lib/events'
 import * as grocery from '../lib/grocery'
 import { getCategoryName } from '../lib/categoryName'
 import HorizontalItemRow from '../components/HorizontalItemRow'
+import ItemImage from '../components/ItemImage'
 import AddToListModal from '../components/AddToListModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
@@ -45,6 +46,18 @@ export default function Home() {
       localStorage.setItem('homeCollapsedSections', JSON.stringify([...collapsed]))
     } catch { /* ignore */ }
   }, [collapsed])
+
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      const saved = localStorage.getItem('homeViewMode')
+      return saved === 'items' ? 'items' : 'categories'
+    } catch { return 'categories' }
+  })
+  useEffect(() => {
+    try {
+      localStorage.setItem('homeViewMode', viewMode)
+    } catch { /* ignore */ }
+  }, [viewMode])
   const toggleCollapse = (key) => setCollapsed((prev) => {
     const next = new Set(prev)
     if (next.has(key)) next.delete(key); else next.add(key)
@@ -104,7 +117,7 @@ export default function Home() {
     async function fetchFrequent() {
       const { data } = await supabase
         .from('list_items')
-        .select('item_id, items(id, name, name_he, emoji, default_unit), grocery_lists!inner(household_id)')
+        .select('item_id, items(id, name, name_he, emoji, photo_url, default_unit), grocery_lists!inner(household_id)')
         .eq('is_bought', true)
         .eq('grocery_lists.household_id', profile.household_id)
         .not('items', 'is', null)
@@ -163,7 +176,7 @@ export default function Home() {
   // Clear selections when switching filters
   useEffect(() => {
     setSelectedItems(new Map())
-  }, [activeTag, activeCategory, search])
+  }, [activeTag, activeCategory, search, viewMode])
 
   // Mutual exclusivity: category and tag filters
   useEffect(() => {
@@ -289,7 +302,7 @@ export default function Home() {
             {isSelected && <span className="text-xs">✓</span>}
           </span>
         )}
-        <span className="text-2xl flex-shrink-0">{item.emoji}</span>
+        <ItemImage item={item} size="md" />
         <div className="flex-1 min-w-0">
           <p className={`font-semibold truncate ${inList && !selectMode ? 'line-through' : ''}`}>{item.name}</p>
           {item.categories && (
@@ -314,6 +327,18 @@ export default function Home() {
   const categoryFilteredItems = activeCategory
     ? allItems.filter((i) => i.category_id === activeCategory)
     : null
+
+  // Items view: all items sorted by category, then by name
+  const sortedAllItems = useMemo(() => {
+    const collator = new Intl.Collator(i18n.language === 'he' ? 'he' : 'en')
+    return [...allItems].sort((a, b) => {
+      const aCat = getCategoryName(a.categories) || ''
+      const bCat = getCategoryName(b.categories) || ''
+      const catCmp = collator.compare(aCat, bCat)
+      if (catCmp !== 0) return catCmp
+      return collator.compare(a.name || '', b.name || '')
+    })
+  }, [allItems, i18n.language])
 
   // Tag type groups for filter chips
   const tagGroups = [
@@ -472,7 +497,7 @@ export default function Home() {
           )}
 
           {/* Select / Clear button — only when items are showing */}
-          {(activeTag || activeCategory) && (
+          {(activeTag || activeCategory || viewMode === 'items') && (
             <button
               onClick={() => {
                 if (selectMode) {
@@ -493,12 +518,14 @@ export default function Home() {
           )}
 
           {/* Select all / deselect all (visible in select mode with filtered items) */}
-          {selectMode && (activeTag || activeCategory) && (
+          {selectMode && (activeTag || activeCategory || viewMode === 'items') && (
             <button
               onClick={() => {
                 const currentItems = activeTag && taggedItemData
                   ? allItems.filter((i) => taggedItemData.has(i.id))
-                  : categoryFilteredItems || []
+                  : activeCategory
+                    ? (categoryFilteredItems || [])
+                    : sortedAllItems
                 if (selectedItems.size === currentItems.length) {
                   setSelectedItems(new Map())
                 } else {
@@ -626,32 +653,71 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => toggleCollapse('categories')}
-                className="flex items-center gap-1.5 text-sm font-medium mb-2 py-1 -my-1"
-              >
-                <span>📁</span>
-                <span>{i18n.language === 'he' ? 'קטגוריות' : 'Categories'}</span>
-                <IconChevronDown
-                  className={`w-3 h-3 text-text-secondary transition-transform ${collapsed.has('categories') ? '-rotate-90' : ''}`}
-                />
-              </button>
-              {!collapsed.has('categories') && (
-                <div className="grid grid-cols-3 gap-3">
-                  {categories.map((cat) => (
-                    <Link
-                      key={cat.id}
-                      to={`/category/${cat.id}`}
-                      className="bg-surface rounded-2xl border-b-2 border-primary/30 p-3 flex flex-col items-center justify-center aspect-square shadow-sm hover:shadow-md hover:border-primary/60 transition-all active:scale-95"
-                    >
-                      <span className="text-3xl mb-1">{cat.emoji}</span>
-                      <span className="text-xs font-semibold text-center leading-tight">
-                        {getCategoryName(cat)}
-                      </span>
-                    </Link>
-                  ))}
+              {/* View mode segmented toggle */}
+              <div className="flex items-center justify-between mb-3">
+                <div className="inline-flex rounded-full border border-neutral bg-surface p-0.5">
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('categories')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      viewMode === 'categories'
+                        ? 'bg-primary text-white'
+                        : 'text-text-secondary'
+                    }`}
+                  >
+                    📁 {i18n.language === 'he' ? 'קטגוריות' : 'Categories'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setViewMode('items')}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      viewMode === 'items'
+                        ? 'bg-primary text-white'
+                        : 'text-text-secondary'
+                    }`}
+                  >
+                    📋 {i18n.language === 'he' ? 'פריטים' : 'Items'}
+                  </button>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => toggleCollapse('categories')}
+                  className="p-1 -m-1 text-text-secondary"
+                  aria-label={collapsed.has('categories') ? 'Expand' : 'Collapse'}
+                >
+                  <IconChevronDown
+                    className={`w-4 h-4 transition-transform ${collapsed.has('categories') ? '-rotate-90' : ''}`}
+                  />
+                </button>
+              </div>
+
+              {!collapsed.has('categories') && (
+                viewMode === 'items' ? (
+                  sortedAllItems.length === 0 ? (
+                    <p className="text-center text-text-secondary py-6">
+                      {t('empty.noItems')}
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {sortedAllItems.map((item) => renderItemCard(item, null))}
+                    </div>
+                  )
+                ) : (
+                  <div className="grid grid-cols-3 gap-3">
+                    {categories.map((cat) => (
+                      <Link
+                        key={cat.id}
+                        to={`/category/${cat.id}`}
+                        className="bg-surface rounded-2xl border-b-2 border-primary/30 p-3 flex flex-col items-center justify-center aspect-square shadow-sm hover:shadow-md hover:border-primary/60 transition-all active:scale-95"
+                      >
+                        <span className="text-3xl mb-1">{cat.emoji}</span>
+                        <span className="text-xs font-semibold text-center leading-tight">
+                          {getCategoryName(cat)}
+                        </span>
+                      </Link>
+                    ))}
+                  </div>
+                )
               )}
             </>
           )}
