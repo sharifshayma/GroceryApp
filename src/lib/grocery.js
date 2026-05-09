@@ -581,12 +581,12 @@ export async function fetchNeedToBuy(supabase, ctx) {
   const [stockRes, listRes] = await Promise.all([
     supabase
       .from('stock')
-      .select('item_id, quantity, low_threshold, items(id, name, name_he, emoji, default_unit)')
+      .select('item_id, quantity, low_threshold, items(id, name, name_he, emoji, photo_url, default_unit)')
       .eq('household_id', ctx.householdId),
     supabase
       .from('list_items')
       .select(
-        'item_id, quantity, unit, items(id, name, name_he, emoji, default_unit), grocery_lists!inner(id, name, status, household_id)'
+        'item_id, quantity, unit, items(id, name, name_he, emoji, photo_url, default_unit), grocery_lists!inner(id, name, status, household_id)'
       )
       .eq('is_bought', false)
       .in('grocery_lists.status', ['draft', 'active'])

@@ -12,6 +12,7 @@ import { on } from '../lib/events'
 import * as grocery from '../lib/grocery'
 import { getCategoryName } from '../lib/categoryName'
 import HorizontalItemRow from '../components/HorizontalItemRow'
+import ItemImage from '../components/ItemImage'
 import AddToListModal from '../components/AddToListModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
@@ -116,7 +117,7 @@ export default function Home() {
     async function fetchFrequent() {
       const { data } = await supabase
         .from('list_items')
-        .select('item_id, items(id, name, name_he, emoji, default_unit), grocery_lists!inner(household_id)')
+        .select('item_id, items(id, name, name_he, emoji, photo_url, default_unit), grocery_lists!inner(household_id)')
         .eq('is_bought', true)
         .eq('grocery_lists.household_id', profile.household_id)
         .not('items', 'is', null)
@@ -301,7 +302,7 @@ export default function Home() {
             {isSelected && <span className="text-xs">✓</span>}
           </span>
         )}
-        <span className="text-2xl flex-shrink-0">{item.emoji}</span>
+        <ItemImage item={item} size="md" />
         <div className="flex-1 min-w-0">
           <p className={`font-semibold truncate ${inList && !selectMode ? 'line-through' : ''}`}>{item.name}</p>
           {item.categories && (
