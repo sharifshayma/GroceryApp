@@ -203,6 +203,34 @@ async function resolveAnyList(ctx, query) {
   }
 }
 
+async function resolveCategory(ctx, query) {
+  const trimmed = (query || '').trim()
+  if (!trimmed) return { ok: false, error: { error: 'missing_arg', arg: 'category_query' } }
+  const matches = await grocery.searchCategories(supabase, ctx, { query: trimmed })
+  if (matches.length === 0) {
+    return { ok: false, error: { error: 'no_match', entity: 'category', query: trimmed } }
+  }
+  const lower = trimmed.toLowerCase()
+  const exact = matches.find(
+    (c) => (c.name || '').toLowerCase() === lower || (c.name_he || '').toLowerCase() === lower
+  )
+  if (exact) return { ok: true, value: exact }
+  if (matches.length === 1) return { ok: true, value: matches[0] }
+  return {
+    ok: false,
+    error: {
+      error: 'ambiguous',
+      entity: 'category',
+      candidates: matches.slice(0, 3).map((c) => ({
+        id: c.id,
+        name: c.name,
+        name_he: c.name_he,
+        emoji: c.emoji,
+      })),
+    },
+  }
+}
+
 async function resolveTag(ctx, name, type) {
   const trimmed = (name || '').trim()
   if (!trimmed) return { ok: false, error: { error: 'no_match', entity: 'tag', query: name } }
@@ -790,6 +818,96 @@ Use for "what recipes do I have?", "what stores are tagged?", or to discover tag
           color: t.color,
           item_count: t.item_count,
         })),
+      })
+    }
+  )
+
+  // ---- 12. create_item ----
+  server.registerTool(
+    'create_item',
+    {
+      title: 'Create a new catalog item',
+      description: `Create a new catalog item in the household. The item must not already exist — call search_items first; only use create_item when that returns no_match. After creation, the new item is immediately usable by add_to_list, set_stock, tag_item, etc.
+
+Use for "add zucchini to the catalog" or first-time-mentioned items like "I want to start tracking tahini". If the user says "add zucchini to my list" and zucchini already exists, use add_to_list instead.
+
+Either name or name_he is required. The missing one is copied from the other. category_query is required — categories cannot be omitted.`,
+      inputSchema: {
+        name: z.string().optional().describe('English item name. If omitted, copied from name_he.'),
+        name_he: z.string().optional().describe('Hebrew item name. If omitted, copied from name.'),
+        category_query: z.string().describe('Fuzzy category name in English or Hebrew. Required.'),
+        emoji: z.string().optional().describe('Single emoji for the item. Optional.'),
+        default_unit: z.string().optional().describe('Default unit, e.g. "pcs", "kg", "L". Default "pcs".'),
+        auto_track_stock: z
+          .boolean()
+          .optional()
+          .describe('When true, marking this item bought on a list also increments its stock. Default false.'),
+      },
+    },
+    async ({ name, name_he, category_query, emoji, default_unit, auto_track_stock }) => {
+      const nameTrimmed = (name || '').trim()
+      const nameHeTrimmed = (name_he || '').trim()
+      if (!nameTrimmed && !nameHeTrimmed) return tx({ error: 'missing_name' })
+      const finalName = nameTrimmed || nameHeTrimmed
+      const finalNameHe = nameHeTrimmed || nameTrimmed
+
+      const dedupQueries = finalName === finalNameHe ? [finalName] : [finalName, finalNameHe]
+      const searches = await Promise.all(
+        dedupQueries.map((q) => grocery.searchItems(supabase, ctx, { query: q, limit: 5 }))
+      )
+      const candidates = searches.flat()
+      const lowerName = finalName.toLowerCase()
+      const lowerNameHe = finalNameHe.toLowerCase()
+      const existing = candidates.find((i) => {
+        const n = (i.name || '').toLowerCase()
+        const nh = (i.name_he || '').toLowerCase()
+        return n === lowerName || n === lowerNameHe || nh === lowerName || nh === lowerNameHe
+      })
+      if (existing) {
+        return tx({
+          error: 'already_exists',
+          item: {
+            id: existing.id,
+            name: existing.name,
+            name_he: existing.name_he,
+            emoji: existing.emoji,
+            default_unit: existing.default_unit,
+            category: existing.categories
+              ? { id: existing.categories.id, name: existing.categories.name, emoji: existing.categories.emoji }
+              : null,
+          },
+        })
+      }
+
+      const catR = await resolveCategory(ctx, category_query)
+      if (!catR.ok) return tx(catR.error)
+      const category = catR.value
+
+      const created = await grocery.createItem(supabase, ctx, {
+        item: {
+          name: finalName,
+          name_he: finalNameHe,
+          category_id: category.id,
+          emoji: emoji || null,
+          default_unit: default_unit || 'pcs',
+          auto_track_stock: auto_track_stock ?? false,
+        },
+      })
+
+      return tx({
+        item: {
+          id: created.id,
+          name: created.name,
+          name_he: created.name_he,
+          emoji: created.emoji,
+          default_unit: created.default_unit,
+          auto_track_stock: created.auto_track_stock,
+          category: {
+            id: category.id,
+            name: created.categories?.name || category.name,
+            emoji: created.categories?.emoji || category.emoji,
+          },
+        },
       })
     }
   )

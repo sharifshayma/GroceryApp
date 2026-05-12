@@ -120,6 +120,20 @@ export async function fetchCategories(supabase, ctx) {
   return data || []
 }
 
+export async function searchCategories(supabase, ctx, { query, limit = 5 }) {
+  const trimmed = (query || '').trim()
+  if (!trimmed) return []
+  const pattern = `%${trimmed.replace(/[%_]/g, (c) => `\\${c}`)}%`
+  const { data, error } = await supabase
+    .from('categories')
+    .select('id, name, name_he, emoji')
+    .eq('household_id', ctx.householdId)
+    .or(`name.ilike.${pattern},name_he.ilike.${pattern}`)
+    .limit(Math.min(limit, 10))
+  if (error) throw error
+  return data || []
+}
+
 // ============================================================================
 // Stock
 // ============================================================================
