@@ -255,7 +255,10 @@ export default function Lists() {
                             <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
                           )}
                         </div>
-                        <IconChevronRight className="w-4 h-4 text-text-secondary opacity-40 flex-shrink-0" />
+                        <span className="flex-shrink-0 inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary uppercase tracking-wide">
+                          {i18n.language === 'he' ? 'פרטים' : 'Details'}
+                          <IconChevronRight className="w-3 h-3" />
+                        </span>
                       </button>
                       <span className="text-xs text-text-secondary flex-shrink-0 ms-1">
                         {li.quantity} {li.unit}
@@ -296,7 +299,10 @@ export default function Lists() {
                           <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
                         )}
                       </div>
-                      <IconChevronRight className="w-4 h-4 text-text-secondary opacity-40 flex-shrink-0" />
+                      <span className="flex-shrink-0 inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary uppercase tracking-wide">
+                          {i18n.language === 'he' ? 'פרטים' : 'Details'}
+                          <IconChevronRight className="w-3 h-3" />
+                        </span>
                     </button>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button
