@@ -588,6 +588,102 @@ export async function fetchItemTags(supabase, ctx, { itemId }) {
 }
 
 // ============================================================================
+// Price history
+// ============================================================================
+
+export async function fetchPriceHistory(supabase, ctx, { itemId }) {
+  const { data, error } = await supabase
+    .from('price_history')
+    .select('id, item_id, price, currency, store, barcode, description, purchased_at, logged_by, created_at')
+    .eq('household_id', ctx.householdId)
+    .eq('item_id', itemId)
+    .order('purchased_at', { ascending: false })
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return data || []
+}
+
+// Insert a price entry. If `store` is given and no `tags` row of type='store'
+// with that name exists for the household, we create one so it shows up in
+// the store autocomplete next time.
+export async function addPriceEntry(
+  supabase,
+  ctx,
+  { itemId, price, store, purchasedAt, barcode, description, currency = 'ILS' }
+) {
+  const trimmedStore = (store || '').trim()
+  if (trimmedStore) await ensureStoreTag(supabase, ctx, { name: trimmedStore })
+
+  const row = {
+    household_id: ctx.householdId,
+    item_id: itemId,
+    price,
+    currency,
+    store: trimmedStore || null,
+    barcode: (barcode || '').trim() || null,
+    description: (description || '').trim() || null,
+    purchased_at: purchasedAt || new Date().toISOString().slice(0, 10),
+    logged_by: ctx.userId,
+  }
+  const { data, error } = await supabase
+    .from('price_history')
+    .insert(row)
+    .select('id, item_id, price, currency, store, barcode, description, purchased_at, logged_by, created_at')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function updatePriceEntry(supabase, ctx, { entryId, updates }) {
+  const clean = {}
+  if (updates.price !== undefined) clean.price = updates.price
+  if (updates.store !== undefined) {
+    const trimmed = (updates.store || '').trim()
+    if (trimmed) await ensureStoreTag(supabase, ctx, { name: trimmed })
+    clean.store = trimmed || null
+  }
+  if (updates.barcode !== undefined) clean.barcode = (updates.barcode || '').trim() || null
+  if (updates.description !== undefined) clean.description = (updates.description || '').trim() || null
+  if (updates.purchased_at !== undefined) clean.purchased_at = updates.purchased_at
+
+  const { data, error } = await supabase
+    .from('price_history')
+    .update(clean)
+    .eq('id', entryId)
+    .eq('household_id', ctx.householdId)
+    .select('id, item_id, price, currency, store, barcode, description, purchased_at, logged_by, created_at')
+    .single()
+  if (error) throw error
+  return data
+}
+
+export async function deletePriceEntry(supabase, ctx, { entryId }) {
+  const { error } = await supabase
+    .from('price_history')
+    .delete()
+    .eq('id', entryId)
+    .eq('household_id', ctx.householdId)
+  if (error) throw error
+}
+
+// Get-or-create a store tag for the household, matching case-insensitively
+// on name. Returns the tag row.
+export async function ensureStoreTag(supabase, ctx, { name }) {
+  const trimmed = (name || '').trim()
+  if (!trimmed) return null
+  const { data: existing, error: findErr } = await supabase
+    .from('tags')
+    .select('*')
+    .eq('household_id', ctx.householdId)
+    .eq('type', 'store')
+    .ilike('name', trimmed)
+    .maybeSingle()
+  if (findErr) throw findErr
+  if (existing) return existing
+  return createTag(supabase, ctx, { name: trimmed, type: 'store' })
+}
+
+// ============================================================================
 // Need-to-buy / status views
 // ============================================================================
 

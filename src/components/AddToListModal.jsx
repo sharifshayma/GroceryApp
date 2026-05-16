@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import PriceHistorySection from './PriceHistorySection'
 
 export default function AddToListModal({
   item,
@@ -238,6 +239,9 @@ export default function AddToListModal({
                   </div>
                 </section>
               )}
+
+              {/* Pricing section */}
+              <PriceHistorySection itemId={item.id} />
 
               {/* Lists section */}
               <section>
