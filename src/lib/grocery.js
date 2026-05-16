@@ -666,6 +666,25 @@ export async function deletePriceEntry(supabase, ctx, { entryId }) {
   if (error) throw error
 }
 
+// For a set of items, return the cheapest logged price per item as
+// Map<item_id, { price, currency, store, purchased_at }>. Items with no
+// price history are absent from the map.
+export async function fetchCheapestPrices(supabase, ctx, { itemIds }) {
+  const map = new Map()
+  if (!itemIds || itemIds.length === 0) return map
+  const { data, error } = await supabase
+    .from('price_history')
+    .select('item_id, price, currency, store, purchased_at')
+    .eq('household_id', ctx.householdId)
+    .in('item_id', itemIds)
+  if (error) throw error
+  for (const row of data || []) {
+    const cur = map.get(row.item_id)
+    if (!cur || Number(row.price) < Number(cur.price)) map.set(row.item_id, row)
+  }
+  return map
+}
+
 // Get-or-create a store tag for the household, matching case-insensitively
 // on name. Returns the tag row.
 export async function ensureStoreTag(supabase, ctx, { name }) {
