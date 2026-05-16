@@ -6,6 +6,8 @@ import { useStock } from '../hooks/useStock'
 import { supabase } from '../lib/supabase'
 import { emit } from '../lib/events'
 import { getCategoryName } from '../lib/categoryName'
+import * as grocery from '../lib/grocery'
+import { useAuth } from '../hooks/useAuth'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import ShareSheet from '../components/ShareSheet'
@@ -28,6 +30,8 @@ export default function Lists() {
   const { listId: paramListId } = useParams()
   const navigate = useNavigate()
   const { lists, loading, error, updateListStatus, deleteList, duplicateList, completeAndCarryOver, toggleBought, updateListItem, refetch } = useLists()
+  const { profile } = useAuth()
+  const [cheapestPrices, setCheapestPrices] = useState(new Map())
   const [shoppingListId, setShoppingListId] = useState(null)
   const [dismissedActiveList, setDismissedActiveList] = useState(false)
   const [shareList, setShareList] = useState(null)
@@ -47,6 +51,37 @@ export default function Lists() {
       }
     }
   }, [paramListId, lists, shoppingListId, navigate])
+
+  // Load cheapest-price hint for the items currently in the shopping view.
+  const activeListForPrices = lists.find((l) => l.status === 'active')
+  const shoppingListForPrices = shoppingListId
+    ? lists.find((l) => l.id === shoppingListId)
+    : (dismissedActiveList ? null : activeListForPrices)
+  const itemIdsKey = (shoppingListForPrices?.list_items || [])
+    .map((li) => li.item_id)
+    .filter(Boolean)
+    .sort()
+    .join(',')
+  useEffect(() => {
+    const householdId = profile?.household_id
+    if (!householdId || !itemIdsKey) {
+      setCheapestPrices(new Map())
+      return
+    }
+    const ids = itemIdsKey.split(',')
+    let cancelled = false
+    grocery
+      .fetchCheapestPrices(supabase, { householdId, userId: profile.id }, { itemIds: ids })
+      .then((m) => {
+        if (!cancelled) setCheapestPrices(m)
+      })
+      .catch(() => {
+        if (!cancelled) setCheapestPrices(new Map())
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [profile?.household_id, profile?.id, itemIdsKey])
 
   if (loading) return <LoadingSpinner fullScreen={false} />
   if (error) return <ErrorBanner error={error} onRetry={refetch} />
@@ -181,6 +216,7 @@ export default function Lists() {
             <div className="space-y-1.5">
               {catItems.map((li) => {
                 if (li.is_bought) {
+                  const cheapestBought = cheapestPrices.get(li.item_id)
                   return (
                     <button
                       key={li.id}
@@ -195,6 +231,12 @@ export default function Lists() {
                         <span className="text-sm font-medium block line-through text-text-secondary">
                           {li.items?.name || '?'}
                         </span>
+                        {cheapestBought && (
+                          <span className="text-xs text-green-dark block truncate">
+                            💰 ₪{Number(cheapestBought.price).toFixed(2)}
+                            {cheapestBought.store ? ` · ${cheapestBought.store}` : ''}
+                          </span>
+                        )}
                         {li.notes && (
                           <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
                         )}
@@ -206,6 +248,7 @@ export default function Lists() {
                   )
                 }
 
+                const cheapest = cheapestPrices.get(li.item_id)
                 return (
                   <div
                     key={li.id}
@@ -220,6 +263,12 @@ export default function Lists() {
                       <span className="text-lg">{li.items?.emoji || '🛒'}</span>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium block truncate">{li.items?.name || '?'}</span>
+                        {cheapest && (
+                          <span className="text-xs text-green-dark block truncate">
+                            💰 ₪{Number(cheapest.price).toFixed(2)}
+                            {cheapest.store ? ` · ${cheapest.store}` : ''}
+                          </span>
+                        )}
                         {li.notes && (
                           <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
                         )}
