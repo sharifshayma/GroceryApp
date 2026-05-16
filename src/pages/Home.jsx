@@ -12,6 +12,7 @@ import { on } from '../lib/events'
 import * as grocery from '../lib/grocery'
 import { getCategoryName } from '../lib/categoryName'
 import HorizontalItemRow from '../components/HorizontalItemRow'
+import ItemCard from '../components/ItemCard'
 import AddToListModal from '../components/AddToListModal'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
@@ -66,6 +67,10 @@ export default function Home() {
   const [showCategoryDropdown, setShowCategoryDropdown] = useState(false)
   const [expandedTagType, setExpandedTagType] = useState(null)
   const [showSettings, setShowSettings] = useState(false)
+  // Home category browser — pills at the top of the default view, with the
+  // selected category's items rendered directly below. Defaults to the first
+  // category once they load.
+  const [homeCategoryId, setHomeCategoryId] = useState(null)
 
   // Refs for click-outside dropdown closing
   const settingsRef = useRef(null)
@@ -172,6 +177,13 @@ export default function Home() {
   useEffect(() => {
     if (activeTag) setActiveCategory(null)
   }, [activeTag])
+
+  // Default the home category browser to the first category once they load.
+  useEffect(() => {
+    if (!homeCategoryId && categories.length > 0) {
+      setHomeCategoryId(categories[0].id)
+    }
+  }, [homeCategoryId, categories])
 
   if (loading) return <LoadingSpinner fullScreen={false} />
   if (categoriesError) return <ErrorBanner error={categoriesError} onRetry={refetchCategories} />
@@ -626,33 +638,54 @@ export default function Home() {
             </div>
           ) : (
             <>
-              <button
-                type="button"
-                onClick={() => toggleCollapse('categories')}
-                className="flex items-center gap-1.5 text-sm font-medium mb-2 py-1 -my-1"
-              >
-                <span>📁</span>
-                <span>{i18n.language === 'he' ? 'קטגוריות' : 'Categories'}</span>
-                <IconChevronDown
-                  className={`w-3 h-3 text-text-secondary transition-transform ${collapsed.has('categories') ? '-rotate-90' : ''}`}
-                />
-              </button>
-              {!collapsed.has('categories') && (
-                <div className="grid grid-cols-3 gap-3">
-                  {categories.map((cat) => (
-                    <Link
+              {/* Category pills — pick a category to browse its items inline */}
+              <div className="flex gap-2 overflow-x-auto no-scrollbar mb-3 -mx-4 px-4">
+                {categories.map((cat) => {
+                  const isActive = cat.id === homeCategoryId
+                  return (
+                    <button
                       key={cat.id}
-                      to={`/category/${cat.id}`}
-                      className="bg-surface rounded-2xl border-b-2 border-primary/30 p-3 flex flex-col items-center justify-center aspect-square shadow-sm hover:shadow-md hover:border-primary/60 transition-all active:scale-95"
+                      onClick={() => setHomeCategoryId(cat.id)}
+                      className={`flex-shrink-0 px-3 py-2 rounded-full text-xs font-medium transition-colors min-h-[36px] ${
+                        isActive
+                          ? 'bg-primary text-white'
+                          : 'bg-white text-text-secondary border border-neutral/30 hover:text-text'
+                      }`}
                     >
-                      <span className="text-3xl mb-1">{cat.emoji}</span>
-                      <span className="text-xs font-semibold text-center leading-tight">
-                        {getCategoryName(cat)}
-                      </span>
-                    </Link>
-                  ))}
-                </div>
-              )}
+                      {cat.emoji} {getCategoryName(cat)}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {/* Items for the selected pill */}
+              {(() => {
+                const homeCategoryItems = homeCategoryId
+                  ? allItems.filter((i) => i.category_id === homeCategoryId)
+                  : []
+                if (homeCategoryItems.length === 0) {
+                  const cat = categories.find((c) => c.id === homeCategoryId)
+                  return (
+                    <div className="text-center py-12">
+                      <span className="text-5xl mb-3 block">{cat?.emoji || '📦'}</span>
+                      <p className="text-text-secondary">{t('empty.noItems')}</p>
+                    </div>
+                  )
+                }
+                return (
+                  <div className="space-y-2">
+                    {homeCategoryItems.map((item) => (
+                      <ItemCard
+                        key={item.id}
+                        item={item}
+                        showActions={false}
+                        isInList={itemsInList.has(item.id)}
+                        onAddToList={(i) => setAddToListItem(i)}
+                      />
+                    ))}
+                  </div>
+                )
+              })()}
             </>
           )}
         </>
