@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '../lib/supabase'
 import { useAuth } from './useAuth'
 import { useRefreshOnFocus } from './useRefreshOnFocus'
@@ -7,8 +7,16 @@ import * as grocery from '../lib/grocery'
 export function useLists() {
   const { profile } = useAuth()
   const [lists, setLists] = useState([])
+  // `loading` only flips true for the initial load. Background refetches
+  // (focus-refresh, post-mutation reconciliation if any) leave it false so
+  // the page doesn't unmount into a spinner mid-interaction.
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const hasLoadedRef = useRef(false)
+  // Keep the latest `lists` accessible inside async mutators without
+  // re-creating callbacks on every render.
+  const listsRef = useRef(lists)
+  useEffect(() => { listsRef.current = lists }, [lists])
 
   const ctx = profile?.household_id ? { householdId: profile.household_id, userId: profile.id } : null
 
@@ -19,12 +27,13 @@ export function useLists() {
       return
     }
     console.log('[useLists] Fetching lists for household:', profile.household_id)
-    setLoading(true)
+    if (!hasLoadedRef.current) setLoading(true)
     setError(null)
     try {
       const data = await grocery.fetchLists(supabase, ctx)
       console.log(`[useLists] Loaded ${data.length} lists`)
       setLists(data)
+      hasLoadedRef.current = true
     } catch (e) {
       console.error('[useLists] Failed to fetch lists:', e)
       setError(e.message || 'Failed to load lists')
@@ -78,25 +87,74 @@ export function useLists() {
     await fetch()
   }
 
-  const removeItemFromList = async (listItemId) => {
-    await grocery.removeItemFromList(supabase, ctx, { listItemId })
-    await fetch()
+  // Apply a transform to `lists` locally, then run the server mutation.
+  // On failure, restore the pre-mutation snapshot and surface the error.
+  // This is what keeps the shopping view feeling instant — the UI moves
+  // synchronously; the network call rides in the background.
+  const optimistic = async (transform, mutation) => {
+    const snapshot = listsRef.current
+    setLists(transform(snapshot))
+    try {
+      await mutation()
+    } catch (e) {
+      console.error('[useLists] Mutation failed, rolling back:', e)
+      setLists(snapshot)
+      setError(e.message || 'Failed to save')
+      throw e
+    }
   }
 
-  const updateListItem = async (listItemId, updates) => {
-    await grocery.updateListItemFields(supabase, ctx, { listItemId, updates })
-    await fetch()
-  }
+  const removeItemFromList = (listItemId) =>
+    optimistic(
+      (prev) =>
+        prev.map((l) => ({
+          ...l,
+          list_items: (l.list_items || []).filter((li) => li.id !== listItemId),
+        })),
+      () => grocery.removeItemFromList(supabase, ctx, { listItemId })
+    )
 
-  const updateListName = async (listId, name) => {
-    await grocery.updateListName(supabase, ctx, { listId, name })
-    await fetch()
-  }
+  const updateListItem = (listItemId, updates) =>
+    optimistic(
+      (prev) =>
+        prev.map((l) => ({
+          ...l,
+          list_items: (l.list_items || []).map((li) =>
+            li.id === listItemId ? { ...li, ...updates } : li
+          ),
+        })),
+      () => grocery.updateListItemFields(supabase, ctx, { listItemId, updates })
+    )
 
-  const toggleBought = async (listItemId, isBought, boughtQuantity = null) => {
-    await grocery.setListItemBought(supabase, ctx, { listItemId, isBought, boughtQuantity })
-    await fetch()
-  }
+  const updateListName = (listId, name) =>
+    optimistic(
+      (prev) => prev.map((l) => (l.id === listId ? { ...l, name } : l)),
+      () => grocery.updateListName(supabase, ctx, { listId, name })
+    )
+
+  const toggleBought = (listItemId, isBought, boughtQuantity = null) =>
+    optimistic(
+      (prev) =>
+        prev.map((l) => ({
+          ...l,
+          list_items: (l.list_items || []).map((li) => {
+            if (li.id !== listItemId) return li
+            const next = {
+              ...li,
+              is_bought: isBought,
+              bought_at: isBought ? new Date().toISOString() : null,
+            }
+            if (isBought && boughtQuantity !== null) next.quantity = boughtQuantity
+            return next
+          }),
+        })),
+      () =>
+        grocery.setListItemBought(supabase, ctx, {
+          listItemId,
+          isBought,
+          boughtQuantity,
+        })
+    )
 
   return {
     lists,
