@@ -911,6 +911,147 @@ Either name or name_he is required. The missing one is copied from the other. ca
       })
     }
   )
+
+  // ---- 13. list_prices ----
+  server.registerTool(
+    'list_prices',
+    {
+      title: 'List price history for an item',
+      description: `Read all logged prices for an item, newest first. Each entry has id, price, currency, store, barcode, description, and purchased_at (YYYY-MM-DD).
+
+Use this for "how much did I pay for milk last time?", "where was eggs cheapest?", or before edit_price / delete_price to find the right entry id.`,
+      inputSchema: {
+        item_query: z.string().describe('Fuzzy item name.'),
+      },
+    },
+    async ({ item_query }) => {
+      const itemR = await resolveItem(ctx, item_query)
+      if (!itemR.ok) return tx(itemR.error)
+      const item = itemR.value
+      const entries = await grocery.fetchPriceHistory(supabase, ctx, { itemId: item.id })
+      return tx({
+        item: { id: item.id, name: item.name, name_he: item.name_he },
+        entries: entries.map((e) => ({
+          id: e.id,
+          price: e.price,
+          currency: e.currency,
+          store: e.store,
+          barcode: e.barcode,
+          description: e.description,
+          purchased_at: e.purchased_at,
+        })),
+      })
+    }
+  )
+
+  // ---- 14. log_price ----
+  server.registerTool(
+    'log_price',
+    {
+      title: 'Log a price for an item',
+      description: `Record a price paid for an item. Date defaults to today. Store is freeform; if it doesn't match an existing store tag in the household, a new store tag is auto-created so it shows up in the in-app autocomplete next time. Barcode and description are optional. Currency defaults to ILS.
+
+Use this for "milk was 8.90 at Shufersal today", "I paid 25 for diapers", or to backfill a past price with a date.`,
+      inputSchema: {
+        item_query: z.string().describe('Fuzzy item name.'),
+        price: z.number().positive().describe('Price paid, > 0.'),
+        store: z.string().optional().describe('Store name. Will be auto-created as a store tag if new.'),
+        purchased_at: z
+          .string()
+          .regex(/^\d{4}-\d{2}-\d{2}$/)
+          .optional()
+          .describe('ISO date YYYY-MM-DD. Defaults to today.'),
+        barcode: z.string().optional().describe('Product barcode. Optional.'),
+        description: z.string().optional().describe('Free-text note (size, brand, etc.). Optional.'),
+      },
+    },
+    async ({ item_query, price, store, purchased_at, barcode, description }) => {
+      const itemR = await resolveItem(ctx, item_query)
+      if (!itemR.ok) return tx(itemR.error)
+      const item = itemR.value
+      const entry = await grocery.addPriceEntry(supabase, ctx, {
+        itemId: item.id,
+        price,
+        store,
+        purchasedAt: purchased_at,
+        barcode,
+        description,
+      })
+      return tx({
+        item: { id: item.id, name: item.name },
+        entry: {
+          id: entry.id,
+          price: entry.price,
+          currency: entry.currency,
+          store: entry.store,
+          barcode: entry.barcode,
+          description: entry.description,
+          purchased_at: entry.purchased_at,
+        },
+      })
+    }
+  )
+
+  // ---- 15. edit_price ----
+  server.registerTool(
+    'edit_price',
+    {
+      title: 'Edit a price entry',
+      description: `Update one or more fields of an existing price entry. Use list_prices first to find the entry_id. Only fields you pass are changed; omitted fields are left as-is. Same store auto-tag behavior as log_price.`,
+      inputSchema: {
+        entry_id: z.string().uuid().describe('Price entry id from list_prices.'),
+        price: z.number().positive().optional(),
+        store: z.string().optional(),
+        purchased_at: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+        barcode: z.string().optional(),
+        description: z.string().optional(),
+      },
+    },
+    async ({ entry_id, price, store, purchased_at, barcode, description }) => {
+      const updates = {}
+      if (price !== undefined) updates.price = price
+      if (store !== undefined) updates.store = store
+      if (purchased_at !== undefined) updates.purchased_at = purchased_at
+      if (barcode !== undefined) updates.barcode = barcode
+      if (description !== undefined) updates.description = description
+      if (Object.keys(updates).length === 0) return tx({ error: 'missing_change' })
+      try {
+        const entry = await grocery.updatePriceEntry(supabase, ctx, { entryId: entry_id, updates })
+        return tx({
+          entry: {
+            id: entry.id,
+            price: entry.price,
+            currency: entry.currency,
+            store: entry.store,
+            barcode: entry.barcode,
+            description: entry.description,
+            purchased_at: entry.purchased_at,
+          },
+        })
+      } catch (e) {
+        if (e?.code === 'PGRST116') return tx({ error: 'not_found', entry_id })
+        throw e
+      }
+    }
+  )
+
+  // ---- 16. delete_price ----
+  server.registerTool(
+    'delete_price',
+    {
+      title: 'Delete a price entry',
+      description: `Delete one logged price by entry_id. Use list_prices first to find the id. Requires confirm=true.`,
+      inputSchema: {
+        entry_id: z.string().uuid().describe('Price entry id from list_prices.'),
+        confirm: z.boolean().describe('Must be true to delete.'),
+      },
+    },
+    async ({ entry_id, confirm }) => {
+      if (confirm !== true) return tx({ error: 'not_confirmed' })
+      await grocery.deletePriceEntry(supabase, ctx, { entryId: entry_id })
+      return tx({ entry_id, action: 'deleted' })
+    }
+  )
 }
 
 // --- HTTP handler -----------------------------------------------------------
