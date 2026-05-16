@@ -12,7 +12,8 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
 import ShareSheet from '../components/ShareSheet'
 import CarryOverModal from '../components/CarryOverModal'
-import { IconBack, IconEdit, IconShare, IconCheck, IconChevronDown, IconCopy, IconTrash, IllustrationNoLists } from '../components/Icons'
+import AddToListModal from '../components/AddToListModal'
+import { IconBack, IconEdit, IconShare, IconCheck, IconChevronDown, IconChevronRight, IconCopy, IconTrash, IllustrationNoLists } from '../components/Icons'
 
 function formatDate(dateStr, lang) {
   const d = new Date(dateStr)
@@ -29,7 +30,7 @@ export default function Lists() {
   const { t, i18n } = useTranslation()
   const { listId: paramListId } = useParams()
   const navigate = useNavigate()
-  const { lists, loading, error, updateListStatus, deleteList, duplicateList, completeAndCarryOver, toggleBought, updateListItem, refetch } = useLists()
+  const { lists, loading, error, updateListStatus, deleteList, duplicateList, completeAndCarryOver, toggleBought, updateListItem, removeItemFromList, addItemToList, createList, refetch } = useLists()
   const { profile } = useAuth()
   const [cheapestPrices, setCheapestPrices] = useState(new Map())
   const [shoppingListId, setShoppingListId] = useState(null)
@@ -38,7 +39,8 @@ export default function Lists() {
   const [expandedListId, setExpandedListId] = useState(null)
   const [showCarryOver, setShowCarryOver] = useState(false)
   const [carryOverSaving, setCarryOverSaving] = useState(false)
-  const { addToStockIncremental, removeFromStockByItemId, refetch: refetchStock } = useStock()
+  const [detailItem, setDetailItem] = useState(null)
+  const { stockItems, addToStock, updateQuantity: updateStockQuantity, updateThreshold: updateStockThreshold, addToStockIncremental, removeFromStockByItemId, refetch: refetchStock } = useStock()
 
   // Handle deep link: open list from URL param
   useEffect(() => {
@@ -215,36 +217,50 @@ export default function Lists() {
             <h3 className="text-sm font-medium text-text-secondary mb-2">{cat}</h3>
             <div className="space-y-1.5">
               {catItems.map((li) => {
+                const itemForModal = li.items ? { ...li.items, id: li.item_id } : null
                 if (li.is_bought) {
                   const cheapestBought = cheapestPrices.get(li.item_id)
                   return (
-                    <button
+                    <div
                       key={li.id}
-                      onClick={() => toggleBought(li.id, false)}
-                      className="w-full bg-white rounded-xl p-3.5 flex items-center gap-3 border shadow-sm transition-all min-h-[52px] border-green/30 opacity-60"
+                      className="w-full bg-white rounded-xl p-2 flex items-center gap-1 border shadow-sm transition-all min-h-[52px] border-green/30 opacity-60"
                     >
-                      <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 bg-green border-green text-white">
-                        <IconCheck />
-                      </div>
-                      <span className="text-lg">{li.items?.emoji || '🛒'}</span>
-                      <div className="flex-1 text-start min-w-0">
-                        <span className="text-sm font-medium block line-through text-text-secondary">
-                          {li.items?.name || '?'}
-                        </span>
-                        {cheapestBought && (
-                          <span className="text-xs text-green-dark block truncate">
-                            💰 ₪{Number(cheapestBought.price).toFixed(2)}
-                            {cheapestBought.store ? ` · ${cheapestBought.store}` : ''}
+                      <button
+                        onClick={() => toggleBought(li.id, false)}
+                        aria-label={i18n.language === 'he' ? `בטל סימון של ${li.items?.name || ''}` : `Unmark ${li.items?.name || ''}`}
+                        className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-neutral/10 active:bg-neutral/20 transition-colors"
+                      >
+                        <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center bg-green border-green text-white">
+                          <IconCheck />
+                        </div>
+                      </button>
+                      <button
+                        onClick={() => itemForModal && setDetailItem(itemForModal)}
+                        disabled={!itemForModal}
+                        aria-label={i18n.language === 'he' ? `הצג פרטי ${li.items?.name || ''}` : `Show details for ${li.items?.name || ''}`}
+                        className="flex items-center gap-2.5 flex-1 min-w-0 text-start py-2 px-1 rounded-lg hover:bg-primary/5 active:bg-primary/10 transition-colors disabled:opacity-50"
+                      >
+                        <span className="text-lg">{li.items?.emoji || '🛒'}</span>
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium block line-through text-text-secondary truncate">
+                            {li.items?.name || '?'}
                           </span>
-                        )}
-                        {li.notes && (
-                          <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
-                        )}
-                      </div>
-                      <span className="text-xs text-text-secondary flex-shrink-0">
+                          {cheapestBought && (
+                            <span className="text-xs text-green-dark block truncate">
+                              💰 ₪{Number(cheapestBought.price).toFixed(2)}
+                              {cheapestBought.store ? ` · ${cheapestBought.store}` : ''}
+                            </span>
+                          )}
+                          {li.notes && (
+                            <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
+                          )}
+                        </div>
+                        <IconChevronRight className="w-4 h-4 text-text-secondary opacity-40 flex-shrink-0" />
+                      </button>
+                      <span className="text-xs text-text-secondary flex-shrink-0 ms-1">
                         {li.quantity} {li.unit}
                       </span>
-                    </button>
+                    </div>
                   )
                 }
 
@@ -252,14 +268,21 @@ export default function Lists() {
                 return (
                   <div
                     key={li.id}
-                    className="w-full bg-white rounded-xl p-3.5 flex items-center gap-2 border shadow-sm transition-all min-h-[52px] border-neutral/20"
+                    className="w-full bg-white rounded-xl p-2 flex items-center gap-1 border shadow-sm transition-all min-h-[52px] border-neutral/20"
                   >
                     <button
                       onClick={() => toggleBought(li.id, true, li.quantity)}
-                      className="flex items-center gap-3 flex-1 min-w-0 text-start"
+                      className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-neutral/10 active:bg-neutral/20 transition-colors"
                       aria-label={i18n.language === 'he' ? `סמן ${li.items?.name || ''} כנקנה` : `Mark ${li.items?.name || ''} as bought`}
                     >
-                      <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center flex-shrink-0 border-neutral" />
+                      <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center border-neutral" />
+                    </button>
+                    <button
+                      onClick={() => itemForModal && setDetailItem(itemForModal)}
+                      disabled={!itemForModal}
+                      aria-label={i18n.language === 'he' ? `הצג פרטי ${li.items?.name || ''}` : `Show details for ${li.items?.name || ''}`}
+                      className="flex items-center gap-2.5 flex-1 min-w-0 text-start py-2 px-1 rounded-lg hover:bg-primary/5 active:bg-primary/10 transition-colors disabled:opacity-50"
+                    >
                       <span className="text-lg">{li.items?.emoji || '🛒'}</span>
                       <div className="flex-1 min-w-0">
                         <span className="text-sm font-medium block truncate">{li.items?.name || '?'}</span>
@@ -273,6 +296,7 @@ export default function Lists() {
                           <span className="text-xs text-text-secondary block truncate">📝 {li.notes}</span>
                         )}
                       </div>
+                      <IconChevronRight className="w-4 h-4 text-text-secondary opacity-40 flex-shrink-0" />
                     </button>
                     <div className="flex items-center gap-1 flex-shrink-0">
                       <button
@@ -315,6 +339,38 @@ export default function Lists() {
             onCompleteAnyway={handleCompleteAnyway}
             onKeepShopping={() => setShowCarryOver(false)}
             saving={carryOverSaving}
+          />
+        )}
+
+        {detailItem && (
+          <AddToListModal
+            item={detailItem}
+            lists={lists}
+            stockRow={stockItems.find((s) => s.item_id === detailItem.id) || null}
+            onAddToList={async (listId, payload) => {
+              await addItemToList(listId, payload)
+            }}
+            onCreateAndAdd={async (payload) => {
+              const today = new Date().toLocaleDateString(i18n.language === 'he' ? 'he-IL' : 'en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+              const name = `${t('nav.lists')} — ${today}`
+              return await createList(name, [payload])
+            }}
+            onRemoveFromList={async (_listId, listItemId) => {
+              await removeItemFromList(listItemId)
+            }}
+            onAddToStock={async (itemId, qty, unit, low) => {
+              await addToStock(itemId, qty, unit, low)
+            }}
+            onUpdateStockQuantity={async (id, qty) => {
+              await updateStockQuantity(id, qty)
+            }}
+            onUpdateStockThreshold={async (id, low) => {
+              await updateStockThreshold(id, low)
+            }}
+            onClose={() => setDetailItem(null)}
           />
         )}
 
