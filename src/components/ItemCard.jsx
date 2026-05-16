@@ -21,13 +21,15 @@ export default function ItemCard({ item, onEdit, onDelete, onAddToList, isInList
   const handleClick = () => {
     if (selectMode && onSelect) {
       onSelect(item)
-    } else if (onAddToList && !isInList) {
+    } else if (onAddToList) {
+      // Open the modal regardless of list membership — the modal handles
+      // showing current lists, stock, and pricing for the item.
       onAddToList(item)
     }
   }
 
   const cardIsClickable =
-    (selectMode && !!onSelect) || (!selectMode && !!onAddToList && !isInList)
+    (selectMode && !!onSelect) || (!selectMode && !!onAddToList)
 
   return (
     <div
