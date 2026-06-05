@@ -188,35 +188,36 @@ export default function Stock() {
                         isLow ? 'border-danger/30 bg-danger/5' : 'border-neutral/20'
                       }`}
                     >
+                      {/* Item name */}
                       <div className="flex items-center gap-3">
                         <ItemImage item={s.items} size="md" />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold leading-tight line-clamp-2 break-words">{s.items?.name}</p>
+                          <p className="font-semibold leading-tight break-words">{s.items?.name}</p>
                           {isLow && (
                             <span className="text-xs font-medium text-danger">
                               {i18n.language === 'he' ? 'מלאי נמוך' : 'Low Stock'}
                             </span>
                           )}
                         </div>
+                      </div>
 
-                        {/* Quantity controls */}
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <button
-                            onClick={() => updateQuantity(s.id, s.quantity - 1)}
-                            className="w-10 h-10 rounded-lg bg-neutral/30 flex items-center justify-center text-text font-medium text-lg active:scale-90 transition-transform"
-                          >
-                            −
-                          </button>
-                          <span className={`w-10 text-center font-medium text-lg ${isLow ? 'text-danger' : 'text-green-dark'}`}>
-                            {s.quantity}
-                          </span>
-                          <button
-                            onClick={() => updateQuantity(s.id, s.quantity + 1)}
-                            className="w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
-                          >
-                            +
-                          </button>
-                        </div>
+                      {/* Quantity controls */}
+                      <div className="flex items-center gap-2 mt-3">
+                        <button
+                          onClick={() => updateQuantity(s.id, s.quantity - 1)}
+                          className="w-10 h-10 rounded-lg bg-neutral/30 flex items-center justify-center text-text font-medium text-lg active:scale-90 transition-transform"
+                        >
+                          −
+                        </button>
+                        <span className={`w-10 text-center font-medium text-lg ${isLow ? 'text-danger' : 'text-green-dark'}`}>
+                          {s.quantity}
+                        </span>
+                        <button
+                          onClick={() => updateQuantity(s.id, s.quantity + 1)}
+                          className="w-10 h-10 rounded-lg bg-primary text-white flex items-center justify-center font-medium text-lg active:scale-90 transition-transform"
+                        >
+                          +
+                        </button>
                       </div>
 
                       {/* Expanded actions */}
