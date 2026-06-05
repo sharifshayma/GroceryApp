@@ -191,7 +191,7 @@ export default function Stock() {
                       <div className="flex items-center gap-3">
                         <ItemImage item={s.items} size="md" />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold truncate">{s.items?.name}</p>
+                          <p className="font-semibold leading-tight line-clamp-2 break-words">{s.items?.name}</p>
                           {isLow && (
                             <span className="text-xs font-medium text-danger">
                               {i18n.language === 'he' ? 'מלאי נמוך' : 'Low Stock'}
