@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { supabase } from '../lib/supabase'
 import { IconCheckCircle, IconEdit, IconTrash } from './Icons'
 import ItemImage from './ItemImage'
+import { getItemName } from '../lib/itemName'
 
 export default function ItemCard({ item, onEdit, onDelete, onAddToList, isInList = false, showActions = true, selectMode = false, isSelected = false, onSelect }) {
   const { t } = useTranslation()
@@ -54,7 +55,7 @@ export default function ItemCard({ item, onEdit, onDelete, onAddToList, isInList
         )}
         <ItemImage item={item} size="md" />
         <div className="flex-1 min-w-0">
-          <p className="font-semibold text-text truncate">{item.name}</p>
+          <p className="font-semibold text-text truncate">{getItemName(item)}</p>
           <p className="text-xs text-text-secondary mt-0.5">
             {t(`units.${item.default_unit}`, item.default_unit)}
           </p>

@@ -60,6 +60,8 @@
     "editItem": "Edit Item",
     "name": "Item Name",
     "namePlaceholder": "e.g. Milk, Bread, Tomatoes",
+    "nameHe": "Item Name (Hebrew)",
+    "nameHePlaceholder": "e.g. חלב, לחם, עגבניות",
     "category": "Category",
     "selectCategory": "Select a category",
     "unit": "Unit",

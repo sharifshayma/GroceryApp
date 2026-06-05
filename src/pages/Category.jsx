@@ -6,6 +6,7 @@ import { useItems } from '../hooks/useItems'
 import { useLists } from '../hooks/useLists'
 import { useStock } from '../hooks/useStock'
 import { getCategoryName } from '../lib/categoryName'
+import { getItemName } from '../lib/itemName'
 import AddItemModal from '../components/AddItemModal'
 import AddToListModal from '../components/AddToListModal'
 import ItemCard from '../components/ItemCard'
@@ -368,7 +369,7 @@ export default function Category() {
   )
 
   async function handleDelete(item) {
-    if (window.confirm(t('items.deleteConfirm', { name: item.name }))) {
+    if (window.confirm(t('items.deleteConfirm', { name: getItemName(item) }))) {
       await deleteItem(item.id)
     }
   }

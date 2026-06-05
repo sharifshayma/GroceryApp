@@ -5,6 +5,7 @@ import { useCategories } from '../hooks/useCategories'
 import { useItems } from '../hooks/useItems'
 import { useLists } from '../hooks/useLists'
 import { getCategoryName } from '../lib/categoryName'
+import { getItemName } from '../lib/itemName'
 
 export default function EditList() {
   const { t, i18n } = useTranslation()
@@ -239,7 +240,7 @@ export default function EditList() {
                         )}
                       </button>
                       <span className="text-xl">{item.emoji}</span>
-                      <span className="flex-1 font-medium text-sm truncate">{item.name}</span>
+                      <span className="flex-1 font-medium text-sm truncate">{getItemName(item)}</span>
 
                       {isSelected && (
                         <div className="flex items-center gap-1.5 flex-shrink-0">

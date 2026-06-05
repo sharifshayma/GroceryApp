@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { getCategoryName } from '../lib/categoryName'
+import { getItemName } from '../lib/itemName'
 import { IconShare, IconCopy, IconLink, IconClose } from './Icons'
 
 export default function ShareSheet({ list, onClose }) {
@@ -25,7 +26,7 @@ export default function ShareSheet({ list, onClose }) {
       text += `${cat}\n`
       catItems.forEach((li) => {
         const check = li.is_bought ? '✅' : '⬜'
-        let line = `${check} ${li.items?.name || '?'} × ${li.quantity} ${li.unit}`
+        let line = `${check} ${getItemName(li.items) || '?'} × ${li.quantity} ${li.unit}`
         if (li.notes) line += ` (${li.notes})`
         text += `${line}\n`
       })
@@ -58,7 +59,7 @@ export default function ShareSheet({ list, onClose }) {
   }
 
   const buildShareLinkText = () => {
-    const itemNames = items.map((li) => li.items?.name || '?')
+    const itemNames = items.map((li) => getItemName(li.items) || '?')
     const total = itemNames.length
     const preview = itemNames.slice(0, 3).join(', ')
     const more = total > 3
