@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next'
+import { getItemName } from '../lib/itemName'
 
 export default function CarryOverModal({ unboughtItems, onCarryOver, onCompleteAnyway, onKeepShopping, saving }) {
   const { t } = useTranslation()
@@ -25,7 +26,7 @@ export default function CarryOverModal({ unboughtItems, onCarryOver, onCompleteA
             {unboughtItems.map((li) => (
               <div key={li.id} className="flex items-center gap-2 text-sm">
                 <span className="text-base">{li.items?.emoji || '🛒'}</span>
-                <span className="flex-1 truncate font-medium">{li.items?.name || '?'}</span>
+                <span className="flex-1 truncate font-medium">{getItemName(li.items) || '?'}</span>
                 <span className="text-xs text-text-secondary flex-shrink-0">
                   {li.quantity} {li.unit}
                 </span>

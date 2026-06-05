@@ -1,6 +1,8 @@
 // Renders an item's photo when present, otherwise falls back to its emoji.
 // Single source of truth for the square tile sizes used across the app.
 
+import { getItemName } from '../lib/itemName'
+
 const SIZES = {
   sm: { box: 'w-12 h-12', emoji: 'text-2xl', rounded: 'rounded-lg' },
   md: { box: 'w-10 h-10', emoji: 'text-2xl', rounded: 'rounded-lg' },
@@ -16,7 +18,7 @@ export default function ItemImage({ item, size = 'md', className = '' }) {
     return (
       <img
         src={photoUrl}
-        alt={item?.name || ''}
+        alt={getItemName(item)}
         loading="lazy"
         decoding="async"
         className={`${s.box} ${s.rounded} object-cover flex-shrink-0 bg-bg ${className}`}

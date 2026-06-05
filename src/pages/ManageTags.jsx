@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { useTags } from '../hooks/useTags'
 import { useItems } from '../hooks/useItems'
 import { supabase } from '../lib/supabase'
+import { getItemName } from '../lib/itemName'
 import { IconBack, IconTrash } from '../components/Icons'
 
 const TAG_TYPES = ['recipe', 'store', 'custom']
@@ -188,7 +189,7 @@ export default function ManageTags() {
                   <div key={item.id} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-white border border-neutral/30">
                     <span className="text-base">{item.emoji}</span>
                     <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium">{item.name}</span>
+                      <span className="text-xs font-medium">{getItemName(item)}</span>
                       {note && editingNoteId !== item.id && (
                         <p className="text-[10px] text-primary italic truncate">{note}</p>
                       )}
@@ -374,7 +375,7 @@ export default function ManageTags() {
                       </span>
                       <span className="text-xl">{item.emoji}</span>
                       <div className="flex-1 text-start min-w-0">
-                        <span className="text-sm font-medium">{item.name}</span>
+                        <span className="text-sm font-medium">{getItemName(item)}</span>
                         {isAssigned && note && (
                           <p className="text-[10px] text-primary italic truncate">{note}</p>
                         )}

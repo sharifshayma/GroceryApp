@@ -58,8 +58,10 @@
   "items": {
     "addItem": "הוסף פריט",
     "editItem": "עריכת פריט",
-    "name": "שם הפריט",
-    "namePlaceholder": "למשל: חלב, לחם, עגבניות",
+    "name": "שם הפריט (אנגלית)",
+    "namePlaceholder": "e.g. Milk, Bread, Tomatoes",
+    "nameHe": "שם הפריט (עברית)",
+    "nameHePlaceholder": "למשל: חלב, לחם, עגבניות",
     "category": "קטגוריה",
     "selectCategory": "בחר קטגוריה",
     "unit": "יחידה",

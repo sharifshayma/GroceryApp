@@ -1,5 +1,6 @@
 import ItemImage from './ItemImage'
 import { IconChevronDown } from './Icons'
+import { getItemName } from '../lib/itemName'
 
 export default function HorizontalItemRow({ title, icon, items, accentClass = 'border-t-primary/30', onItemClick, itemsInList, collapsed, onToggleCollapse }) {
   if (!items || items.length === 0) return null
@@ -45,7 +46,7 @@ export default function HorizontalItemRow({ title, icon, items, accentClass = 'b
                 )}
                 <ItemImage item={item} size="sm" className="mb-1" />
                 <span className="text-xs font-semibold text-center leading-tight line-clamp-2">
-                  {item.name}
+                  {getItemName(item)}
                 </span>
               </button>
             )

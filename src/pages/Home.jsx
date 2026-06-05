@@ -11,6 +11,7 @@ import { useStock } from '../hooks/useStock'
 import { on } from '../lib/events'
 import * as grocery from '../lib/grocery'
 import { getCategoryName } from '../lib/categoryName'
+import { getItemName } from '../lib/itemName'
 import HorizontalItemRow from '../components/HorizontalItemRow'
 import ItemCard from '../components/ItemCard'
 import AddToListModal from '../components/AddToListModal'
@@ -303,7 +304,7 @@ export default function Home() {
         )}
         <span className="text-2xl flex-shrink-0">{item.emoji}</span>
         <div className="flex-1 min-w-0">
-          <p className={`font-semibold truncate ${inList && !selectMode ? 'line-through' : ''}`}>{item.name}</p>
+          <p className={`font-semibold truncate ${inList && !selectMode ? 'line-through' : ''}`}>{getItemName(item)}</p>
           {item.categories && (
             <p className="text-xs text-text-secondary">
               {item.categories.emoji} {getCategoryName(item.categories)}

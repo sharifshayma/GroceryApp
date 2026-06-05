@@ -912,6 +912,75 @@ Either name or name_he is required. The missing one is copied from the other. ca
     }
   )
 
+  // ---- 12b. edit_item ----
+  server.registerTool(
+    'edit_item',
+    {
+      title: 'Edit or rename an existing catalog item',
+      description: `Update an existing catalog item — rename it (English and/or Hebrew), move it to a different category, or change its emoji, default unit, or stock-tracking. Identify the item with item_query (fuzzy English or Hebrew name); the remaining fields are the changes to apply.
+
+Use for "rename zucchini to courgette", "fix the Hebrew name for milk", "move tahini to the Pantry category", or "change eggs default unit to box". At least one field to change (name, name_he, category_query, emoji, default_unit, auto_track_stock) must be provided. Renaming only changes the field you pass — to update both languages, pass both name and name_he.`,
+      inputSchema: {
+        item_query: z.string().describe('Fuzzy name of the existing item to edit (English or Hebrew).'),
+        name: z.string().optional().describe('New English name. Omit to leave unchanged.'),
+        name_he: z.string().optional().describe('New Hebrew name. Omit to leave unchanged.'),
+        category_query: z
+          .string()
+          .optional()
+          .describe('Fuzzy category to move the item to. Omit to leave unchanged.'),
+        emoji: z.string().optional().describe('New emoji. Omit to leave unchanged.'),
+        default_unit: z
+          .string()
+          .optional()
+          .describe('New default unit, e.g. "pcs", "kg", "L". Omit to leave unchanged.'),
+        auto_track_stock: z
+          .boolean()
+          .optional()
+          .describe('Toggle whether marking this item bought also increments stock. Omit to leave unchanged.'),
+      },
+    },
+    async ({ item_query, name, name_he, category_query, emoji, default_unit, auto_track_stock }) => {
+      const itemR = await resolveItem(ctx, item_query)
+      if (!itemR.ok) return tx(itemR.error)
+      const item = itemR.value
+
+      const updates = {}
+      if (typeof name === 'string' && name.trim()) updates.name = name.trim()
+      if (typeof name_he === 'string' && name_he.trim()) updates.name_he = name_he.trim()
+      if (typeof emoji === 'string' && emoji.trim()) updates.emoji = emoji.trim()
+      if (typeof default_unit === 'string' && default_unit.trim()) updates.default_unit = default_unit.trim()
+      if (typeof auto_track_stock === 'boolean') updates.auto_track_stock = auto_track_stock
+
+      if (category_query) {
+        const catR = await resolveCategory(ctx, category_query)
+        if (!catR.ok) return tx(catR.error)
+        updates.category_id = catR.value.id
+      }
+
+      if (Object.keys(updates).length === 0) return tx({ error: 'no_changes' })
+
+      const updated = await grocery.updateItem(supabase, ctx, { itemId: item.id, updates })
+
+      return tx({
+        item: {
+          id: updated.id,
+          name: updated.name,
+          name_he: updated.name_he,
+          emoji: updated.emoji,
+          default_unit: updated.default_unit,
+          auto_track_stock: updated.auto_track_stock,
+          category: updated.categories
+            ? {
+                name: updated.categories.name,
+                name_he: updated.categories.name_he,
+                emoji: updated.categories.emoji,
+              }
+            : null,
+        },
+      })
+    }
+  )
+
   // ---- 13. list_prices ----
   server.registerTool(
     'list_prices',

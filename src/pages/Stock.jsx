@@ -4,6 +4,7 @@ import { useStock } from '../hooks/useStock'
 import { useItems } from '../hooks/useItems'
 import { useCategories } from '../hooks/useCategories'
 import { getCategoryName } from '../lib/categoryName'
+import { getItemName } from '../lib/itemName'
 import { useKeyboardVisible } from '../hooks/useKeyboardVisible'
 import LoadingSpinner from '../components/LoadingSpinner'
 import ErrorBanner from '../components/ErrorBanner'
@@ -129,12 +130,12 @@ export default function Stock() {
                     <div key={item.id} className="flex items-center justify-between py-2 border-b border-neutral/10 last:border-0">
                       <div className="flex items-center gap-2 min-w-0">
                         <ItemImage item={item} size="md" />
-                        <span className="text-sm font-medium truncate">{item.name}</span>
+                        <span className="text-sm font-medium truncate">{getItemName(item)}</span>
                       </div>
                       <Toggle
                         checked={item.auto_track_stock ?? true}
                         onChange={() => updateItem(item.id, { auto_track_stock: !(item.auto_track_stock ?? true) })}
-                        ariaLabel={item.name}
+                        ariaLabel={getItemName(item)}
                       />
                     </div>
                   ))}
@@ -192,7 +193,7 @@ export default function Stock() {
                       <div className="flex items-center gap-3">
                         <ItemImage item={s.items} size="md" />
                         <div className="flex-1 min-w-0">
-                          <p className="font-semibold leading-tight break-words">{s.items?.name}</p>
+                          <p className="font-semibold leading-tight break-words">{getItemName(s.items)}</p>
                           {isLow && (
                             <span className="text-xs font-medium text-danger">
                               {i18n.language === 'he' ? 'מלאי נמוך' : 'Low Stock'}
@@ -415,7 +416,7 @@ function AddToStockModal({ mode, items, categories, onBatchAdd, onClose }) {
                         {isSelected && <span className="text-xs">{isInStock ? '✓' : '✗'}</span>}
                       </span>
                       <ItemImage item={item} size="md" />
-                      <span className="text-sm font-medium">{item.name}</span>
+                      <span className="text-sm font-medium">{getItemName(item)}</span>
                     </button>
                   )
                 })}
@@ -500,7 +501,7 @@ function EditStockModal({ stockItem, onSave, onClose }) {
           <div className="flex items-center gap-3 p-3.5 bg-bg rounded-xl border border-primary/30">
             <ItemImage item={stockItem.items} size="lg" />
             <div>
-              <p className="font-medium">{stockItem.items?.name}</p>
+              <p className="font-medium">{getItemName(stockItem.items)}</p>
               <p className="text-xs text-text-secondary">{stockItem.unit}</p>
             </div>
           </div>

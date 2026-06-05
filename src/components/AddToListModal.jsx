@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import PriceHistorySection from './PriceHistorySection'
+import { getItemName } from '../lib/itemName'
 
 export default function AddToListModal({
   item,
@@ -126,7 +127,7 @@ export default function AddToListModal({
             <div className="flex items-center gap-3 min-w-0">
               <span className="text-2xl flex-shrink-0">{item.emoji || '🛒'}</span>
               <div className="min-w-0">
-                <h2 className="text-lg font-semibold text-text truncate">{item.name}</h2>
+                <h2 className="text-lg font-semibold text-text truncate">{getItemName(item)}</h2>
                 <p className="text-xs text-text-secondary">{item.default_unit || 'pcs'}</p>
               </div>
             </div>

@@ -25,6 +25,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
   const { isKeyboardVisible, viewportHeight } = useKeyboardVisible()
 
   const [name, setName] = useState(item?.name || '')
+  const [nameHe, setNameHe] = useState(item?.name_he || '')
   const [selectedCategory, setSelectedCategory] = useState(item?.category_id || categoryId)
   const [emoji, setEmoji] = useState(item?.emoji || '🛒')
   const [unit, setUnit] = useState(item?.default_unit || 'pcs')
@@ -104,6 +105,7 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
     try {
       const result = await onSave({
         name: name.trim(),
+        name_he: nameHe.trim() || null,
         category_id: selectedCategory,
         emoji,
         default_unit: unit,
@@ -200,6 +202,21 @@ export default function AddItemModal({ categoryId, categories, item, onSave, onC
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Hebrew name */}
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1">
+              {t('items.nameHe')}
+            </label>
+            <input
+              type="text"
+              value={nameHe}
+              onChange={(e) => setNameHe(e.target.value)}
+              placeholder={t('items.nameHePlaceholder')}
+              dir="rtl"
+              className="w-full px-3 py-2.5 rounded-xl border border-neutral/40 bg-bg text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+            />
           </div>
 
           {/* Emoji picker — tap to pick, or use keyboard for custom */}

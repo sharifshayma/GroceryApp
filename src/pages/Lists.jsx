@@ -6,6 +6,7 @@ import { useStock } from '../hooks/useStock'
 import { supabase } from '../lib/supabase'
 import { emit } from '../lib/events'
 import { getCategoryName } from '../lib/categoryName'
+import { getItemName } from '../lib/itemName'
 import * as grocery from '../lib/grocery'
 import { useAuth } from '../hooks/useAuth'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -227,7 +228,7 @@ export default function Lists() {
                     >
                       <button
                         onClick={() => toggleBought(li.id, false)}
-                        aria-label={i18n.language === 'he' ? `בטל סימון של ${li.items?.name || ''}` : `Unmark ${li.items?.name || ''}`}
+                        aria-label={i18n.language === 'he' ? `בטל סימון של ${getItemName(li.items)}` : `Unmark ${getItemName(li.items)}`}
                         className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-neutral/10 active:bg-neutral/20 transition-colors"
                       >
                         <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center bg-green border-green text-white">
@@ -237,13 +238,13 @@ export default function Lists() {
                       <button
                         onClick={() => itemForModal && setDetailItem(itemForModal)}
                         disabled={!itemForModal}
-                        aria-label={i18n.language === 'he' ? `הצג פרטי ${li.items?.name || ''}` : `Show details for ${li.items?.name || ''}`}
+                        aria-label={i18n.language === 'he' ? `הצג פרטי ${getItemName(li.items)}` : `Show details for ${getItemName(li.items)}`}
                         className="flex items-center gap-2.5 flex-1 min-w-0 text-start py-2 px-1 rounded-lg hover:bg-primary/5 active:bg-primary/10 transition-colors disabled:opacity-50"
                       >
                         <span className="text-lg">{li.items?.emoji || '🛒'}</span>
                         <div className="flex-1 min-w-0">
                           <span className="text-sm font-medium block line-through text-text-secondary truncate">
-                            {li.items?.name || '?'}
+                            {getItemName(li.items) || '?'}
                           </span>
                           {cheapestBought && (
                             <span className="text-xs text-green-dark block truncate">
@@ -276,19 +277,19 @@ export default function Lists() {
                     <button
                       onClick={() => toggleBought(li.id, true, li.quantity)}
                       className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-neutral/10 active:bg-neutral/20 transition-colors"
-                      aria-label={i18n.language === 'he' ? `סמן ${li.items?.name || ''} כנקנה` : `Mark ${li.items?.name || ''} as bought`}
+                      aria-label={i18n.language === 'he' ? `סמן ${getItemName(li.items)} כנקנה` : `Mark ${getItemName(li.items)} as bought`}
                     >
                       <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center border-neutral" />
                     </button>
                     <button
                       onClick={() => itemForModal && setDetailItem(itemForModal)}
                       disabled={!itemForModal}
-                      aria-label={i18n.language === 'he' ? `הצג פרטי ${li.items?.name || ''}` : `Show details for ${li.items?.name || ''}`}
+                      aria-label={i18n.language === 'he' ? `הצג פרטי ${getItemName(li.items)}` : `Show details for ${getItemName(li.items)}`}
                       className="flex items-center gap-2.5 flex-1 min-w-0 text-start py-2 px-1 rounded-lg hover:bg-primary/5 active:bg-primary/10 transition-colors disabled:opacity-50"
                     >
                       <span className="text-lg">{li.items?.emoji || '🛒'}</span>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium block truncate">{li.items?.name || '?'}</span>
+                        <span className="text-sm font-medium block truncate">{getItemName(li.items) || '?'}</span>
                         {cheapest && (
                           <span className="text-xs text-green-dark block truncate">
                             💰 ₪{Number(cheapest.price).toFixed(2)}
@@ -478,7 +479,7 @@ export default function Lists() {
                         )}
                         <span className="text-base">{li.items?.emoji || '🛒'}</span>
                         <span className={`truncate ${li.is_bought && list.status === 'completed' ? 'line-through' : ''}`}>
-                          {li.items?.name || '?'} <span className="text-xs">× {li.quantity} {li.unit}</span>
+                          {getItemName(li.items) || '?'} <span className="text-xs">× {li.quantity} {li.unit}</span>
                         </span>
                         {li.notes && <span className="text-xs text-primary italic truncate">({li.notes})</span>}
                       </div>
