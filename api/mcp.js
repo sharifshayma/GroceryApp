@@ -981,6 +981,47 @@ Use for "rename zucchini to courgette", "fix the Hebrew name for milk", "move ta
     }
   )
 
+  // ---- 12c. delete_item ----
+  server.registerTool(
+    'delete_item',
+    {
+      title: 'Delete a catalog item',
+      description: `Permanently remove a catalog item from the household. Identify it with item_query (fuzzy English or Hebrew name). Requires confirm=true — call once without it (or with confirm=false) to see exactly which item would be deleted, then again with confirm=true to delete.
+
+Deleting an item also removes it from any lists, clears its stock row, and drops its logged prices and tags. Use for mistaken or duplicate items. To merely rename or recategorize, use edit_item instead.`,
+      inputSchema: {
+        item_query: z.string().describe('Fuzzy name of the item to delete (English or Hebrew).'),
+        confirm: z.boolean().describe('Must be true to delete. Omit/false to preview the target first.'),
+      },
+    },
+    async ({ item_query, confirm }) => {
+      const itemR = await resolveItem(ctx, item_query)
+      if (!itemR.ok) return tx(itemR.error)
+      const item = itemR.value
+
+      const itemView = {
+        id: item.id,
+        name: item.name,
+        name_he: item.name_he,
+        emoji: item.emoji,
+        default_unit: item.default_unit,
+        auto_track_stock: item.auto_track_stock,
+        category: item.categories
+          ? { name: item.categories.name, name_he: item.categories.name_he, emoji: item.categories.emoji }
+          : null,
+      }
+
+      if (confirm !== true) return tx({ error: 'not_confirmed', item: itemView })
+
+      // Clear the stock row explicitly; the items FK also cascades to stock,
+      // list_items, price_history and item_tags at the DB level.
+      await grocery.deleteStockByItemId(supabase, ctx, { itemId: item.id })
+      await grocery.deleteItem(supabase, ctx, { itemId: item.id })
+
+      return tx({ item: itemView, action: 'deleted' })
+    }
+  )
+
   // ---- 13. list_prices ----
   server.registerTool(
     'list_prices',
