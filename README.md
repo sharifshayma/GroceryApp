@@ -15,6 +15,28 @@ A household grocery management PWA for families and roommates. Create shopping l
 - **WhatsApp Sharing** — Share lists as text or via link
 - **Connect to Claude** — Talk to your groceries via an MCP server (search items, mark bought, adjust stock, etc.) — see [Connect to Claude](#connect-to-claude) below
 
+## Screenshots
+
+<table>
+  <tr>
+    <td align="center"><b>Items (פריטים)</b></td>
+    <td align="center"><b>Lists (רשימות)</b></td>
+    <td align="center"><b>Inventory (מלאי)</b></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/items-home.jpg" width="240" alt="Items home — catalog"></td>
+    <td><img src="docs/screenshots/lists.jpg" width="240" alt="Shopping list"></td>
+    <td><img src="docs/screenshots/inventory.jpg" width="240" alt="Inventory / stock"></td>
+  </tr>
+  <tr>
+    <td align="center">Catalog with "need to buy" and popular items, category / recipe / store filters.</td>
+    <td align="center">A list with check-off, quantities, per-item prices, and completion progress.</td>
+    <td align="center">Stock by category with low-stock alerts and quick +/− adjustments.</td>
+  </tr>
+</table>
+
+_Shown in Hebrew (RTL); the app runs fully in English too._
+
 ## Tech Stack
 
 - **Frontend:** React 19, React Router 7, Tailwind CSS 4
