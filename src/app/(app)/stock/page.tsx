@@ -46,10 +46,13 @@ export default async function StockPage() {
       lowThreshold: s.lowThreshold,
     })),
     openListItems: openListItems
-      .filter((li) => li.item)
+      .filter(
+        (li): li is typeof li & { item: NonNullable<(typeof li)["item"]> } =>
+          li.item != null
+      )
       .map((li) => ({
-        itemId: li.item!.id,
-        item: { id: li.item!.id, name: li.item!.name, emoji: li.item!.emoji },
+        itemId: li.item.id,
+        item: { id: li.item.id, name: li.item.name, emoji: li.item.emoji },
         listName: li.list.name,
         quantity: li.quantity,
       })),
