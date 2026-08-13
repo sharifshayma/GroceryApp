@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { createItem, updateItem, deleteItem } from "@/actions/items";
+import { ItemTagPicker } from "@/components/ItemTagPicker";
 import { getDictionary, t } from "@/i18n";
 
 const d = getDictionary("en");
@@ -18,12 +19,20 @@ interface ItemRow {
   notes: string | null;
   categoryId: string | null;
   category: { name: string; emoji: string } | null;
+  tags: { tag: { id: string; name: string; color: string } }[];
 }
 
 interface CategoryOption {
   id: string;
   name: string;
   emoji: string;
+}
+
+interface TagOption {
+  id: string;
+  name: string;
+  type: string;
+  color: string;
 }
 
 interface ItemFormValues {
@@ -47,9 +56,11 @@ const emptyForm: ItemFormValues = {
 export function ItemManager({
   items,
   categories,
+  tags,
 }: {
   items: ItemRow[];
   categories: CategoryOption[];
+  tags: TagOption[];
 }) {
   const router = useRouter();
 
@@ -62,6 +73,10 @@ export function ItemManager({
 
   // Row id currently running a delete mutation
   const [pendingId, setPendingId] = useState<string | null>(null);
+
+  // Item currently showing the Tags picker modal (null = closed)
+  const [tagPickerItemId, setTagPickerItemId] = useState<string | null>(null);
+  const tagPickerItem = items.find((row) => row.id === tagPickerItemId) ?? null;
 
   const firstFieldRef = useRef<HTMLSelectElement>(null);
 
@@ -170,8 +185,34 @@ export function ItemManager({
                 <div className="text-sm text-ink/60">
                   {categoryLabel} · {row.defaultUnit}
                 </div>
+                {row.tags.length > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {row.tags.map(({ tag }) => (
+                      <span
+                        key={tag.id}
+                        className="rounded-full border px-2 py-0.5 text-xs font-bold"
+                        style={{
+                          backgroundColor: `${tag.color}22`,
+                          borderColor: tag.color,
+                          color: tag.color,
+                        }}
+                      >
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={isPending}
+                  onClick={() => setTagPickerItemId(row.id)}
+                >
+                  {t(d, "catalog.tags.assign")}
+                </Button>
                 <Button
                   type="button"
                   variant="ghost"
@@ -286,6 +327,16 @@ export function ItemManager({
             </form>
           </div>
         </div>
+      )}
+
+      {tagPickerItem && (
+        <ItemTagPicker
+          itemId={tagPickerItem.id}
+          itemName={tagPickerItem.name}
+          tags={tags}
+          assignedTagIds={tagPickerItem.tags.map(({ tag }) => tag.id)}
+          onClose={() => setTagPickerItemId(null)}
+        />
       )}
     </div>
   );

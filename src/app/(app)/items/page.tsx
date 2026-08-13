@@ -6,7 +6,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ItemsPage() {
   const household = await requireHousehold();
-  const [items, categories] = await Promise.all([
+  const [items, categories, tags] = await Promise.all([
     prisma.item.findMany({
       where: { householdId: household.id },
       orderBy: { createdAt: "desc" },
@@ -14,6 +14,7 @@ export default async function ItemsPage() {
         id: true, name: true, nameHe: true, emoji: true, defaultUnit: true,
         notes: true, categoryId: true,
         category: { select: { name: true, emoji: true } },
+        tags: { select: { tag: { select: { id: true, name: true, color: true } } } },
       },
     }),
     prisma.category.findMany({
@@ -21,6 +22,11 @@ export default async function ItemsPage() {
       orderBy: { sortOrder: "asc" },
       select: { id: true, name: true, emoji: true },
     }),
+    prisma.tag.findMany({
+      where: { householdId: household.id },
+      orderBy: [{ type: "asc" }, { name: "asc" }],
+      select: { id: true, name: true, type: true, color: true },
+    }),
   ]);
-  return <ItemManager items={items} categories={categories} />;
+  return <ItemManager items={items} categories={categories} tags={tags} />;
 }
