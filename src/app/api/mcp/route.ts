@@ -44,7 +44,7 @@ const baseHandler = createMcpHandler(
     );
   },
   { serverInfo: { name: "grocery", version: "1.0.0" } },
-  { basePath: "/api", maxDuration: 60, verboseLogs: true },
+  { basePath: "/api", maxDuration: 60, verboseLogs: process.env.NODE_ENV !== "production" },
 );
 
 const authedHandler = withMcpAuth(
