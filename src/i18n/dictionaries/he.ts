@@ -97,5 +97,12 @@ export const he: typeof en = {
     removeConfirm: "להסיר את הפריט מהרשימה?",
     emptyItems: "אין עדיין פריטים. הוסף אחד מהקטלוג שלך.",
     unknownItem: "(פריט שהוסר)",
+    markBought: "סמן כנקנה",
+    progress: "{bought} מתוך {total} נקנו",
+    complete: "השלם רשימה",
+    carryOver: "העבר פריטים שלא נקנו",
+    completeAnyway: "השלם בכל זאת",
+    completedBadge: "הושלמה",
+    completePrompt: "חלק מהפריטים עדיין לא נקנו.",
   },
 };

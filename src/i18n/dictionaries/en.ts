@@ -95,5 +95,12 @@ export const en = {
     removeConfirm: "Remove this item from the list?",
     emptyItems: "No items yet. Add one from your catalog.",
     unknownItem: "(removed item)",
+    markBought: "Mark bought",
+    progress: "{bought} of {total} bought",
+    complete: "Complete list",
+    carryOver: "Carry over unbought",
+    completeAnyway: "Complete anyway",
+    completedBadge: "Completed",
+    completePrompt: "Some items aren't bought yet.",
   },
 };

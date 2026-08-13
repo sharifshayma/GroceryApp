@@ -5,8 +5,9 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { renameList, deleteList, duplicateList } from "@/actions/lists";
-import { addListItem, updateListItem, removeListItem } from "@/actions/list-items";
+import { renameList, deleteList, duplicateList, completeList } from "@/actions/lists";
+import { addListItem, updateListItem, removeListItem, setListItemBought } from "@/actions/list-items";
+import { shoppingProgress } from "@/lib/shopping-progress";
 import { getDictionary, t } from "@/i18n";
 
 const d = getDictionary("en");
@@ -23,6 +24,8 @@ interface ListItemRow {
   quantity: number;
   unit: string;
   notes: string | null;
+  isBought: boolean;
+  boughtAt: string | Date | null;
   item: { id: string; name: string; emoji: string; defaultUnit: string } | null;
 }
 
@@ -38,6 +41,18 @@ interface ListDetailProps {
 
 export function ListDetail({ list, catalogItems }: ListDetailProps) {
   const router = useRouter();
+
+  const isCompleted = list.status === "completed";
+  const { bought, total } = shoppingProgress(list.items);
+
+  // Row id currently running a bought-toggle mutation
+  const [togglingItemId, setTogglingItemId] = useState<string | null>(null);
+  const [toggleError, setToggleError] = useState<string | null>(null);
+
+  // Complete-list flow state
+  const [showCompleteChoice, setShowCompleteChoice] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [completeError, setCompleteError] = useState<string | null>(null);
 
   // Rename form state
   const [renaming, setRenaming] = useState(false);
@@ -192,6 +207,42 @@ export function ListDetail({ list, catalogItems }: ListDetailProps) {
     router.refresh();
   }
 
+  async function toggleBought(listItemId: string, isBought: boolean) {
+    setToggleError(null);
+    setTogglingItemId(listItemId);
+    const result = await setListItemBought({ listItemId, isBought });
+    setTogglingItemId(null);
+    if (!result.ok) {
+      setToggleError(result.error);
+      return;
+    }
+    router.refresh();
+  }
+
+  function handleCompleteClick() {
+    if (bought === total) {
+      handleComplete(false);
+      return;
+    }
+    setShowCompleteChoice(true);
+  }
+
+  async function handleComplete(carryOver: boolean) {
+    setCompleteError(null);
+    setCompleting(true);
+    const result = await completeList({ listId: list.id, carryOver });
+    setCompleting(false);
+    if (!result.ok) {
+      setCompleteError(result.error);
+      return;
+    }
+    if (result.carriedOverListId) {
+      router.push(`/lists/${result.carriedOverListId}`);
+    } else {
+      router.push("/lists");
+    }
+  }
+
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 p-4 sm:p-6">
       <Link href="/lists" className="text-sm font-bold text-brand hover:underline">
@@ -227,6 +278,11 @@ export function ListDetail({ list, catalogItems }: ListDetailProps) {
         ) : (
           <div className="flex items-center gap-3">
             <h1 className="flex-1 text-2xl font-extrabold">{list.name}</h1>
+            {isCompleted && (
+              <span className="rounded-full bg-black/5 px-3 py-1 text-sm font-bold text-ink/70">
+                {t(d, "lists.completedBadge")}
+              </span>
+            )}
             <div className="flex items-center gap-1">
               <Button
                 type="button"
@@ -260,6 +316,12 @@ export function ListDetail({ list, catalogItems }: ListDetailProps) {
         )}
         {nameError && <p className="mt-2 text-sm text-red-600">{nameError}</p>}
       </div>
+
+      {total > 0 && (
+        <p className="text-sm font-bold text-ink/70">
+          {t(d, "lists.progress", { bought, total })}
+        </p>
+      )}
 
       <div className="flex flex-col gap-3">
         {list.items.length === 0 ? (
@@ -333,45 +395,103 @@ export function ListDetail({ list, catalogItems }: ListDetailProps) {
                 );
               }
 
+              const isToggling = togglingItemId === row.id;
+
               return (
                 <li
                   key={row.id}
                   className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4"
                 >
+                  {!isCompleted && (
+                    <input
+                      type="checkbox"
+                      checked={row.isBought}
+                      disabled={isToggling}
+                      aria-label={t(d, "lists.markBought")}
+                      onChange={() => toggleBought(row.id, !row.isBought)}
+                      className="h-5 w-5 shrink-0 accent-brand"
+                    />
+                  )}
                   <div className="flex-1">
-                    <div className="font-bold">{label}</div>
-                    <div className="text-sm text-ink/60">
+                    <div
+                      className={
+                        row.isBought
+                          ? "font-bold line-through opacity-50"
+                          : "font-bold"
+                      }
+                    >
+                      {label}
+                    </div>
+                    <div
+                      className={
+                        row.isBought
+                          ? "text-sm text-ink/60 line-through opacity-50"
+                          : "text-sm text-ink/60"
+                      }
+                    >
                       {row.quantity} {row.unit}
                       {row.notes ? ` · ${row.notes}` : ""}
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => startEditItem(row)}
-                    >
-                      {t(d, "lists.edit")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
-                      disabled={isPending}
-                      onClick={() => handleRemoveItem(row.id)}
-                    >
-                      {t(d, "lists.remove")}
-                    </Button>
-                  </div>
+                  {!isCompleted && (
+                    <div className="flex items-center gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => startEditItem(row)}
+                      >
+                        {t(d, "lists.edit")}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="danger"
+                        size="sm"
+                        disabled={isPending}
+                        onClick={() => handleRemoveItem(row.id)}
+                      >
+                        {t(d, "lists.remove")}
+                      </Button>
+                    </div>
+                  )}
                 </li>
               );
             })}
           </ul>
         )}
+        {toggleError && <p className="text-sm text-red-600">{toggleError}</p>}
       </div>
 
+      {!isCompleted && (
+        <div className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4">
+          {showCompleteChoice ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-ink/70">{t(d, "lists.completePrompt")}</p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" disabled={completing} onClick={() => handleComplete(true)}>
+                  {t(d, "lists.carryOver")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  disabled={completing}
+                  onClick={() => handleComplete(false)}
+                >
+                  {t(d, "lists.completeAnyway")}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <Button type="button" disabled={completing} onClick={handleCompleteClick}>
+              {t(d, "lists.complete")}
+            </Button>
+          )}
+          {completeError && <p className="text-sm text-red-600">{completeError}</p>}
+        </div>
+      )}
+
+      {!isCompleted && (
       <form
         onSubmit={handleAddItem}
         className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4"
@@ -432,6 +552,7 @@ export function ListDetail({ list, catalogItems }: ListDetailProps) {
         </div>
         {addError && <p className="text-sm text-red-600">{addError}</p>}
       </form>
+      )}
     </div>
   );
 }

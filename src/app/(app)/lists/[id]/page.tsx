@@ -26,6 +26,8 @@ export default async function ListDetailPage({
             quantity: true,
             unit: true,
             notes: true,
+            isBought: true,
+            boughtAt: true,
             item: { select: { id: true, name: true, emoji: true, defaultUnit: true } },
           },
         },
