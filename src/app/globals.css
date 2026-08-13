@@ -1,1 +1,30 @@
 @import "tailwindcss";
+
+:root {
+  --paper: #fdf8f0;
+  --ink: #241a14;
+  --brand: #b5542c;
+  --brand-dark: color-mix(in srgb, var(--brand) 82%, #000);
+  --accent: #1f6f6b;
+  --gold: #d9a441;
+  --card: #ffffff;
+  --muted: #7a6a5c;
+  --border: #e7dbc9;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-brand: var(--brand);
+  --color-brand-dark: var(--brand-dark);
+  --color-accent: var(--accent);
+  --color-gold: var(--gold);
+  --color-card: var(--card);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
