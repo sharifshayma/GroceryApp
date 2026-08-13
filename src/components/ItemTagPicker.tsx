@@ -42,13 +42,9 @@ export function ItemTagPicker({
   onClose: () => void;
 }) {
   const router = useRouter();
-  const [assigned, setAssigned] = useState<Set<string>>(new Set(assignedTagIds));
+  const [assigned, setAssigned] = useState<Set<string>>(() => new Set(assignedTagIds));
   const [pendingTagId, setPendingTagId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    setAssigned(new Set(assignedTagIds));
-  }, [assignedTagIds]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -63,14 +59,10 @@ export function ItemTagPicker({
   async function handleToggle(tagId: string, isAssigned: boolean) {
     setError(null);
     setPendingTagId(tagId);
-    const result = isAssigned
-      ? await unassignTag({ itemId, tagId })
-      : await assignTag({ itemId, tagId });
-    setPendingTagId(null);
-    if (!result.ok) {
-      setError(result.error);
-      return;
-    }
+
+    // Optimistically flip the toggle so the checkbox responds immediately
+    // and stays correct even if an unrelated parent re-render occurs
+    // while the request is in flight.
     setAssigned((prev) => {
       const next = new Set(prev);
       if (isAssigned) {
@@ -80,6 +72,25 @@ export function ItemTagPicker({
       }
       return next;
     });
+
+    const result = isAssigned
+      ? await unassignTag({ itemId, tagId })
+      : await assignTag({ itemId, tagId });
+    setPendingTagId(null);
+    if (!result.ok) {
+      // Revert the optimistic change.
+      setAssigned((prev) => {
+        const next = new Set(prev);
+        if (isAssigned) {
+          next.add(tagId);
+        } else {
+          next.delete(tagId);
+        }
+        return next;
+      });
+      setError(result.error);
+      return;
+    }
     router.refresh();
   }
 
