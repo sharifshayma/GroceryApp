@@ -1,7 +1,7 @@
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
 import { verifyMcpToken } from "@/lib/mcp-token";
-import { searchItems, getLists, getNeedToBuy, listTags, listPrices } from "@/lib/mcp-queries";
+import { searchItems, getLists, getNeedToBuy, listTags, listCategories, listPrices } from "@/lib/mcp-queries";
 import { addListItemCore, updateListItemCore, setListItemBoughtCore } from "@/lib/mutations/list-items";
 import { createListCore, renameListCore, deleteListCore, duplicateListCore, completeListCore } from "@/lib/mutations/lists";
 
@@ -42,6 +42,12 @@ const baseHandler = createMcpHandler(
       "List this household's tags (recipe/store/custom) with item counts. Optional type filter.",
       { type: z.enum(["recipe", "store", "custom"]).optional() },
       async ({ type }, extra) => json(await listTags(hh(extra), type)),
+    );
+    server.tool(
+      "list_categories",
+      "List the household's item categories (id, name, emoji). Use a category id with create_item/edit_item.",
+      {},
+      async (_args, extra) => json(await listCategories(hh(extra))),
     );
     server.tool(
       "list_prices",
