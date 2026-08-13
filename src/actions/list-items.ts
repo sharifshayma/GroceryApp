@@ -1,34 +1,16 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
 import { requireHousehold } from "@/lib/household-context";
 import { getCurrentUser } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
+import {
+  addListItemCore,
+  updateListItemCore,
+  removeListItemCore,
+  setListItemBoughtCore,
+} from "@/lib/mutations/list-items";
 
 type Result = { ok: true } | { ok: false; error: string };
-
-function clean(s: string | undefined | null): string | null {
-  const v = (s ?? "").trim();
-  return v ? v : null;
-}
-
-// True iff the list belongs to the household.
-async function listOwned(householdId: string, listId: string): Promise<boolean> {
-  const list = await prisma.groceryList.findFirst({
-    where: { id: listId, householdId },
-    select: { id: true },
-  });
-  return Boolean(list);
-}
-
-// Returns the list_item's listId iff its parent list belongs to the household, else null.
-async function listItemListId(householdId: string, listItemId: string): Promise<string | null> {
-  const li = await prisma.listItem.findFirst({
-    where: { id: listItemId, list: { householdId } },
-    select: { listId: true },
-  });
-  return li?.listId ?? null;
-}
 
 export async function addListItem(input: {
   listId: string;
@@ -38,24 +20,12 @@ export async function addListItem(input: {
   notes?: string;
 }): Promise<Result> {
   const household = await requireHousehold();
-  if (!(await listOwned(household.id, input.listId))) return { ok: false, error: "List not found" };
-  const item = await prisma.item.findFirst({
-    where: { id: input.itemId, householdId: household.id },
-    select: { id: true },
-  });
-  if (!item) return { ok: false, error: "Item not found" };
-  await prisma.listItem.create({
-    data: {
-      listId: input.listId,
-      itemId: input.itemId,
-      quantity: Number.isFinite(input.quantity) && input.quantity > 0 ? input.quantity : 1,
-      unit: clean(input.unit) ?? "pcs",
-      notes: clean(input.notes),
-    },
-  });
-  revalidatePath(`/lists/${input.listId}`);
-  revalidatePath("/lists");
-  return { ok: true };
+  const res = await addListItemCore(household.id, input);
+  if (res.ok) {
+    revalidatePath(`/lists/${input.listId}`);
+    revalidatePath("/lists");
+  }
+  return res;
 }
 
 export async function updateListItem(input: {
@@ -65,26 +35,17 @@ export async function updateListItem(input: {
   notes?: string;
 }): Promise<Result> {
   const household = await requireHousehold();
-  const listId = await listItemListId(household.id, input.listItemId);
-  if (!listId) return { ok: false, error: "List item not found" };
-  await prisma.listItem.update({
-    where: { id: input.listItemId },
-    data: {
-      quantity: Number.isFinite(input.quantity) && input.quantity > 0 ? input.quantity : 1,
-      unit: clean(input.unit) ?? "pcs",
-      notes: clean(input.notes),
-    },
-  });
-  revalidatePath(`/lists/${listId}`);
+  const res = await updateListItemCore(household.id, input);
+  if (!res.ok) return res;
+  revalidatePath(`/lists/${res.listId}`);
   return { ok: true };
 }
 
 export async function removeListItem(listItemId: string): Promise<Result> {
   const household = await requireHousehold();
-  const listId = await listItemListId(household.id, listItemId);
-  if (!listId) return { ok: false, error: "List item not found" };
-  await prisma.listItem.delete({ where: { id: listItemId } });
-  revalidatePath(`/lists/${listId}`);
+  const res = await removeListItemCore(household.id, { listItemId });
+  if (!res.ok) return res;
+  revalidatePath(`/lists/${res.listId}`);
   return { ok: true };
 }
 
@@ -93,17 +54,9 @@ export async function setListItemBought(input: {
   isBought: boolean;
 }): Promise<Result> {
   const household = await requireHousehold();
-  const listId = await listItemListId(household.id, input.listItemId);
-  if (!listId) return { ok: false, error: "List item not found" };
-  const user = input.isBought ? await getCurrentUser() : null;
-  await prisma.listItem.update({
-    where: { id: input.listItemId },
-    data: {
-      isBought: input.isBought,
-      boughtById: input.isBought ? (user?.id ?? null) : null,
-      boughtAt: input.isBought ? new Date() : null,
-    },
-  });
-  revalidatePath(`/lists/${listId}`);
+  const user = await getCurrentUser();
+  const res = await setListItemBoughtCore(household.id, user?.id ?? null, input);
+  if (!res.ok) return res;
+  revalidatePath(`/lists/${res.listId}`);
   return { ok: true };
 }
