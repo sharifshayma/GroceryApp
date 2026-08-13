@@ -10,7 +10,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "db:migrate": "prisma migrate deploy"
+    "db:migrate": "prisma migrate deploy",
+    "seed:demo": "prisma db seed"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
