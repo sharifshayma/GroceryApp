@@ -1,43 +1,35 @@
 # GroceryApp
 
-A household grocery management PWA for families and roommates. Create shopping lists, track what's in stock, and never forget what you need at the store.
+A household grocery management app for families and roommates. Create shopping lists, track what's in stock, and never forget what you need at the store.
 
-**Live demo:** [grocerylist.shayma.me](https://grocerylist.shayma.me)
+**Live demo (current `main` app):** [grocerylist.shayma.me](https://grocerylist.shayma.me)
 
-## Features
+> **Branch note:** This is the `next-migration` branch — an in-progress rebuild of GroceryApp on Next.js + Prisma. `main` remains the live Vite + Supabase app and keeps serving the demo above until this branch is cut over. Phase 1 (this branch, so far) stands up the app shell, database schema, and auth/household foundation only — grocery list/stock/catalog features have not been ported yet.
 
-- **Shopping Lists** — Create lists, shop with check-off mode, and carry over unbought items to a new list automatically
-- **Stock Tracking** — Keep track of what's in your pantry with low-stock alerts
-- **Household Sharing** — Invite family members to share lists and stock via invite codes
-- **Item Catalog** — Organize items by category with emoji icons, tags (recipes, stores), and notes
-- **Bilingual** — Full English and Hebrew support with RTL layout
-- **Installable PWA** — Works offline, installable on mobile and desktop
-- **WhatsApp Sharing** — Share lists as text or via link
-- **Connect to Claude** — Talk to your groceries via an MCP server (search items, mark bought, adjust stock, etc.) — see [Connect to Claude](#connect-to-claude) below
+## Tech Stack (next-migration branch)
 
-## Tech Stack
-
-- **Frontend:** React 19, React Router 7, Tailwind CSS 4
-- **Backend:** Supabase (PostgreSQL + Auth + Row-Level Security)
-- **Build:** Vite 8 with PWA plugin
-- **i18n:** i18next (English + Hebrew)
-- **Deployment:** Vercel
-- **Email:** Resend (for feedback)
+- **Framework:** Next.js 16 (App Router), React 19, TypeScript
+- **Database:** Prisma 6 + Prisma Postgres (via the Accelerate extension)
+- **Auth:** better-auth (email + password, email-OTP password reset)
+- **Styling:** Tailwind CSS 4
+- **Validation:** Zod
+- **Testing:** Vitest
+- **i18n:** Custom EN/HE dictionary + `t()` helper, with RTL support for Hebrew
 
 ## Getting Started
 
 ### Prerequisites
 
 - Node.js 18+
-- A [Supabase](https://supabase.com) project
-- (Optional) [Vercel](https://vercel.com) account for deployment
+- A [Prisma](https://www.prisma.io) account (for Prisma Postgres — free tier is enough for local dev)
 
 ### Setup
 
-1. Clone the repo:
+1. Clone the repo and check out this branch:
    ```bash
    git clone https://github.com/sharifshayma/GroceryApp.git
    cd GroceryApp
+   git checkout next-migration
    ```
 
 2. Install dependencies:
@@ -45,113 +37,67 @@ A household grocery management PWA for families and roommates. Create shopping l
    npm install
    ```
 
-3. Create your environment file:
+3. Provision a Prisma Postgres database:
+   ```bash
+   npx prisma init --db
+   ```
+   This logs you into Prisma (or prompts you to sign up), creates a Prisma Postgres database, and prints a `DATABASE_URL` (routed through Accelerate) and `DIRECT_URL` (direct connection, used for migrations).
+
+4. Create your environment file:
    ```bash
    cp .env.example .env
    ```
-   Fill in your Supabase credentials:
+   Fill in `.env` (gitignored — never commit it):
    ```
-   VITE_SUPABASE_URL=https://your-project.supabase.co
-   VITE_SUPABASE_ANON_KEY=your-anon-key-here
+   DATABASE_URL="prisma+postgres://accelerate.prisma-data.net/?api_key=..."   # from step 3
+   DIRECT_URL="postgres://USER:PASSWORD@HOST:5432/DB"                        # from step 3
+   BETTER_AUTH_SECRET=""   # generate with: openssl rand -base64 32
+   BETTER_AUTH_URL="http://localhost:3000"
+   RESEND_API_KEY=""       # optional — needed only to actually send password-reset emails
    ```
 
-4. Set up the database — run the migration files in `supabase/migrations/` against your Supabase project (via the Supabase dashboard SQL editor or CLI).
+5. Create the database schema:
+   ```bash
+   npx prisma migrate dev
+   ```
 
-5. Start the dev server:
+6. Start the dev server:
    ```bash
    npm run dev
    ```
+   The app runs at [http://localhost:3000](http://localhost:3000). Sign up at `/signup`, log in at `/login`.
 
-### Deployment
-
-Deploy to Vercel:
-```bash
-vercel --prod
-```
-
-Or connect your GitHub repo to Vercel for automatic deployments.
-
-## Connect to Claude
-
-The app exposes an MCP (Model Context Protocol) server at `/api/mcp` so you can manage your groceries from Claude (Desktop, web, or any MCP-compatible client) — "what do I need to buy?", "add bread to my list", "I just used 1 egg", etc.
-
-### Tools (11)
-
-Reads: `search_items`, `get_lists`, `get_need_to_buy`, `list_tags`.
-Writes: `add_to_list`, `mark_list_item`, `edit_list_item`, `set_stock`, `adjust_stock`, `manage_list`, `tag_item`.
-
-### Set up the server
-
-The MCP function needs the Supabase service-role key (it bypasses RLS and scopes every query by household via `mcp_tokens`).
-
-In your Vercel project:
-
-```
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=...your service role key...
-```
-
-Run migration `008_mcp_tokens.sql` against your Supabase project.
-
-### Generate a personal token
-
-1. Open the app → **Profile** → **Connect to Claude**.
-2. Click **Generate new token**, give it a name (e.g. "Claude Desktop").
-3. Copy the token — it's shown only once.
-
-### Connect from Claude
-
-The server speaks the MCP Streamable HTTP transport. It authenticates with a static bearer token, so connect via Claude Desktop's JSON config or the Claude Code CLI — both support arbitrary auth headers. (The claude.ai web/mobile custom-connector UI currently only supports OAuth-based MCPs, so it can't talk to this server until OAuth is added.)
-
-**Claude Desktop** — edit `~/Library/Application Support/Claude/claude_desktop_config.json` on macOS:
-
-```json
-{
-  "mcpServers": {
-    "grocery": {
-      "url": "https://your-app.vercel.app/api/mcp",
-      "headers": {
-        "Authorization": "Bearer <paste-your-token>"
-      }
-    }
-  }
-}
-```
-
-Restart Claude Desktop. The 11 grocery tools should appear in the tool list.
-
-**Claude Code:**
+### Verification (no database required)
 
 ```bash
-claude mcp add --transport http --scope user grocery \
-  https://your-app.vercel.app/api/mcp \
-  --header "Authorization: Bearer <paste-your-token>"
+npx tsc --noEmit   # typecheck
+npm run test       # vitest
+npm run lint       # eslint
+npm run build      # prisma generate + next build
 ```
 
-Verify with `claude mcp get grocery` — status should be `✓ Connected`.
-
-### Revoking tokens
-
-Profile → Connect to Claude → **Revoke** next to any active token. The hash row is deleted; further calls with that token return 401.
-
-## Project Structure
+## Project Structure (next-migration branch)
 
 ```
+prisma/
+  schema.prisma        # full data model (auth tables + household/grocery domain)
 src/
-  pages/          # Route pages (Home, Lists, Stock, Profile, etc.)
-  components/     # Reusable UI components
-  hooks/          # Custom React hooks (useLists, useStock, useItems, etc.)
-  i18n/           # Translation files (en.json, he.json)
-  lib/
-    grocery.js    # Shared business logic — used by hooks AND the MCP server
-    supabase.js   # Browser Supabase client
-    withTimeout.js
-api/
-  feedback.js     # Feedback email handler
-  mcp.js          # MCP server (Streamable HTTP transport)
-supabase/         # Database migrations
-public/           # PWA icons & assets
+  app/
+    (auth)/             # /login, /signup, /reset
+    (app)/dashboard/     # authenticated shell (guarded: user + household required)
+    onboarding/          # create-or-join household
+    api/auth/[...all]/   # better-auth route handler
+  actions/              # server actions (signUp, createHousehold, joinHousehold)
+  lib/                  # prisma client, auth server/client/guard, household context,
+                         # invite-code generator, validations, resend email helper
+  i18n/                 # EN/HE dictionaries + t()/dirFor() helpers, LocaleProvider
+  components/           # UI primitives + onboarding/auth components
+src-vite-legacy/        # the old Vite + Supabase app, kept for reference during migration
 ```
+
+## Connect to Claude (not yet ported)
+
+The `main` branch exposes an MCP (Model Context Protocol) server at `/api/mcp` for managing groceries from Claude. This has **not** been ported to the Next.js stack yet — it's planned for a later migration phase. See `main`'s README for how it currently works.
 
 ## License
 
