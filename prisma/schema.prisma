@@ -1,0 +1,260 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum Role {
+  owner
+  member
+}
+
+enum Language {
+  en
+  he
+}
+
+enum TagType {
+  recipe
+  store
+  custom
+}
+
+enum ListStatus {
+  draft
+  active
+  completed
+}
+
+enum InvitationStatus {
+  pending
+  accepted
+  expired
+}
+
+// ---- better-auth ----
+model User {
+  id            String    @id
+  name          String
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+
+  // profile fields (folds the old `profiles` table into the user)
+  householdId String?
+  household   Household? @relation("HouseholdMembers", fields: [householdId], references: [id], onDelete: SetNull)
+  role        Role       @default(member)
+  language    Language   @default(he)
+  displayName String?
+
+  createdHouseholds Household[] @relation("HouseholdCreator")
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([userId])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  @@index([userId])
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  @@index([identifier])
+  @@map("verification")
+}
+
+// ---- GroceryApp domain ----
+model Household {
+  id          String   @id @default(cuid())
+  name        String
+  inviteCode  String   @unique
+  createdById String?
+  createdBy   User?    @relation("HouseholdCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+
+  members      User[]         @relation("HouseholdMembers")
+  categories   Category[]
+  items        Item[]
+  tags         Tag[]
+  lists        GroceryList[]
+  stock        Stock[]
+  priceHistory PriceHistory[]
+  invitations  Invitation[]
+
+  @@index([inviteCode])
+}
+
+model Category {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name        String
+  nameHe      String?
+  emoji       String    @default("📦")
+  photoUrl    String?
+  sortOrder   Int       @default(0)
+  isDefault   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  items       Item[]
+  @@index([householdId])
+}
+
+model Item {
+  id             String    @id @default(cuid())
+  householdId    String
+  household      Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  name           String
+  nameHe         String?
+  emoji          String    @default("🛒")
+  defaultUnit    String    @default("pcs")
+  notes          String?
+  autoTrackStock Boolean   @default(true)
+  photoUrl       String?
+  photoPath      String?
+  createdById    String?
+  createdAt      DateTime  @default(now())
+  tags           ItemTag[]
+  listItems      ListItem[]
+  stock          Stock[]
+  priceHistory   PriceHistory[]
+  @@index([householdId])
+  @@index([categoryId])
+}
+
+model Tag {
+  id          String    @id @default(cuid())
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name        String
+  type        TagType
+  description String?
+  color       String    @default("#3B82F6")
+  createdAt   DateTime  @default(now())
+  items       ItemTag[]
+  @@index([householdId])
+}
+
+model ItemTag {
+  itemId String
+  item   Item   @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  notes  String?
+  @@id([itemId, tagId])
+}
+
+model GroceryList {
+  id          String     @id @default(cuid())
+  householdId String
+  household   Household  @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  name        String
+  status      ListStatus @default(draft)
+  createdById String?
+  createdAt   DateTime   @default(now())
+  completedAt DateTime?
+  items       ListItem[]
+  @@index([householdId])
+}
+
+model ListItem {
+  id           String       @id @default(cuid())
+  listId       String
+  list         GroceryList  @relation(fields: [listId], references: [id], onDelete: Cascade)
+  itemId       String?
+  item         Item?        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  quantity     Float        @default(1)
+  unit         String       @default("pcs")
+  isBought     Boolean      @default(false)
+  boughtById   String?
+  boughtAt     DateTime?
+  notes        String?
+  stockUpdated Boolean      @default(false)
+  @@index([listId])
+}
+
+model Stock {
+  id           String    @id @default(cuid())
+  householdId  String
+  household    Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  itemId       String
+  item         Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  quantity     Float     @default(0)
+  unit         String    @default("pcs")
+  lowThreshold Float     @default(1)
+  updatedAt    DateTime  @updatedAt
+  updatedById  String?
+  @@unique([householdId, itemId])
+  @@index([householdId])
+}
+
+model PriceHistory {
+  id             String    @id @default(cuid())
+  itemId         String
+  item           Item      @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  householdId    String
+  household      Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  price          Decimal
+  currency       String    @default("ILS")
+  store          String?
+  quantityAmount Float?
+  quantityUnit   String?
+  purchasedAt    DateTime  @default(now()) @db.Date
+  loggedById     String?
+  createdAt      DateTime  @default(now())
+  @@index([itemId])
+  @@index([householdId])
+}
+
+model Invitation {
+  id          String           @id @default(cuid())
+  householdId String
+  household   Household        @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  email       String?
+  invitedById String?
+  status      InvitationStatus @default(pending)
+  createdAt   DateTime         @default(now())
+  @@index([householdId])
+}
