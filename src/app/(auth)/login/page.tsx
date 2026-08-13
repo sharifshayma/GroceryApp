@@ -1,0 +1,76 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { signIn } from "@/lib/auth-client";
+import { getDictionary, t } from "@/i18n";
+
+const d = getDictionary("en");
+
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    const { error: signInError } = await signIn.email({ email, password });
+    setSubmitting(false);
+    if (signInError) {
+      setError("Invalid email or password");
+      return;
+    }
+    router.push("/dashboard");
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center p-4">
+      <form
+        onSubmit={handleSubmit}
+        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
+      >
+        <h1 className="text-center text-xl font-extrabold">{t(d, "auth.login.title")}</h1>
+        <Input
+          id="email"
+          type="email"
+          label={t(d, "auth.login.email")}
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          autoComplete="email"
+          required
+          autoFocus
+        />
+        <Input
+          id="password"
+          type="password"
+          label={t(d, "auth.login.password")}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          autoComplete="current-password"
+          required
+        />
+        {error && <p className="text-sm text-red-600">{error}</p>}
+        <Button type="submit" disabled={submitting}>
+          {submitting ? t(d, "common.saving") : t(d, "auth.login.submit")}
+        </Button>
+        <p className="text-center text-sm text-ink/60">
+          <Link href="/signup" className="font-bold text-brand hover:underline">
+            {t(d, "auth.login.noAccount")}
+          </Link>
+        </p>
+        <p className="text-center text-sm text-ink/60">
+          <Link href="/reset" className="font-bold text-brand hover:underline">
+            {t(d, "auth.reset.title")}
+          </Link>
+        </p>
+      </form>
+    </div>
+  );
+}
