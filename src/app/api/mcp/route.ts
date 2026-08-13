@@ -4,6 +4,10 @@ import { verifyMcpToken } from "@/lib/mcp-token";
 import { searchItems, getLists, getNeedToBuy, listTags, listCategories, listPrices } from "@/lib/mcp-queries";
 import { addListItemCore, updateListItemCore, setListItemBoughtCore } from "@/lib/mutations/list-items";
 import { createListCore, renameListCore, deleteListCore, duplicateListCore, completeListCore } from "@/lib/mutations/lists";
+import { createItemCore, updateItemCore, deleteItemCore } from "@/lib/mutations/items";
+import { setStockCore, adjustStockCore } from "@/lib/mutations/stock";
+import { addPriceEntryCore, updatePriceEntryCore, deletePriceEntryCore } from "@/lib/mutations/prices";
+import { assignTagCore, unassignTagCore } from "@/lib/mutations/tags";
 
 function hh(extra: unknown): string {
   const id = (extra as { authInfo?: { extra?: { householdId?: string } } })?.authInfo?.extra?.householdId;
@@ -120,6 +124,97 @@ const baseHandler = createMcpHandler(
             return json(await duplicateListCore(householdId, uid(extra), { id: listId }));
         }
       },
+    );
+
+    server.tool(
+      "create_item",
+      "Create a catalog item. Optional categoryId from list_categories.",
+      {
+        name: z.string(),
+        nameHe: z.string().optional(),
+        emoji: z.string().optional(),
+        defaultUnit: z.string().optional(),
+        notes: z.string().optional(),
+        categoryId: z.string().optional(),
+      },
+      async ({ name, nameHe, emoji, defaultUnit, notes, categoryId }, extra) =>
+        json(await createItemCore(hh(extra), uid(extra), { name, nameHe, emoji, defaultUnit, notes, categoryId })),
+    );
+
+    server.tool(
+      "edit_item",
+      "Edit a catalog item. Get itemId from search_items; name is required. Optional categoryId from list_categories.",
+      {
+        itemId: z.string(),
+        name: z.string(),
+        nameHe: z.string().optional(),
+        emoji: z.string().optional(),
+        defaultUnit: z.string().optional(),
+        notes: z.string().optional(),
+        categoryId: z.string().optional(),
+      },
+      async ({ itemId, name, nameHe, emoji, defaultUnit, notes, categoryId }, extra) =>
+        json(await updateItemCore(hh(extra), { id: itemId, name, nameHe, emoji, defaultUnit, notes, categoryId })),
+    );
+
+    server.tool(
+      "delete_item",
+      "Delete a catalog item. This also removes its stock, price history, list lines, and tags. Get itemId from search_items.",
+      { itemId: z.string() },
+      async ({ itemId }, extra) => json(await deleteItemCore(hh(extra), { id: itemId })),
+    );
+
+    server.tool(
+      "set_stock",
+      "Set an item's stock quantity, unit, and low threshold. Get itemId from search_items.",
+      {
+        itemId: z.string(),
+        quantity: z.number(),
+        unit: z.string().optional(),
+        lowThreshold: z.number().optional(),
+      },
+      async ({ itemId, quantity, unit, lowThreshold }, extra) =>
+        json(await setStockCore(hh(extra), uid(extra), { itemId, quantity, unit: unit ?? "", lowThreshold: lowThreshold ?? 1 })),
+    );
+
+    server.tool(
+      "adjust_stock",
+      "Add delta (may be negative) to an item's stock, clamped at 0. Get itemId from search_items.",
+      { itemId: z.string(), delta: z.number() },
+      async ({ itemId, delta }, extra) => json(await adjustStockCore(hh(extra), uid(extra), { itemId, delta })),
+    );
+
+    server.tool(
+      "log_price",
+      "Record a price for an item. Get itemId from search_items. purchasedAt is YYYY-MM-DD (defaults to today).",
+      { itemId: z.string(), price: z.number(), store: z.string().optional(), purchasedAt: z.string().optional() },
+      async ({ itemId, price, store, purchasedAt }, extra) =>
+        json(await addPriceEntryCore(hh(extra), uid(extra), { itemId, price, store, purchasedAt })),
+    );
+
+    server.tool(
+      "edit_price",
+      "Edit a recorded price. Get entryId from list_prices. purchasedAt is YYYY-MM-DD.",
+      { entryId: z.string(), price: z.number(), store: z.string().optional(), purchasedAt: z.string().optional() },
+      async ({ entryId, price, store, purchasedAt }, extra) =>
+        json(await updatePriceEntryCore(hh(extra), { entryId, price, store, purchasedAt })),
+    );
+
+    server.tool(
+      "delete_price",
+      "Delete a recorded price. Get entryId from list_prices.",
+      { entryId: z.string() },
+      async ({ entryId }, extra) => json(await deletePriceEntryCore(hh(extra), { entryId })),
+    );
+
+    server.tool(
+      "tag_item",
+      "Attach a tag to an item (or detach with attach:false). Get itemId from search_items and tagId from list_tags.",
+      { itemId: z.string(), tagId: z.string(), attach: z.boolean().optional() },
+      async ({ itemId, tagId, attach }, extra) =>
+        json(attach === false
+          ? await unassignTagCore(hh(extra), { itemId, tagId })
+          : await assignTagCore(hh(extra), { itemId, tagId })),
     );
   },
   { serverInfo: { name: "grocery", version: "1.0.0" } },
