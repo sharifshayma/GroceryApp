@@ -1,0 +1,135 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { getDictionary, t } from "@/i18n";
+import { generateMcpToken, revokeMcpTokenAction } from "@/actions/mcp-tokens";
+
+const d = getDictionary("en");
+
+type TokenView = {
+  id: string;
+  name: string | null;
+  lastFour: string | null;
+  createdAt: string;
+  lastUsedAt: string | null;
+};
+
+export function McpTokensCard({
+  initialTokens,
+  endpoint,
+}: {
+  initialTokens: TokenView[];
+  endpoint: string;
+}) {
+  const router = useRouter();
+  const [name, setName] = useState("");
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [rawToken, setRawToken] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  async function onGenerate() {
+    setPending(true);
+    setError(null);
+    const res = await generateMcpToken({ name });
+    setPending(false);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    setRawToken(res.raw);
+    setName("");
+    router.refresh();
+  }
+
+  async function onRevoke(id: string) {
+    if (!confirm(t(d, "settings.connect.revokeConfirm"))) return;
+    const res = await revokeMcpTokenAction(id);
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    router.refresh();
+  }
+
+  const configSnippet = JSON.stringify(
+    {
+      mcpServers: {
+        grocery: { url: endpoint, headers: { Authorization: "Bearer <YOUR_TOKEN>" } },
+      },
+    },
+    null,
+    2,
+  );
+
+  return (
+    <section className="rounded-lg border border-border bg-white p-4">
+      <h2 className="text-lg font-bold">{t(d, "settings.connect.heading")}</h2>
+      <p className="mt-1 text-sm text-ink/70">{t(d, "settings.connect.intro")}</p>
+
+      <div className="mt-3 flex gap-2">
+        <input
+          className="flex-1 rounded border border-border px-2 py-1"
+          placeholder={t(d, "settings.connect.namePlaceholder")}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <button
+          className="rounded bg-brand px-3 py-1 font-semibold text-white disabled:opacity-50"
+          disabled={pending || !name.trim()}
+          onClick={onGenerate}
+        >
+          {pending ? t(d, "settings.connect.generating") : t(d, "settings.connect.generate")}
+        </button>
+      </div>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
+
+      {rawToken && (
+        <div className="mt-3 rounded border border-brand/40 bg-brand/5 p-3">
+          <p className="text-sm font-medium">{t(d, "settings.connect.oncePrefix")}</p>
+          <div className="mt-1 flex items-center gap-2">
+            <code className="flex-1 break-all rounded bg-white px-2 py-1 text-sm">{rawToken}</code>
+            <button
+              className="rounded border border-border px-2 py-1 text-sm"
+              onClick={() => {
+                navigator.clipboard.writeText(rawToken);
+                setCopied(true);
+              }}
+            >
+              {copied ? t(d, "settings.connect.copied") : t(d, "settings.connect.copy")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <ul className="mt-4 divide-y divide-border">
+        {initialTokens.length === 0 && (
+          <li className="py-2 text-sm text-ink/60">{t(d, "settings.connect.empty")}</li>
+        )}
+        {initialTokens.map((tk) => (
+          <li key={tk.id} className="flex items-center justify-between py-2 text-sm">
+            <span>
+              <span className="font-medium">{tk.name ?? "—"}</span>{" "}
+              <span className="text-ink/50">
+                {t(d, "settings.connect.lastFour", { four: tk.lastFour ?? "????" })}
+              </span>
+            </span>
+            <button className="text-red-600 hover:underline" onClick={() => onRevoke(tk.id)}>
+              {t(d, "settings.connect.revoke")}
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      <div className="mt-4">
+        <h3 className="text-sm font-semibold">{t(d, "settings.connect.instructionsHeading")}</h3>
+        <p className="mt-1 text-sm text-ink/70">{t(d, "settings.connect.instructions")}</p>
+        <p className="mt-2 text-xs text-ink/60">
+          {t(d, "settings.connect.endpointLabel")}: <code>{endpoint}</code>
+        </p>
+        <pre className="mt-2 overflow-x-auto rounded bg-ink/5 p-2 text-xs">{configSnippet}</pre>
+      </div>
+    </section>
+  );
+}

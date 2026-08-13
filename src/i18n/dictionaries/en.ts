@@ -13,7 +13,7 @@ export const en = {
   },
   dashboard: { title: "Dashboard", empty: "Your household is set up. Grocery features are coming next." },
   catalog: {
-    nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices" },
+    nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices", settings: "Settings" },
     categories: {
       title: "Categories",
       add: "Add category",
@@ -142,5 +142,29 @@ export const en = {
     removeConfirm: "Delete this price entry?",
     noStore: "—",
     empty: "No prices logged yet.",
+  },
+  settings: {
+    title: "Settings",
+    connect: {
+      heading: "Connect to Claude",
+      intro: "Generate a token to let Claude read and manage your groceries via MCP.",
+      namePlaceholder: "Token name (e.g. Claude Desktop)",
+      generate: "Generate token",
+      generating: "Generating...",
+      oncePrefix: "Copy this token now — it won't be shown again:",
+      copy: "Copy",
+      copied: "Copied",
+      revoke: "Revoke",
+      revokeConfirm: "Revoke this token? Any client using it will stop working.",
+      empty: "No tokens yet.",
+      created: "Created",
+      lastUsed: "Last used",
+      never: "never",
+      lastFour: "ending {four}",
+      instructionsHeading: "How to connect",
+      instructions:
+        "Add this to your Claude Desktop MCP config (Settings → Developer), using the token above as the Authorization bearer.",
+      endpointLabel: "MCP endpoint",
+    },
   },
 };

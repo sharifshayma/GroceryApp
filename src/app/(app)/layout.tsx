@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth-guard";
 import { getCurrentHousehold } from "@/lib/household-context";
@@ -17,7 +18,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen">
       <nav className="flex items-center justify-between border-b border-border bg-white px-4 py-3">
         <span className="font-extrabold">{household.name}</span>
-        <LogoutButton label={t(d, "auth.logout")} />
+        <div className="flex items-center gap-4">
+          <Link href="/settings" className="text-sm font-medium hover:underline">
+            {t(d, "catalog.nav.settings")}
+          </Link>
+          <LogoutButton label={t(d, "auth.logout")} />
+        </div>
       </nav>
       <main>{children}</main>
     </div>

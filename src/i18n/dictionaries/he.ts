@@ -15,7 +15,7 @@ export const he: typeof en = {
   },
   dashboard: { title: "לוח בקרה", empty: "משק הבית שלך מוגדר. תכונות הקניות בדרך." },
   catalog: {
-    nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים" },
+    nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים", settings: "הגדרות" },
     categories: {
       title: "קטגוריות",
       add: "הוספת קטגוריה",
@@ -144,5 +144,29 @@ export const he: typeof en = {
     removeConfirm: "למחוק את רשומת המחיר הזו?",
     noStore: "—",
     empty: "עדיין לא נרשמו מחירים.",
+  },
+  settings: {
+    title: "הגדרות",
+    connect: {
+      heading: "חיבור ל‑Claude",
+      intro: "צור טוקן כדי לאפשר ל‑Claude לקרוא ולנהל את הקניות שלך דרך MCP.",
+      namePlaceholder: "שם הטוקן (למשל Claude Desktop)",
+      generate: "צור טוקן",
+      generating: "יוצר...",
+      oncePrefix: "העתק את הטוקן עכשיו — הוא לא יוצג שוב:",
+      copy: "העתק",
+      copied: "הועתק",
+      revoke: "בטל",
+      revokeConfirm: "לבטל את הטוקן? כל לקוח שמשתמש בו יפסיק לעבוד.",
+      empty: "אין טוקנים עדיין.",
+      created: "נוצר",
+      lastUsed: "שימוש אחרון",
+      never: "אף פעם",
+      lastFour: "מסתיים ב‑{four}",
+      instructionsHeading: "איך להתחבר",
+      instructions:
+        "הוסף זאת להגדרות ה‑MCP של Claude Desktop (הגדרות → מפתחים), עם הטוקן שלמעלה כ‑Authorization bearer.",
+      endpointLabel: "כתובת MCP",
+    },
   },
 };
