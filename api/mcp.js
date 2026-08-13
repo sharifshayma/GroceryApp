@@ -1167,13 +1167,16 @@ Use this for "milk was 8.90 at Shufersal today", "I paid 25 for diapers", or to 
 // --- HTTP handler -----------------------------------------------------------
 
 export default async function handler(req, res) {
-  if (req.method === 'GET') {
-    res.status(200).json({ ok: true, name: 'grocery-mcp', version: '1.0.0' })
-    return
-  }
+  // MCP Streamable HTTP clients open a GET to listen for server->client SSE
+  // messages. This server is stateless and never pushes, so per the MCP spec we
+  // MUST answer GET (and any non-POST) with 405. Returning a 200 JSON body here
+  // made clients treat it as a broken stream and reconnect several times per
+  // second — a tight loop that drove ~200K requests/day on Vercel. Do not
+  // "restore" a 200 health response on this path; add a separate route if you
+  // need a health check.
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'GET, POST')
-    res.status(405).json({ error: 'Method not allowed' })
+    res.setHeader('Allow', 'POST')
+    res.status(405).json({ error: 'Method not allowed. This MCP endpoint accepts POST only.' })
     return
   }
 
