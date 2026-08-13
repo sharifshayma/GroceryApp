@@ -42,12 +42,12 @@ export async function getLists(householdId: string, status: "open" | "all" = "op
     orderBy: { createdAt: "desc" },
     select: {
       id: true, name: true, status: true,
-      items: { select: { quantity: true, isBought: true, item: { select: { name: true } } } },
+      items: { select: { id: true, itemId: true, quantity: true, isBought: true, item: { select: { name: true } } } },
     },
   });
   return lists.map((l) => ({
     id: l.id, name: l.name, status: l.status,
-    items: l.items.map((li) => ({ name: li.item?.name ?? "?", quantity: li.quantity, bought: li.isBought })),
+    items: l.items.map((li) => ({ listItemId: li.id, itemId: li.itemId, name: li.item?.name ?? "?", quantity: li.quantity, bought: li.isBought })),
   }));
 }
 
