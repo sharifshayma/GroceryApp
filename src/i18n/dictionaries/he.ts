@@ -36,6 +36,7 @@ export const he: typeof en = {
       add: "הוספת פריט",
       name: "שם",
       nameHe: "שם בעברית",
+      emoji: "אימוג'י",
       category: "קטגוריה",
       noCategory: "ללא קטגוריה",
       unit: "יחידה",

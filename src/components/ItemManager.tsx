@@ -100,7 +100,6 @@ export function ItemManager({
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modalOpen]);
 
   async function handleSubmit(e: FormEvent) {
@@ -253,7 +252,7 @@ export function ItemManager({
 
               <Input
                 id="itemEmoji"
-                label="Emoji"
+                label={t(d, "catalog.items.emoji")}
                 type="text"
                 value={form.emoji}
                 onChange={(e) => setForm({ ...form, emoji: e.target.value })}

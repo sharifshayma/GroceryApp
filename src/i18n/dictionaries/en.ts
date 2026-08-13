@@ -34,6 +34,7 @@ export const en = {
       add: "Add item",
       name: "Name",
       nameHe: "Hebrew name",
+      emoji: "Emoji",
       category: "Category",
       noCategory: "No category",
       unit: "Unit",
