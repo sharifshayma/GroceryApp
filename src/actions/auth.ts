@@ -5,6 +5,7 @@ import { auth } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-guard";
 import { generateInviteCode } from "@/lib/invite-code";
+import { seedDefaultCategories } from "@/lib/default-categories";
 import {
   signupSchema,
   createHouseholdSchema,
@@ -49,6 +50,7 @@ export async function createHousehold(name: string): Promise<Result> {
           where: { id: user.id },
           data: { householdId: hh.id, role: "owner" },
         });
+        await seedDefaultCategories(tx, hh.id);
       });
       return { ok: true };
     } catch (e) {
