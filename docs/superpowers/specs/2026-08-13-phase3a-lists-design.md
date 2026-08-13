@@ -85,9 +85,11 @@ the household, else null).
   no household of their own) — a caller can never touch a list_item on another household's list.
 - `addListItem` additionally verifies the catalog item belongs to the household — a list can never
   reference another household's item.
-- Deleting a list cascades its list_items via the FK; deleting a catalog item (Phase 2a) leaves its
-  list_items with `itemId` null (FK `SetNull`) — the list row survives (shown as a removed/unknown
-  item; the detail view handles a null item gracefully).
+- Deleting a list cascades its list_items via the FK. Deleting a catalog item (Phase 2a) removes
+  its list_items via the FK (`ListItem.item` is `onDelete: Cascade`) — the item vanishes from any
+  list it was on. This matches the original Supabase app (`item_id ... ON DELETE CASCADE`). `itemId`
+  is nullable in the schema, so the detail view still renders defensively if an item is ever null,
+  but under Cascade a list_item's item is normally present.
 
 ## Testing
 
