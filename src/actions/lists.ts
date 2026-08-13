@@ -80,3 +80,59 @@ export async function duplicateList(id: string): Promise<CreateResult> {
   revalidatePath("/lists");
   return { ok: true, id: copy.id };
 }
+
+type CompleteResult =
+  | { ok: true; carriedOverListId?: string }
+  | { ok: false; error: string };
+
+export async function completeList(input: {
+  listId: string;
+  carryOver: boolean;
+}): Promise<CompleteResult> {
+  const household = await requireHousehold();
+  const user = await getCurrentUser();
+  // Household-scoped load confirms ownership before we mutate by id below.
+  const list = await prisma.groceryList.findFirst({
+    where: { id: input.listId, householdId: household.id },
+    select: {
+      name: true,
+      items: {
+        select: { itemId: true, quantity: true, unit: true, notes: true, isBought: true },
+      },
+    },
+  });
+  if (!list) return { ok: false, error: "List not found" };
+
+  const unbought = list.items.filter((li) => !li.isBought);
+  const shouldCarry = input.carryOver && unbought.length > 0;
+
+  const carriedOverListId = await prisma.$transaction(async (tx) => {
+    await tx.groceryList.update({
+      where: { id: input.listId },
+      data: { status: "completed", completedAt: new Date() },
+    });
+    if (!shouldCarry) return undefined as string | undefined;
+    const copy = await tx.groceryList.create({
+      data: {
+        householdId: household.id,
+        name: `${list.name} (carried over)`,
+        status: "draft",
+        createdById: user?.id ?? null,
+        items: {
+          create: unbought.map((li) => ({
+            itemId: li.itemId,
+            quantity: li.quantity,
+            unit: li.unit,
+            notes: li.notes,
+          })),
+        },
+      },
+      select: { id: true },
+    });
+    return copy.id;
+  });
+
+  revalidatePath("/lists");
+  revalidatePath(`/lists/${input.listId}`);
+  return { ok: true, carriedOverListId };
+}
