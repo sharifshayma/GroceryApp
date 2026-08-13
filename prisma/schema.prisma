@@ -55,6 +55,7 @@ model User {
   displayName String?
 
   createdHouseholds Household[] @relation("HouseholdCreator")
+  mcpTokens         McpToken[]
 
   @@map("user")
 }
@@ -120,6 +121,7 @@ model Household {
   stock        Stock[]
   priceHistory PriceHistory[]
   invitations  Invitation[]
+  mcpTokens    McpToken[]
 
   @@index([inviteCode])
 }
@@ -256,4 +258,21 @@ model Invitation {
   status      InvitationStatus @default(pending)
   createdAt   DateTime         @default(now())
   @@index([householdId])
+}
+
+model McpToken {
+  id          String    @id @default(cuid())
+  tokenHash   String    @unique
+  householdId String
+  userId      String
+  name        String?
+  lastFour    String?
+  createdAt   DateTime  @default(now())
+  lastUsedAt  DateTime?
+
+  household Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([householdId])
+  @@index([userId])
 }
