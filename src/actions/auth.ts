@@ -1,5 +1,6 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-guard";
@@ -34,18 +35,26 @@ export async function createHousehold(name: string): Promise<Result> {
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Unauthorized" };
 
-  // Retry on the (rare) inviteCode unique collision.
+  const existing = await prisma.user.findUnique({ where: { id: user.id }, select: { householdId: true } });
+  if (existing?.householdId) return { ok: false, error: "You're already in a household" };
+
+  // Retry only on the (rare) inviteCode unique collision.
   for (let attempt = 0; attempt < 5; attempt++) {
     try {
-      const hh = await prisma.household.create({
-        data: { name: parsed.data.name, inviteCode: generateInviteCode(), createdById: user.id },
-      });
-      await prisma.user.update({
-        where: { id: user.id },
-        data: { householdId: hh.id, role: "owner" },
+      await prisma.$transaction(async (tx) => {
+        const hh = await tx.household.create({
+          data: { name: parsed.data.name, inviteCode: generateInviteCode(), createdById: user.id },
+        });
+        await tx.user.update({
+          where: { id: user.id },
+          data: { householdId: hh.id, role: "owner" },
+        });
       });
       return { ok: true };
     } catch (e) {
+      const isInviteCodeCollision =
+        e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2002";
+      if (!isInviteCodeCollision) return { ok: false, error: "Could not create the household" };
       if (attempt === 4) return { ok: false, error: "Could not create the household" };
     }
   }
@@ -57,6 +66,10 @@ export async function joinHousehold(code: string): Promise<Result> {
   if (!parsed.success) return { ok: false, error: "Enter a valid 8-character code" };
   const user = await getCurrentUser();
   if (!user) return { ok: false, error: "Unauthorized" };
+
+  const existing = await prisma.user.findUnique({ where: { id: user.id }, select: { householdId: true } });
+  if (existing?.householdId) return { ok: false, error: "You're already in a household" };
+
   const hh = await prisma.household.findUnique({ where: { inviteCode: parsed.data.code } });
   if (!hh) return { ok: false, error: "No household found for that code" };
   await prisma.user.update({
