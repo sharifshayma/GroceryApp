@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { getDictionary, t } from "@/i18n";
 import { generateMcpToken, revokeMcpTokenAction } from "@/actions/mcp-tokens";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 const d = getDictionary("en");
 
@@ -32,6 +34,7 @@ export function McpTokensCard({
   async function onGenerate() {
     setPending(true);
     setError(null);
+    setCopied(false);
     const res = await generateMcpToken({ name });
     setPending(false);
     if (!res.ok) {
@@ -50,6 +53,7 @@ export function McpTokensCard({
       setError(res.error);
       return;
     }
+    setError(null);
     router.refresh();
   }
 
@@ -69,19 +73,16 @@ export function McpTokensCard({
       <p className="mt-1 text-sm text-ink/70">{t(d, "settings.connect.intro")}</p>
 
       <div className="mt-3 flex gap-2">
-        <input
-          className="flex-1 rounded border border-border px-2 py-1"
-          placeholder={t(d, "settings.connect.namePlaceholder")}
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button
-          className="rounded bg-brand px-3 py-1 font-semibold text-white disabled:opacity-50"
-          disabled={pending || !name.trim()}
-          onClick={onGenerate}
-        >
+        <div className="flex-1">
+          <Input
+            placeholder={t(d, "settings.connect.namePlaceholder")}
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </div>
+        <Button disabled={pending || !name.trim()} onClick={onGenerate}>
           {pending ? t(d, "settings.connect.generating") : t(d, "settings.connect.generate")}
-        </button>
+        </Button>
       </div>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
@@ -90,15 +91,17 @@ export function McpTokensCard({
           <p className="text-sm font-medium">{t(d, "settings.connect.oncePrefix")}</p>
           <div className="mt-1 flex items-center gap-2">
             <code className="flex-1 break-all rounded bg-white px-2 py-1 text-sm">{rawToken}</code>
-            <button
-              className="rounded border border-border px-2 py-1 text-sm"
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
               onClick={() => {
                 navigator.clipboard.writeText(rawToken);
                 setCopied(true);
               }}
             >
               {copied ? t(d, "settings.connect.copied") : t(d, "settings.connect.copy")}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -108,16 +111,26 @@ export function McpTokensCard({
           <li className="py-2 text-sm text-ink/60">{t(d, "settings.connect.empty")}</li>
         )}
         {initialTokens.map((tk) => (
-          <li key={tk.id} className="flex items-center justify-between py-2 text-sm">
+          <li key={tk.id} className="flex items-start justify-between gap-2 py-2 text-sm">
             <span>
               <span className="font-medium">{tk.name ?? "—"}</span>{" "}
               <span className="text-ink/50">
                 {t(d, "settings.connect.lastFour", { four: tk.lastFour ?? "????" })}
               </span>
+              <div className="text-xs text-ink/50">
+                {t(d, "settings.connect.created")}: {tk.createdAt.slice(0, 10)} ·{" "}
+                {t(d, "settings.connect.lastUsed")}:{" "}
+                {tk.lastUsedAt ? tk.lastUsedAt.slice(0, 10) : t(d, "settings.connect.never")}
+              </div>
             </span>
-            <button className="text-red-600 hover:underline" onClick={() => onRevoke(tk.id)}>
+            <Button
+              type="button"
+              variant="danger"
+              size="sm"
+              onClick={() => onRevoke(tk.id)}
+            >
               {t(d, "settings.connect.revoke")}
-            </button>
+            </Button>
           </li>
         ))}
       </ul>
