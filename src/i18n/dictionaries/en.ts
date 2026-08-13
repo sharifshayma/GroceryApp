@@ -13,7 +13,7 @@ export const en = {
   },
   dashboard: { title: "Dashboard", empty: "Your household is set up. Grocery features are coming next." },
   catalog: {
-    nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock" },
+    nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices" },
     categories: {
       title: "Categories",
       add: "Add category",
@@ -124,5 +124,23 @@ export const en = {
     remove: "Remove",
     removeConfirm: "Stop tracking this item's stock?",
     onLists: "on: {lists}",
+  },
+  prices: {
+    title: "Prices",
+    logPrice: "Log a price",
+    chooseItem: "Choose an item",
+    price: "Price",
+    store: "Store",
+    date: "Date",
+    save: "Save",
+    cancel: "Cancel",
+    cheapest: "Cheapest",
+    entriesCount: "prices",
+    history: "History",
+    edit: "Edit",
+    remove: "Remove",
+    removeConfirm: "Delete this price entry?",
+    noStore: "—",
+    empty: "No prices logged yet.",
   },
 };

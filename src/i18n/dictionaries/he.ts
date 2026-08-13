@@ -15,7 +15,7 @@ export const he: typeof en = {
   },
   dashboard: { title: "לוח בקרה", empty: "משק הבית שלך מוגדר. תכונות הקניות בדרך." },
   catalog: {
-    nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי" },
+    nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים" },
     categories: {
       title: "קטגוריות",
       add: "הוספת קטגוריה",
@@ -126,5 +126,23 @@ export const he: typeof en = {
     remove: "הסרה",
     removeConfirm: "להפסיק לעקוב אחרי המלאי של הפריט הזה?",
     onLists: "ב: {lists}",
+  },
+  prices: {
+    title: "מחירים",
+    logPrice: "רישום מחיר",
+    chooseItem: "בחר פריט",
+    price: "מחיר",
+    store: "חנות",
+    date: "תאריך",
+    save: "שמור",
+    cancel: "ביטול",
+    cheapest: "הזול ביותר",
+    entriesCount: "מחירים",
+    history: "היסטוריה",
+    edit: "עריכה",
+    remove: "הסרה",
+    removeConfirm: "למחוק את רשומת המחיר הזו?",
+    noStore: "—",
+    empty: "עדיין לא נרשמו מחירים.",
   },
 };
