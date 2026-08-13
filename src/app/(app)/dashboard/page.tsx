@@ -8,16 +8,21 @@ const d = getDictionary("en");
 
 export default async function DashboardPage() {
   const household = await requireHousehold();
-  const [categoryCount, itemCount, tagCount, openListCount] = await Promise.all([
+  const [categoryCount, itemCount, tagCount, openListCount, stockRows] = await Promise.all([
     prisma.category.count({ where: { householdId: household.id } }),
     prisma.item.count({ where: { householdId: household.id } }),
     prisma.tag.count({ where: { householdId: household.id } }),
     prisma.groceryList.count({ where: { householdId: household.id, status: { in: ["draft", "active"] } } }),
+    prisma.stock.findMany({
+      where: { householdId: household.id },
+      select: { quantity: true, lowThreshold: true },
+    }),
   ]);
+  const lowStockCount = stockRows.filter((s) => s.quantity <= s.lowThreshold).length;
   return (
     <div className="flex flex-col gap-4 p-6">
       <h1 className="text-2xl font-extrabold">{t(d, "dashboard.title")}</h1>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <Link href="/categories" className="rounded-2xl border border-border bg-white p-5 hover:border-brand">
           <div className="font-bold">{t(d, "catalog.nav.categories")}</div>
           <div className="text-sm text-ink/60">{categoryCount}</div>
@@ -33,6 +38,10 @@ export default async function DashboardPage() {
         <Link href="/lists" className="rounded-2xl border border-border bg-white p-5 hover:border-brand">
           <div className="font-bold">{t(d, "catalog.nav.lists")}</div>
           <div className="text-sm text-ink/60">{openListCount}</div>
+        </Link>
+        <Link href="/stock" className="rounded-2xl border border-border bg-white p-5 hover:border-brand">
+          <div className="font-bold">{t(d, "catalog.nav.stock")}</div>
+          <div className="text-sm text-ink/60">{lowStockCount}</div>
         </Link>
       </div>
     </div>
