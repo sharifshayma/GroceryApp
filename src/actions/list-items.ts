@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { requireHousehold } from "@/lib/household-context";
+import { getCurrentUser } from "@/lib/auth-guard";
 import { revalidatePath } from "next/cache";
 
 type Result = { ok: true } | { ok: false; error: string };
@@ -83,6 +84,26 @@ export async function removeListItem(listItemId: string): Promise<Result> {
   const listId = await listItemListId(household.id, listItemId);
   if (!listId) return { ok: false, error: "List item not found" };
   await prisma.listItem.delete({ where: { id: listItemId } });
+  revalidatePath(`/lists/${listId}`);
+  return { ok: true };
+}
+
+export async function setListItemBought(input: {
+  listItemId: string;
+  isBought: boolean;
+}): Promise<Result> {
+  const household = await requireHousehold();
+  const listId = await listItemListId(household.id, input.listItemId);
+  if (!listId) return { ok: false, error: "List item not found" };
+  const user = input.isBought ? await getCurrentUser() : null;
+  await prisma.listItem.update({
+    where: { id: input.listItemId },
+    data: {
+      isBought: input.isBought,
+      boughtById: input.isBought ? (user?.id ?? null) : null,
+      boughtAt: input.isBought ? new Date() : null,
+    },
+  });
   revalidatePath(`/lists/${listId}`);
   return { ok: true };
 }
