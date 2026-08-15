@@ -136,9 +136,10 @@ const baseHandler = createMcpHandler(
         defaultUnit: z.string().optional(),
         notes: z.string().optional(),
         categoryId: z.string().optional(),
+        autoTrackStock: z.boolean().optional(),
       },
-      async ({ name, nameHe, emoji, defaultUnit, notes, categoryId }, extra) =>
-        json(await createItemCore(hh(extra), uid(extra), { name, nameHe, emoji, defaultUnit, notes, categoryId })),
+      async ({ name, nameHe, emoji, defaultUnit, notes, categoryId, autoTrackStock }, extra) =>
+        json(await createItemCore(hh(extra), uid(extra), { name, nameHe, emoji, defaultUnit, notes, categoryId, autoTrackStock })),
     );
 
     server.tool(
@@ -152,9 +153,10 @@ const baseHandler = createMcpHandler(
         defaultUnit: z.string().optional(),
         notes: z.string().optional(),
         categoryId: z.string().optional(),
+        autoTrackStock: z.boolean().optional(),
       },
-      async ({ itemId, name, nameHe, emoji, defaultUnit, notes, categoryId }, extra) =>
-        json(await updateItemCore(hh(extra), { id: itemId, name, nameHe, emoji, defaultUnit, notes, categoryId })),
+      async ({ itemId, name, nameHe, emoji, defaultUnit, notes, categoryId, autoTrackStock }, extra) =>
+        json(await updateItemCore(hh(extra), { id: itemId, name, nameHe, emoji, defaultUnit, notes, categoryId, autoTrackStock })),
     );
 
     server.tool(
@@ -210,11 +212,11 @@ const baseHandler = createMcpHandler(
     server.tool(
       "tag_item",
       "Attach a tag to an item (or detach with attach:false). Get itemId from search_items and tagId from list_tags.",
-      { itemId: z.string(), tagId: z.string(), attach: z.boolean().optional() },
-      async ({ itemId, tagId, attach }, extra) =>
+      { itemId: z.string(), tagId: z.string(), attach: z.boolean().optional(), notes: z.string().optional() },
+      async ({ itemId, tagId, attach, notes }, extra) =>
         json(attach === false
           ? await unassignTagCore(hh(extra), { itemId, tagId })
-          : await assignTagCore(hh(extra), { itemId, tagId })),
+          : await assignTagCore(hh(extra), { itemId, tagId, note: notes })),
     );
   },
   { serverInfo: { name: "grocery", version: "1.0.0" } },
