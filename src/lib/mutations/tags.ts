@@ -21,7 +21,7 @@ export async function assignTagCore(
   }
   await prisma.itemTag.upsert({
     where: { itemId_tagId: { itemId: input.itemId, tagId: input.tagId } },
-    update: { notes: clean(input.note) },
+    update: input.note !== undefined ? { notes: clean(input.note) } : {},
     create: { itemId: input.itemId, tagId: input.tagId, notes: clean(input.note) },
   });
   return { ok: true };

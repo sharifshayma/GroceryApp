@@ -211,7 +211,7 @@ const baseHandler = createMcpHandler(
 
     server.tool(
       "tag_item",
-      "Attach a tag to an item (or detach with attach:false). Get itemId from search_items and tagId from list_tags.",
+      "Attach a tag to an item (or detach with attach:false); optionally set a note on the tag link. Get itemId from search_items and tagId from list_tags.",
       { itemId: z.string(), tagId: z.string(), attach: z.boolean().optional(), notes: z.string().optional() },
       async ({ itemId, tagId, attach, notes }, extra) =>
         json(attach === false
