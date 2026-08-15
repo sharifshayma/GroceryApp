@@ -69,6 +69,7 @@ export const he: typeof en = {
       assign: "תגיות",
       pickerTitle: "תגיות עבור {name}",
       done: "סיום",
+      notePlaceholder: "הערה (אופציונלי)",
     },
   },
   lists: {

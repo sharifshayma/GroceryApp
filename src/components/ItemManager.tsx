@@ -20,7 +20,7 @@ interface ItemRow {
   categoryId: string | null;
   autoTrackStock: boolean;
   category: { name: string; emoji: string } | null;
-  tags: { tag: { id: string; name: string; color: string } }[];
+  tags: { notes: string | null; tag: { id: string; name: string; color: string } }[];
 }
 
 interface CategoryOption {
@@ -350,6 +350,9 @@ export function ItemManager({
           itemName={tagPickerItem.name}
           tags={tags}
           assignedTagIds={tagPickerItem.tags.map(({ tag }) => tag.id)}
+          assignedNotes={Object.fromEntries(
+            tagPickerItem.tags.map(({ tag, notes }) => [tag.id, notes]),
+          )}
           onClose={() => setTagPickerItemId(null)}
         />
       )}

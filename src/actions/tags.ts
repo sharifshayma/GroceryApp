@@ -69,7 +69,9 @@ export async function deleteTag(id: string): Promise<Result> {
   return { ok: true };
 }
 
-export async function assignTag(input: { itemId: string; tagId: string }): Promise<Result> {
+export async function assignTag(
+  input: { itemId: string; tagId: string; note?: string },
+): Promise<Result> {
   const household = await requireHousehold();
   const res = await assignTagCore(household.id, input);
   if (res.ok) revalidatePath("/items");

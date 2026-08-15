@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { clean } from "./util";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -13,15 +14,15 @@ async function bothOwned(householdId: string, itemId: string, tagId: string): Pr
 
 export async function assignTagCore(
   householdId: string,
-  input: { itemId: string; tagId: string },
+  input: { itemId: string; tagId: string; note?: string },
 ): Promise<Result> {
   if (!(await bothOwned(householdId, input.itemId, input.tagId))) {
     return { ok: false, error: "Item or tag not found" };
   }
   await prisma.itemTag.upsert({
     where: { itemId_tagId: { itemId: input.itemId, tagId: input.tagId } },
-    update: {},
-    create: { itemId: input.itemId, tagId: input.tagId },
+    update: { notes: clean(input.note) },
+    create: { itemId: input.itemId, tagId: input.tagId, notes: clean(input.note) },
   });
   return { ok: true };
 }

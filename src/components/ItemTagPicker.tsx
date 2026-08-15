@@ -33,18 +33,32 @@ export function ItemTagPicker({
   itemName,
   tags,
   assignedTagIds,
+  assignedNotes,
   onClose,
 }: {
   itemId: string;
   itemName: string;
   tags: TagOption[];
   assignedTagIds: string[];
+  assignedNotes: Record<string, string | null>;
   onClose: () => void;
 }) {
   const router = useRouter();
   const [assigned, setAssigned] = useState<Set<string>>(() => new Set(assignedTagIds));
   const [pendingTagId, setPendingTagId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [notes, setNotes] = useState<Record<string, string>>(() =>
+    Object.fromEntries(Object.entries(assignedNotes).map(([k, v]) => [k, v ?? ""])),
+  );
+
+  async function saveNote(tagId: string) {
+    const res = await assignTag({ itemId, tagId, note: notes[tagId] ?? "" });
+    if (!res.ok) {
+      setError(res.error);
+      return;
+    }
+    router.refresh();
+  }
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -141,6 +155,16 @@ export function ItemTagPicker({
                         />
                         <span className="flex-1">{tag.name}</span>
                       </label>
+                      {isAssigned && (
+                        <input
+                          type="text"
+                          value={notes[tag.id] ?? ""}
+                          onChange={(e) => setNotes((n) => ({ ...n, [tag.id]: e.target.value }))}
+                          onBlur={() => saveNote(tag.id)}
+                          placeholder={t(d, "catalog.tags.notePlaceholder")}
+                          className="mt-1 w-full rounded-lg border border-border px-2 py-1 text-sm"
+                        />
+                      )}
                     </li>
                   );
                 })}

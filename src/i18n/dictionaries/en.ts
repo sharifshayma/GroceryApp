@@ -67,6 +67,7 @@ export const en = {
       assign: "Tags",
       pickerTitle: "Tags for {name}",
       done: "Done",
+      notePlaceholder: "Note (optional)",
     },
   },
   lists: {

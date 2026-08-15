@@ -14,7 +14,7 @@ export default async function ItemsPage() {
         id: true, name: true, nameHe: true, emoji: true, defaultUnit: true,
         notes: true, categoryId: true, autoTrackStock: true,
         category: { select: { name: true, emoji: true } },
-        tags: { select: { tag: { select: { id: true, name: true, color: true } } } },
+        tags: { select: { notes: true, tag: { select: { id: true, name: true, color: true } } } },
       },
     }),
     prisma.category.findMany({
