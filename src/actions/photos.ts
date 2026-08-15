@@ -23,6 +23,7 @@ export async function setItemPhoto(input: {
   const household = await requireHousehold();
   const item = await ownedItem(household.id, input.itemId);
   if (!item) return { ok: false, error: "Item not found" };
+  if (!isBlobUrl(input.url)) return { ok: false, error: "Invalid photo URL" };
   if (item.photoUrl && isBlobUrl(item.photoUrl)) await del(item.photoUrl).catch(() => {});
   await prisma.item.update({
     where: { id: input.itemId },
