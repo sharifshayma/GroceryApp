@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { clean, normalizeQuantity } from "./util";
+import { computeAutoTrack } from "@/lib/auto-track";
 
 type Result = { ok: true } | { ok: false; error: string };
 type ResultWithList = { ok: true; listId: string } | { ok: false; error: string };
@@ -76,15 +77,59 @@ export async function setListItemBoughtCore(
   userId: string | null,
   input: { listItemId: string; isBought: boolean },
 ): Promise<ResultWithList> {
-  const listId = await listItemListId(householdId, input.listItemId);
-  if (!listId) return { ok: false, error: "List item not found" };
-  await prisma.listItem.update({
-    where: { id: input.listItemId },
-    data: {
-      isBought: input.isBought,
-      boughtById: input.isBought ? userId : null,
-      boughtAt: input.isBought ? new Date() : null,
+  // Household-scoped load also serves as the ownership gate.
+  const line = await prisma.listItem.findFirst({
+    where: { id: input.listItemId, list: { householdId } },
+    select: {
+      listId: true,
+      itemId: true,
+      quantity: true,
+      stockUpdated: true,
+      item: { select: { autoTrackStock: true, defaultUnit: true } },
     },
   });
-  return { ok: true, listId };
+  if (!line) return { ok: false, error: "List item not found" };
+
+  const track =
+    line.itemId && line.item
+      ? computeAutoTrack({
+          isBought: input.isBought,
+          autoTrackStock: line.item.autoTrackStock,
+          stockUpdated: line.stockUpdated,
+          quantity: line.quantity,
+        })
+      : { stockDelta: null, stockUpdated: line.stockUpdated };
+
+  await prisma.$transaction(async (tx) => {
+    await tx.listItem.update({
+      where: { id: input.listItemId },
+      data: {
+        isBought: input.isBought,
+        boughtById: input.isBought ? userId : null,
+        boughtAt: input.isBought ? new Date() : null,
+        stockUpdated: track.stockUpdated,
+      },
+    });
+    if (track.stockDelta !== null && line.itemId) {
+      const existing = await tx.stock.findUnique({
+        where: { householdId_itemId: { householdId, itemId: line.itemId } },
+        select: { quantity: true },
+      });
+      const newQty = Math.max(0, (existing?.quantity ?? 0) + track.stockDelta);
+      await tx.stock.upsert({
+        where: { householdId_itemId: { householdId, itemId: line.itemId } },
+        update: { quantity: newQty, updatedById: userId },
+        create: {
+          householdId,
+          itemId: line.itemId,
+          quantity: newQty,
+          unit: line.item?.defaultUnit || "pcs",
+          lowThreshold: 1,
+          updatedById: userId,
+        },
+      });
+    }
+  });
+
+  return { ok: true, listId: line.listId };
 }
