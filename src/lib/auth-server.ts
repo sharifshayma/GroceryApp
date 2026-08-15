@@ -16,19 +16,24 @@ export const auth = betterAuth({
     user: {
       create: {
         after: async (user) => {
-          // If this email was migrated from Supabase, attach them to their household.
-          const claim = await prisma.migrationClaim.findUnique({ where: { email: user.email } });
-          if (!claim) return;
-          await prisma.user.update({
-            where: { id: user.id },
-            data: {
-              householdId: claim.householdId,
-              role: claim.role,
-              language: claim.language,
-              displayName: claim.displayName,
-            },
-          });
-          await prisma.migrationClaim.delete({ where: { id: claim.id } });
+          try {
+            // If this email was migrated from Supabase, attach them to their household.
+            const claim = await prisma.migrationClaim.findUnique({ where: { email: user.email } });
+            if (!claim) return;
+            await prisma.user.update({
+              where: { id: user.id },
+              data: {
+                householdId: claim.householdId,
+                role: claim.role,
+                language: claim.language,
+                displayName: claim.displayName,
+              },
+            });
+            await prisma.migrationClaim.delete({ where: { id: claim.id } });
+          } catch (e) {
+            // Never let a migration-claim failure break signup; the user can still onboard/join manually.
+            console.error("claim-on-signup attach failed for", user.email, e);
+          }
         },
       },
     },
