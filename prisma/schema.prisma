@@ -113,15 +113,16 @@ model Household {
   createdBy   User?    @relation("HouseholdCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
 
-  members      User[]         @relation("HouseholdMembers")
-  categories   Category[]
-  items        Item[]
-  tags         Tag[]
-  lists        GroceryList[]
-  stock        Stock[]
-  priceHistory PriceHistory[]
-  invitations  Invitation[]
-  mcpTokens    McpToken[]
+  members           User[]              @relation("HouseholdMembers")
+  categories        Category[]
+  items             Item[]
+  tags              Tag[]
+  lists             GroceryList[]
+  stock             Stock[]
+  priceHistory      PriceHistory[]
+  invitations       Invitation[]
+  mcpTokens         McpToken[]
+  migrationClaims   MigrationClaim[]
 
   @@index([inviteCode])
 }
@@ -245,6 +246,8 @@ model PriceHistory {
   purchasedAt    DateTime  @default(now()) @db.Date
   loggedById     String?
   createdAt      DateTime  @default(now())
+  barcode        String?
+  description    String?
   @@index([itemId])
   @@index([householdId])
 }
@@ -257,6 +260,19 @@ model Invitation {
   invitedById String?
   status      InvitationStatus @default(pending)
   createdAt   DateTime         @default(now())
+  @@index([householdId])
+}
+
+model MigrationClaim {
+  id          String   @id @default(cuid())
+  email       String   @unique
+  householdId String
+  household   Household @relation(fields: [householdId], references: [id], onDelete: Cascade)
+  role        Role      @default(member)
+  language    Language  @default(en)
+  displayName String?
+  createdAt   DateTime  @default(now())
+
   @@index([householdId])
 }
 
