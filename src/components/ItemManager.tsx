@@ -18,6 +18,7 @@ interface ItemRow {
   defaultUnit: string;
   notes: string | null;
   categoryId: string | null;
+  autoTrackStock: boolean;
   category: { name: string; emoji: string } | null;
   tags: { tag: { id: string; name: string; color: string } }[];
 }
@@ -42,6 +43,7 @@ interface ItemFormValues {
   emoji: string;
   defaultUnit: string;
   notes: string;
+  autoTrackStock: boolean;
 }
 
 const emptyForm: ItemFormValues = {
@@ -51,6 +53,7 @@ const emptyForm: ItemFormValues = {
   emoji: "",
   defaultUnit: "",
   notes: "",
+  autoTrackStock: true,
 };
 
 export function ItemManager({
@@ -96,6 +99,7 @@ export function ItemManager({
       emoji: row.emoji,
       defaultUnit: row.defaultUnit,
       notes: row.notes ?? "",
+      autoTrackStock: row.autoTrackStock,
     });
     setFormError(null);
     setModalOpen(true);
@@ -128,6 +132,7 @@ export function ItemManager({
       emoji: form.emoji,
       defaultUnit: form.defaultUnit,
       notes: form.notes,
+      autoTrackStock: form.autoTrackStock,
     };
     const result = editingId
       ? await updateItem({ id: editingId, ...payload })
@@ -313,6 +318,16 @@ export function ItemManager({
                 value={form.notes}
                 onChange={(e) => setForm({ ...form, notes: e.target.value })}
               />
+
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={form.autoTrackStock}
+                  onChange={(e) => setForm({ ...form, autoTrackStock: e.target.checked })}
+                  className="h-4 w-4"
+                />
+                {t(d, "catalog.items.autoTrack")}
+              </label>
 
               {formError && <p className="text-sm text-red-600">{formError}</p>}
 

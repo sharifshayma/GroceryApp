@@ -14,6 +14,7 @@ export async function createItem(input: {
   emoji?: string;
   defaultUnit?: string;
   notes?: string;
+  autoTrackStock?: boolean;
 }): Promise<Result> {
   const household = await requireHousehold();
   const user = await getCurrentUser();
@@ -30,6 +31,7 @@ export async function updateItem(input: {
   emoji?: string;
   defaultUnit?: string;
   notes?: string;
+  autoTrackStock?: boolean;
 }): Promise<Result> {
   const household = await requireHousehold();
   const res = await updateItemCore(household.id, input);

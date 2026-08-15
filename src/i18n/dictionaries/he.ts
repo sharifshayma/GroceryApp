@@ -41,6 +41,7 @@ export const he: typeof en = {
       noCategory: "ללא קטגוריה",
       unit: "יחידה",
       notes: "הערות",
+      autoTrack: "עדכן מלאי אוטומטית בקנייה",
       save: "שמור",
       cancel: "ביטול",
       edit: "עריכה",

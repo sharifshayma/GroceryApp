@@ -20,7 +20,7 @@ export async function resolveCategoryId(
 export async function createItemCore(
   householdId: string,
   userId: string | null,
-  input: { categoryId?: string | null; name: string; nameHe?: string; emoji?: string; defaultUnit?: string; notes?: string },
+  input: { categoryId?: string | null; name: string; nameHe?: string; emoji?: string; defaultUnit?: string; notes?: string; autoTrackStock?: boolean },
 ): Promise<Result> {
   const name = clean(input.name);
   if (!name) return { ok: false, error: "Please enter an item name" };
@@ -35,6 +35,7 @@ export async function createItemCore(
       emoji: clean(input.emoji) ?? "🛒",
       defaultUnit: clean(input.defaultUnit) ?? "pcs",
       notes: clean(input.notes),
+      autoTrackStock: input.autoTrackStock ?? true,
       createdById: userId,
     },
   });
@@ -43,7 +44,7 @@ export async function createItemCore(
 
 export async function updateItemCore(
   householdId: string,
-  input: { id: string; categoryId?: string | null; name: string; nameHe?: string; emoji?: string; defaultUnit?: string; notes?: string },
+  input: { id: string; categoryId?: string | null; name: string; nameHe?: string; emoji?: string; defaultUnit?: string; notes?: string; autoTrackStock?: boolean },
 ): Promise<Result> {
   const name = clean(input.name);
   if (!name) return { ok: false, error: "Please enter an item name" };
@@ -58,6 +59,7 @@ export async function updateItemCore(
       emoji: clean(input.emoji) ?? "🛒",
       defaultUnit: clean(input.defaultUnit) ?? "pcs",
       notes: clean(input.notes),
+      ...(input.autoTrackStock !== undefined ? { autoTrackStock: input.autoTrackStock } : {}),
     },
   });
   if (res.count === 0) return { ok: false, error: "Item not found" };

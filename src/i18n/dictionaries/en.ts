@@ -39,6 +39,7 @@ export const en = {
       noCategory: "No category",
       unit: "Unit",
       notes: "Notes",
+      autoTrack: "Auto-update stock when bought",
       save: "Save",
       cancel: "Cancel",
       edit: "Edit",
