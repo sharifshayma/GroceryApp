@@ -6,6 +6,7 @@ import { Input, Textarea } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { createItem, updateItem, deleteItem } from "@/actions/items";
 import { ItemTagPicker } from "@/components/ItemTagPicker";
+import { ItemPhotoField } from "@/components/ItemPhotoField";
 import { getDictionary, t } from "@/i18n";
 
 const d = getDictionary("en");
@@ -19,6 +20,7 @@ interface ItemRow {
   notes: string | null;
   categoryId: string | null;
   autoTrackStock: boolean;
+  photoUrl: string | null;
   category: { name: string; emoji: string } | null;
   tags: { notes: string | null; tag: { id: string; name: string; color: string } }[];
 }
@@ -183,7 +185,11 @@ export function ItemManager({
               key={row.id}
               className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4"
             >
-              <span className="text-2xl">{row.emoji}</span>
+              {row.photoUrl ? (
+                <img src={row.photoUrl} alt="" className="h-10 w-10 shrink-0 rounded-lg object-cover" />
+              ) : (
+                <span className="text-2xl">{row.emoji}</span>
+              )}
               <div className="flex-1">
                 <div className="font-bold">{row.name}</div>
                 {row.nameHe && <div className="text-sm text-ink/60">{row.nameHe}</div>}
@@ -328,6 +334,13 @@ export function ItemManager({
                 />
                 {t(d, "catalog.items.autoTrack")}
               </label>
+
+              {editingId && (
+                <ItemPhotoField
+                  itemId={editingId}
+                  photoUrl={items.find((r) => r.id === editingId)?.photoUrl ?? null}
+                />
+              )}
 
               {formError && <p className="text-sm text-red-600">{formError}</p>}
 

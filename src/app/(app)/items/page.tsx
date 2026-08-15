@@ -12,7 +12,7 @@ export default async function ItemsPage() {
       orderBy: { createdAt: "desc" },
       select: {
         id: true, name: true, nameHe: true, emoji: true, defaultUnit: true,
-        notes: true, categoryId: true, autoTrackStock: true,
+        notes: true, categoryId: true, autoTrackStock: true, photoUrl: true,
         category: { select: { name: true, emoji: true } },
         tags: { select: { notes: true, tag: { select: { id: true, name: true, color: true } } } },
       },
