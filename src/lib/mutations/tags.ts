@@ -37,3 +37,15 @@ export async function unassignTagCore(
   await prisma.itemTag.deleteMany({ where: { itemId: input.itemId, tagId: input.tagId } });
   return { ok: true };
 }
+
+// Best-effort: ensure a store-type tag with this name exists for the household.
+export async function ensureStoreTag(householdId: string, store: string | null): Promise<void> {
+  const name = store?.trim();
+  if (!name) return;
+  const existing = await prisma.tag.findFirst({
+    where: { householdId, name, type: "store" },
+    select: { id: true },
+  });
+  if (existing) return;
+  await prisma.tag.create({ data: { householdId, name, type: "store" } });
+}

@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { clean } from "./util";
+import { ensureStoreTag } from "./tags";
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -39,6 +40,7 @@ export async function addPriceEntryCore(
       loggedById: userId,
     },
   });
+  await ensureStoreTag(householdId, clean(input.store)).catch(() => {});
   return { ok: true };
 }
 
@@ -53,6 +55,7 @@ export async function updatePriceEntryCore(
     data: { price, store: clean(input.store), purchasedAt: parseDate(input.purchasedAt) },
   });
   if (res.count === 0) return { ok: false, error: "Price entry not found" };
+  await ensureStoreTag(householdId, clean(input.store)).catch(() => {});
   return { ok: true };
 }
 
