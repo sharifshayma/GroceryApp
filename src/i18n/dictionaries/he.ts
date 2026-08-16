@@ -22,6 +22,9 @@ export const he: typeof en = {
     join: { heading: "הצטרפות למשק בית", code: "קוד הזמנה", submit: "הצטרף" },
   },
   dashboard: { title: "לוח בקרה", empty: "משק הבית שלך מוגדר. תכונות הקניות בדרך." },
+  home: {
+    emptyCategory: "אין עדיין פריטים בקטגוריה הזו.",
+  },
   catalog: {
     nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים", settings: "הגדרות" },
     categories: {
