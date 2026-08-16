@@ -93,7 +93,11 @@ export function AddToStockModal({
       unit: item.defaultUnit || "pcs",
       lowThreshold: 0,
     }));
-    await onBatchAdd(batch);
+    try {
+      await onBatchAdd(batch);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
