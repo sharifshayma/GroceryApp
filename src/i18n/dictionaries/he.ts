@@ -29,6 +29,7 @@ export const he: typeof en = {
     title: "הגדרת משק הבית",
     create: { heading: "יצירת משק בית", name: "שם משק הבית", submit: "צור" },
     join: { heading: "הצטרפות למשק בית", code: "קוד הזמנה", submit: "הצטרף" },
+    inviteFailed: { heading: "לא הצלחנו להצטרף למשק הבית", cta: "הזן את הקוד ידנית" },
   },
   dashboard: { title: "לוח בקרה", empty: "משק הבית שלך מוגדר. תכונות הקניות בדרך." },
   home: {

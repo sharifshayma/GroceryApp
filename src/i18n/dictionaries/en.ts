@@ -27,6 +27,7 @@ export const en = {
     title: "Set up your household",
     create: { heading: "Create a household", name: "Household name", submit: "Create" },
     join: { heading: "Join a household", code: "Invite code", submit: "Join" },
+    inviteFailed: { heading: "Couldn't join that household", cta: "Enter the code manually" },
   },
   dashboard: { title: "Dashboard", empty: "Your household is set up. Grocery features are coming next." },
   home: {
