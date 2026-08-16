@@ -1,6 +1,10 @@
 "use server";
 
 import { Prisma } from "@prisma/client";
+import { APIError } from "better-auth";
+import { parseSetCookieHeader, toCookieOptions } from "better-auth/cookies";
+import { cookies, headers } from "next/headers";
+import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth-server";
 import { prisma } from "@/lib/prisma";
 import { getCurrentUser } from "@/lib/auth-guard";
@@ -14,6 +18,74 @@ import {
 } from "@/lib/validations";
 
 type Result = { ok: true } | { ok: false; error: string };
+
+/**
+ * Signs the user in and, if this login is continuing an in-progress OAuth
+ * `/authorize` request, resumes it — otherwise sends the user to /dashboard.
+ *
+ * Login round-trip (confirmed against node_modules/better-auth/dist/plugins/mcp/authorize.mjs
+ * and node_modules/better-auth/dist/plugins/mcp/index.mjs):
+ * - When an unauthenticated browser hits `/api/auth/mcp/authorize`, the plugin
+ *   sets a signed `oidc_login_prompt` cookie (the original authorize query)
+ *   and 302s to `loginPage` ("/login") with that same query string appended.
+ *   That's a real top-level navigation, so the cookie is already in the
+ *   browser by the time /login renders — no return/callback param needs to
+ *   be threaded through the URL or the login form.
+ * - The plugin also registers an `after` hook (matcher: all requests) that
+ *   fires whenever a request both carries that cookie AND just set a new
+ *   session cookie. It resumes the authorize flow inline and throws
+ *   `ctx.redirect(...)` — an APIError with status "FOUND" and a `location`
+ *   header — in place of the normal sign-in response, pointing either at our
+ *   own consent page or straight at the OAuth client's (often cross-origin)
+ *   redirect_uri.
+ * - The previous /login page called the client-side `signIn.email()`, a
+ *   fetch() that would auto-follow that redirect: for a same-origin target
+ *   the tab never actually navigates (fetch consumes the redirect
+ *   internally); for a cross-origin target the browser still fires the
+ *   request (silently burning the one-time code) but fetch's default "cors"
+ *   mode has no way to succeed against a foreign origin, so the promise
+ *   rejects and nothing happens. Calling `auth.api.signInEmail` here instead
+ *   and finishing with next/navigation's `redirect()` performs a real
+ *   top-level navigation for both cases.
+ * - `nextCookies()` (in src/lib/auth-server.ts) normally persists Set-Cookie
+ *   headers via its own `after` hook, but it's uncertain whether that still
+ *   runs once an earlier hook (the mcp plugin's) has thrown — so the session
+ *   cookie, which travels on the SAME headers object as the thrown redirect,
+ *   is forwarded manually here as a defensive measure regardless of hook
+ *   ordering.
+ */
+export async function logIn(email: string, password: string): Promise<Result> {
+  let resumeTo: string | null = null;
+  try {
+    await auth.api.signInEmail({
+      body: { email, password },
+      headers: await headers(),
+    });
+  } catch (e) {
+    if (!(e instanceof APIError)) throw e;
+    // APIError.headers is typed as HeadersInit, but better-call always
+    // constructs it as a real `Headers` instance (node_modules/better-call/dist/context.mjs).
+    const errorHeaders = new Headers(e.headers);
+    const location = errorHeaders.get("location");
+    if (!location) return { ok: false, error: "Invalid email or password" };
+
+    const store = await cookies();
+    for (const raw of errorHeaders.getSetCookie()) {
+      const parsed = parseSetCookieHeader(raw);
+      parsed.forEach((value, key) => {
+        if (!key) return;
+        try {
+          store.set(key, value.value, toCookieOptions(value));
+        } catch {
+          // Outside a request that can mutate cookies (shouldn't happen for
+          // a Server Action); matches next-cookies' own best-effort handling.
+        }
+      });
+    }
+    resumeTo = location;
+  }
+  redirect(resumeTo ?? "/dashboard");
+}
 
 export async function signUp(input: SignupInput): Promise<Result> {
   const parsed = signupSchema.safeParse(input);

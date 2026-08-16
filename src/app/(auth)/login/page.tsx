@@ -1,17 +1,15 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
-import { signIn } from "@/lib/auth-client";
+import { logIn } from "@/actions/auth";
 import { getDictionary, t } from "@/i18n";
 
 const d = getDictionary("en");
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -21,13 +19,13 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    const { error: signInError } = await signIn.email({ email, password });
+    // On success logIn() redirects server-side (to /dashboard, or back into an
+    // in-progress OAuth /authorize flow) and never resolves with a value.
+    const result = await logIn(email, password);
     setSubmitting(false);
-    if (signInError) {
-      setError("Invalid email or password");
-      return;
+    if (result && !result.ok) {
+      setError(result.error);
     }
-    router.push("/dashboard");
   }
 
   return (

@@ -177,4 +177,17 @@ export const he: typeof en = {
       endpointLabel: "כתובת MCP",
     },
   },
+  oauth: {
+    consent: {
+      title: "אישור גישה",
+      heading: "{client} מבקש/ת גישה לנתוני הקניות של משק הבית שלך.",
+      scopesHeading: "זה יאפשר:",
+      approve: "אישור",
+      approving: "מאשר...",
+      deny: "דחייה",
+      denying: "דוחה...",
+      invalid: "בקשת ההרשאה אינה תקפה או שפגה. נסה/י להתחבר שוב.",
+      error: "משהו השתבש. נסה/י להתחבר שוב.",
+    },
+  },
 };

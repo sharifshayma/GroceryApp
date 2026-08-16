@@ -175,4 +175,17 @@ export const en = {
       endpointLabel: "MCP endpoint",
     },
   },
+  oauth: {
+    consent: {
+      title: "Authorize access",
+      heading: "{client} wants to access your household's grocery data.",
+      scopesHeading: "This will allow it to:",
+      approve: "Approve",
+      approving: "Approving...",
+      deny: "Deny",
+      denying: "Denying...",
+      invalid: "This authorization request is invalid or has expired. Please try connecting again.",
+      error: "Something went wrong. Please try connecting again.",
+    },
+  },
 };
