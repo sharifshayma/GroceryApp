@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireHousehold } from "@/lib/household-context";
-import { ListDetail } from "@/components/ListDetail";
+import { ShoppingList } from "@/components/lists/ShoppingList";
+import type { OpenList, StockRow } from "@/lib/home-data";
 
 export const dynamic = "force-dynamic";
 
@@ -12,7 +13,7 @@ export default async function ListDetailPage({
 }) {
   const household = await requireHousehold();
   const { id } = await params;
-  const [list, catalogItems] = await Promise.all([
+  const [list, stock, openLists] = await Promise.all([
     prisma.groceryList.findFirst({
       where: { id, householdId: household.id },
       select: {
@@ -27,18 +28,46 @@ export default async function ListDetailPage({
             unit: true,
             notes: true,
             isBought: true,
-            boughtAt: true,
-            item: { select: { id: true, name: true, emoji: true, defaultUnit: true } },
+            item: {
+              select: {
+                id: true,
+                name: true,
+                nameHe: true,
+                emoji: true,
+                defaultUnit: true,
+                photoUrl: true,
+                autoTrackStock: true,
+                category: { select: { name: true, nameHe: true, emoji: true } },
+              },
+            },
           },
         },
       },
     }),
-    prisma.item.findMany({
+    prisma.stock.findMany({
       where: { householdId: household.id },
-      orderBy: { name: "asc" },
-      select: { id: true, name: true, emoji: true, defaultUnit: true },
+      select: { itemId: true, quantity: true, unit: true, lowThreshold: true },
+    }),
+    prisma.groceryList.findMany({
+      where: { householdId: household.id, status: { in: ["draft", "active"] } },
+      orderBy: { createdAt: "desc" },
+      select: { id: true, name: true, status: true, items: { select: { id: true, itemId: true } } },
     }),
   ]);
   if (!list) notFound();
-  return <ListDetail list={list} catalogItems={catalogItems} />;
+
+  const stockRows: StockRow[] = stock.map((s) => ({
+    itemId: s.itemId,
+    quantity: s.quantity,
+    unit: s.unit,
+    lowThreshold: s.lowThreshold,
+  }));
+  const lists: OpenList[] = openLists.map((l) => ({
+    id: l.id,
+    name: l.name,
+    status: l.status as "draft" | "active",
+    items: l.items.filter((li) => li.itemId != null).map((li) => ({ listItemId: li.id, itemId: li.itemId as string })),
+  }));
+
+  return <ShoppingList list={list} openLists={lists} stockRows={stockRows} />;
 }

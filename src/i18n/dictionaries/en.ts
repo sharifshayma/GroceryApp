@@ -1,6 +1,6 @@
 export const en = {
   nav: { home: "Items", lists: "Lists", stock: "Stock", profile: "Profile" },
-  common: { greeting: "Hi, {name}", save: "Save", saving: "Saving...", loading: "Loading..." },
+  common: { greeting: "Hi, {name}", save: "Save", saving: "Saving...", loading: "Loading...", done: "Done" },
   auth: {
     login: {
       title: "Log in",

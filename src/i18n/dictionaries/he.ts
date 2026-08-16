@@ -2,7 +2,7 @@ import type { en } from "./en";
 
 export const he: typeof en = {
   nav: { home: "פריטים", lists: "רשימות", stock: "מלאי", profile: "פרופיל" },
-  common: { greeting: "שלום, {name}", save: "שמור", saving: "שומר...", loading: "טוען..." },
+  common: { greeting: "שלום, {name}", save: "שמור", saving: "שומר...", loading: "טוען...", done: "סיום" },
   auth: {
     login: {
       title: "התחברות",
