@@ -316,7 +316,6 @@ model OauthApplication {
   consents     OauthConsent[]
 
   @@index([userId])
-  @@index([clientId])
 }
 
 model OauthAccessToken {
@@ -327,8 +326,8 @@ model OauthAccessToken {
   refreshTokenExpiresAt DateTime?
   clientId              String
   client                OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId                String?
+  user                  User?     @relation(fields: [userId], references: [id], onDelete: Cascade)
   scopes                String
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
