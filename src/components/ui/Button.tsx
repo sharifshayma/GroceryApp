@@ -7,10 +7,10 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 const variants = {
-  primary: "bg-brand text-white hover:bg-brand-dark",
-  secondary: "bg-accent text-white hover:opacity-90",
-  ghost: "bg-transparent text-ink hover:bg-black/5 border border-border",
-  danger: "bg-red-600 text-white hover:bg-red-700",
+  primary: "bg-primary text-white hover:bg-primary-dark",
+  secondary: "bg-green text-white hover:bg-green-dark",
+  ghost: "bg-surface text-text hover:bg-bg border border-neutral",
+  danger: "bg-danger text-white hover:opacity-90",
 };
 
 const sizes = {
