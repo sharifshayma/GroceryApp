@@ -120,6 +120,10 @@ export const en = {
     completeAnyway: "Complete anyway",
     completedBadge: "Completed",
     completePrompt: "Some items aren't bought yet.",
+    unboughtTitle: "Unbought items",
+    unboughtMessage: "You still have {count} unbought item(s).",
+    keepShopping: "Keep shopping",
+    saving: "Saving...",
   },
   stock: {
     title: "Stock",

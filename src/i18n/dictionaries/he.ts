@@ -122,6 +122,10 @@ export const he: typeof en = {
     completeAnyway: "השלם בכל זאת",
     completedBadge: "הושלמה",
     completePrompt: "חלק מהפריטים עדיין לא נקנו.",
+    unboughtTitle: "פריטים שלא נקנו",
+    unboughtMessage: "נותרו לך {count} פריטים שלא נקנו.",
+    keepShopping: "המשך קניות",
+    saving: "שומר...",
   },
   stock: {
     title: "מלאי",
