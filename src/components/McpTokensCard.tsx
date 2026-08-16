@@ -101,13 +101,15 @@ export function McpTokensCard({
 
           <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-text/80">
         <p>
-          <span className="font-semibold">Using claude.ai or the Claude mobile app?</span> You
-          don&rsquo;t need a token — add <code className="break-all">{endpoint}</code> as a custom
-          connector and sign in. Claude connects over OAuth.
+          <span className="font-semibold">Easiest — no token needed.</span> In claude.ai, the
+          Claude mobile app, or Claude Desktop, add{" "}
+          <code className="break-all">{endpoint}</code> as a custom connector
+          (Settings&nbsp;→&nbsp;Connectors) and sign in. Claude connects over OAuth.
         </p>
         <p className="mt-1.5">
-          <span className="font-semibold">Using Claude Desktop?</span> Generate a token below and
-          paste it into your <code>mcpServers</code> config (shown at the bottom).
+          <span className="font-semibold">Prefer a manual config?</span> Generate a token below and
+          add it to an <code>mcpServers</code> entry with an <code>Authorization: Bearer</code>{" "}
+          header (shown at the bottom).
         </p>
       </div>
 

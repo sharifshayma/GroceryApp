@@ -226,9 +226,9 @@ export const en = {
       lastUsed: "Last used",
       never: "never",
       lastFour: "ending {four}",
-      instructionsHeading: "How to connect",
+      instructionsHeading: "Manual config (optional)",
       instructions:
-        "Add this to your Claude Desktop MCP config (Settings → Developer), using the token above as the Authorization bearer.",
+        "Only if you're not using the OAuth connector above: add this to your claude_desktop_config.json, using the token above as the Authorization bearer.",
       endpointLabel: "MCP endpoint",
     },
   },
