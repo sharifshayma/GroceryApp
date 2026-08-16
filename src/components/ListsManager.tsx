@@ -27,7 +27,7 @@ interface ListRow {
   items: ListItemRow[];
 }
 
-export function ListsManager({ lists }: { lists: ListRow[] }) {
+export function ListsManager({ lists, nowMs }: { lists: ListRow[]; nowMs: number }) {
   const router = useRouter();
   const { t, locale } = useT();
 
@@ -77,7 +77,7 @@ export function ListsManager({ lists }: { lists: ListRow[] }) {
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-primary uppercase">{t("lists.active")}</span>
                 <span className="text-xs text-text-secondary">
-                  {formatListDate(new Date(activeList.createdAt).toISOString(), locale, Date.now())}
+                  {formatListDate(new Date(activeList.createdAt).toISOString(), locale, nowMs)}
                 </span>
               </div>
               <h3 className="font-medium text-lg mb-1">{activeList.name}</h3>
@@ -114,7 +114,7 @@ export function ListsManager({ lists }: { lists: ListRow[] }) {
                     {statusLabels[list.status] || list.status}
                   </span>
                   <span className="text-xs text-text-secondary">
-                    {formatListDate(new Date(list.createdAt).toISOString(), locale, Date.now())}
+                    {formatListDate(new Date(list.createdAt).toISOString(), locale, nowMs)}
                   </span>
                 </div>
                 <h3 className="font-medium mb-1">{list.name}</h3>

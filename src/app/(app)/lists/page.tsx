@@ -26,5 +26,6 @@ export default async function ListsPage() {
       },
     },
   });
-  return <ListsManager lists={lists} />;
+  const nowMs = Date.now();
+  return <ListsManager lists={lists} nowMs={nowMs} />;
 }
