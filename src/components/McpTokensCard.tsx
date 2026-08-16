@@ -30,6 +30,7 @@ export function McpTokensCard({
   const [error, setError] = useState<string | null>(null);
   const [rawToken, setRawToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   async function onGenerate() {
     setPending(true);
@@ -69,10 +70,36 @@ export function McpTokensCard({
 
   return (
     <section className="rounded-lg border border-neutral bg-white p-4">
-      <h2 className="text-lg font-bold">{t(d, "settings.connect.heading")}</h2>
-      <p className="mt-1 text-sm text-text/70">{t(d, "settings.connect.intro")}</p>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        aria-expanded={expanded}
+        className="flex w-full items-center justify-between gap-2 text-left"
+      >
+        <h2 className="text-lg font-bold">{t(d, "settings.connect.heading")}</h2>
+        <svg
+          className={`h-5 w-5 flex-shrink-0 text-text/50 transition-transform ${expanded ? "rotate-180" : ""}`}
+          viewBox="0 0 20 20"
+          fill="currentColor"
+          aria-hidden="true"
+        >
+          <path
+            fillRule="evenodd"
+            d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+            clipRule="evenodd"
+          />
+        </svg>
+      </button>
 
-      <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-text/80">
+      {!expanded && (
+        <p className="mt-1 text-sm text-text/60">{t(d, "settings.connect.intro")}</p>
+      )}
+
+      {expanded && (
+        <>
+          <p className="mt-3 text-sm text-text/70">{t(d, "settings.connect.intro")}</p>
+
+          <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-text/80">
         <p>
           <span className="font-semibold">Using claude.ai or the Claude mobile app?</span> You
           don&rsquo;t need a token — add <code className="break-all">{endpoint}</code> as a custom
@@ -155,6 +182,8 @@ export function McpTokensCard({
         </p>
         <pre className="mt-2 overflow-x-auto rounded bg-text/5 p-2 text-xs">{configSnippet}</pre>
       </div>
+        </>
+      )}
     </section>
   );
 }
