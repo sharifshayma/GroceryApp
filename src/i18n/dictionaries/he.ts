@@ -2,7 +2,16 @@ import type { en } from "./en";
 
 export const he: typeof en = {
   nav: { home: "פריטים", lists: "רשימות", stock: "מלאי", profile: "פרופיל" },
-  common: { greeting: "שלום, {name}", save: "שמור", saving: "שומר...", loading: "טוען...", done: "סיום" },
+  common: {
+    greeting: "שלום, {name}",
+    save: "שמור",
+    saving: "שומר...",
+    loading: "טוען...",
+    done: "סיום",
+    cancel: "ביטול",
+    edit: "עריכה",
+    you: "את/ה",
+  },
   auth: {
     login: {
       title: "התחברות",
@@ -185,6 +194,17 @@ export const he: typeof en = {
     amountPlaceholder: "כמות",
     unitPlaceholder: 'יחידה (למשל L, ק"ג)',
     forQuantity: "עבור {amount} {unit}",
+  },
+  profile: {
+    title: "פרופיל",
+    language: "שפה",
+    household: "משק בית",
+  },
+  household: {
+    inviteMembers: "הזמנת חברים",
+    members: "חברים",
+    inviteMessage: "הצטרפו למשק הבית שלנו באפליקציית הקניות:",
+    codeCopied: "קישור ההזמנה הועתק",
   },
   settings: {
     title: "הגדרות",

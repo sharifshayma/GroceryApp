@@ -1,6 +1,15 @@
 export const en = {
   nav: { home: "Items", lists: "Lists", stock: "Stock", profile: "Profile" },
-  common: { greeting: "Hi, {name}", save: "Save", saving: "Saving...", loading: "Loading...", done: "Done" },
+  common: {
+    greeting: "Hi, {name}",
+    save: "Save",
+    saving: "Saving...",
+    loading: "Loading...",
+    done: "Done",
+    cancel: "Cancel",
+    edit: "Edit",
+    you: "you",
+  },
   auth: {
     login: {
       title: "Log in",
@@ -183,6 +192,17 @@ export const en = {
     amountPlaceholder: "Amount",
     unitPlaceholder: "Unit (e.g. L, kg)",
     forQuantity: "for {amount} {unit}",
+  },
+  profile: {
+    title: "Profile",
+    language: "Language",
+    household: "Household",
+  },
+  household: {
+    inviteMembers: "Invite members",
+    members: "Members",
+    inviteMessage: "Join our household on Grocery:",
+    codeCopied: "Invite link copied",
   },
   settings: {
     title: "Settings",
