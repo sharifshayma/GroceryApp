@@ -93,6 +93,9 @@ export const en = {
   lists: {
     title: "Lists",
     create: "Create list",
+    newTitle: "New List",
+    allCategories: "All",
+    clearFilter: "Clear",
     namePlaceholder: "List name",
     open: "Open",
     completed: "Completed",

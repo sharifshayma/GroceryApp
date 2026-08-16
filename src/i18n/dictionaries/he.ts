@@ -95,6 +95,9 @@ export const he: typeof en = {
   lists: {
     title: "רשימות",
     create: "יצירת רשימה",
+    newTitle: "רשימה חדשה",
+    allCategories: "הכל",
+    clearFilter: "נקה",
     namePlaceholder: "שם הרשימה",
     open: "פתוחות",
     completed: "הושלמו",
