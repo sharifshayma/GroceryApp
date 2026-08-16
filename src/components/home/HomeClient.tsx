@@ -103,14 +103,18 @@ export function HomeClient(props: {
     const res = await createListAndAddItem({ name, itemId: first.id, quantity: 1, unit: first.defaultUnit || "pcs" });
     if (res.ok) {
       for (const item of rest) {
-        await addListItem({ listId: res.id, itemId: item.id, quantity: 1, unit: item.defaultUnit || "pcs" });
+        const itemRes = await addListItem({ listId: res.id, itemId: item.id, quantity: 1, unit: item.defaultUnit || "pcs" });
+        if (!itemRes.ok) break;
       }
     }
   };
 
-  // Bulk add all selected items to a list, skipping duplicates already on it
+  // Bulk add all selected items to a list, skipping duplicates already on it.
+  // When no explicit listId is given but exactly one list is open, that list
+  // is the implicit target — resolve it up front so dedup applies there too.
   const handleBulkAdd = async (listId: string | null) => {
-    const targetList = listId ? props.openLists.find((l) => l.id === listId) : null;
+    const effectiveListId = listId ?? (props.openLists.length === 1 ? props.openLists[0].id : null);
+    const targetList = effectiveListId ? props.openLists.find((l) => l.id === effectiveListId) : null;
     const existingItemIds = new Set((targetList?.items ?? []).map((li) => li.itemId));
     const items = [...selectedItems.values()].filter((item) => !existingItemIds.has(item.id));
 
@@ -120,16 +124,13 @@ export function HomeClient(props: {
       return;
     }
 
-    if (listId) {
+    if (effectiveListId) {
       for (const item of items) {
-        await addListItem({ listId, itemId: item.id, quantity: 1, unit: item.defaultUnit || "pcs" });
+        const res = await addListItem({ listId: effectiveListId, itemId: item.id, quantity: 1, unit: item.defaultUnit || "pcs" });
+        if (!res.ok) break;
       }
     } else if (props.openLists.length === 0) {
       await createNewListWithItems(items);
-    } else if (props.openLists.length === 1) {
-      for (const item of items) {
-        await addListItem({ listId: props.openLists[0].id, itemId: item.id, quantity: 1, unit: item.defaultUnit || "pcs" });
-      }
     } else {
       // Multiple lists — show picker, don't clear selection yet
       setShowListPicker(true);
