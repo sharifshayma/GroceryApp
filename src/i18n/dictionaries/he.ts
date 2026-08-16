@@ -24,6 +24,8 @@ export const he: typeof en = {
   dashboard: { title: "לוח בקרה", empty: "משק הבית שלך מוגדר. תכונות הקניות בדרך." },
   home: {
     emptyCategory: "אין עדיין פריטים בקטגוריה הזו.",
+    search: "חיפוש פריטים...",
+    noResults: "אין פריטים בקטגוריה הזו עדיין",
   },
   catalog: {
     nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים", settings: "הגדרות" },

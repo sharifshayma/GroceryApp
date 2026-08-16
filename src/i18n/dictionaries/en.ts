@@ -22,6 +22,8 @@ export const en = {
   dashboard: { title: "Dashboard", empty: "Your household is set up. Grocery features are coming next." },
   home: {
     emptyCategory: "No items in this category yet.",
+    search: "Search items...",
+    noResults: "No items in this category yet",
   },
   catalog: {
     nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices", settings: "Settings" },
