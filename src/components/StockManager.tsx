@@ -86,7 +86,8 @@ export function StockManager({
 
   async function handleThresholdBlur(row: StockRow, value: string) {
     setEditingThreshold(null);
-    const lowThreshold = Number(value) || 1;
+    const raw = value.trim();
+    const lowThreshold = raw === "" ? row.lowThreshold : Math.max(0, Number(raw) || 0);
     const result = await setStock({
       itemId: row.itemId,
       quantity: row.quantity,
@@ -134,7 +135,11 @@ export function StockManager({
     items: { itemId: string; quantity: number; unit: string; lowThreshold: number }[],
   ) {
     for (const item of items) {
-      await setStock(item);
+      const result = await setStock(item);
+      if (!result.ok) {
+        alert(result.error);
+        return;
+      }
     }
     setAddModalMode(null);
     router.refresh();

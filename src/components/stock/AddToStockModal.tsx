@@ -73,7 +73,11 @@ export function AddToStockModal({
     const cat = categories.find((c) => c.id === item.categoryId);
     const key = cat?.id || "other";
     if (!grouped[key])
-      grouped[key] = { name: cat ? getCategoryName(cat, locale) : "Other", emoji: cat?.emoji || "📦", items: [] };
+      grouped[key] = {
+        name: cat ? getCategoryName(cat, locale) : isHe ? "אחר" : "Other",
+        emoji: cat?.emoji || "📦",
+        items: [],
+      };
     grouped[key].items.push(item);
   });
 
@@ -119,6 +123,8 @@ export function AddToStockModal({
           <p className="text-center text-text-secondary py-6">
             {isHe ? "כל הפריטים כבר במלאי" : "All items are already in stock"}
           </p>
+        ) : filtered.length === 0 ? (
+          <p className="text-center text-text-secondary py-6">{t("stock.noSearchResults")}</p>
         ) : (
           Object.entries(grouped).map(([catId, group]) => (
             <div key={catId} className="mb-3">

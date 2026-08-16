@@ -161,6 +161,7 @@ export const en = {
     remove: "Remove",
     removeConfirm: "Stop tracking this item's stock?",
     onLists: "on: {lists}",
+    noSearchResults: "No items found",
   },
   prices: {
     title: "Prices",

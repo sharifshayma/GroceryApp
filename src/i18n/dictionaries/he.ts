@@ -163,6 +163,7 @@ export const he: typeof en = {
     remove: "הסרה",
     removeConfirm: "להפסיק לעקוב אחרי המלאי של הפריט הזה?",
     onLists: "ב: {lists}",
+    noSearchResults: "לא נמצאו פריטים",
   },
   prices: {
     title: "מחירים",
