@@ -8,10 +8,12 @@ import { getCategoryName } from "@/lib/i18n-names";
 import { HorizontalItemRow } from "@/components/HorizontalItemRow";
 import { ItemCard } from "@/components/ItemCard";
 import { AddToListModal } from "@/components/AddToListModal";
+import { AddItemModal } from "@/components/AddItemModal";
 import { BottomSheet } from "@/components/BottomSheet";
 import { IconChevronDown, IconChevronRight, IconSearch, IconSettings } from "@/components/Icons";
 import { addListItem } from "@/actions/list-items";
 import { createListAndAddItem } from "@/actions/home";
+import { deleteItem } from "@/actions/items";
 import type { HomeItem, HomeCategory, HomeTag, OpenList, StockRow } from "@/lib/home-data";
 
 export function HomeClient(props: {
@@ -22,6 +24,11 @@ export function HomeClient(props: {
   const { t, locale } = useT();
   const [homeCategoryId, setHomeCategoryId] = useState<string | null>(props.categories[0]?.id ?? null);
   const [addToListItem, setAddToListItem] = useState<HomeItem | null>(null);
+  // "new" = create mode; a real id = editing that item (re-resolved from
+  // props.items on every render so photo/tag edits made inside the modal
+  // stay in sync after router.refresh()); null = closed.
+  const [itemModalId, setItemModalId] = useState<string | "new" | null>(null);
+  const [deletingItemId, setDeletingItemId] = useState<string | null>(null);
 
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
@@ -151,6 +158,16 @@ export function HomeClient(props: {
     setSelectMode(false);
   };
 
+  const handleDeleteItem = async (item: HomeItem) => {
+    if (!confirm(t("catalog.items.deleteConfirm"))) return;
+    setDeletingItemId(item.id);
+    const res = await deleteItem(item.id);
+    setDeletingItemId(null);
+    if (res.ok) router.refresh();
+  };
+
+  const editingItem = itemModalId && itemModalId !== "new" ? (props.items.find((i) => i.id === itemModalId) ?? null) : null;
+
   const renderItemCard = (item: HomeItem) => (
     <ItemCard key={item.id} item={item} showActions={false}
       isInList={itemsInList.has(item.id)} onAddToList={() => setAddToListItem(item)}
@@ -162,12 +179,21 @@ export function HomeClient(props: {
       {/* Header with title + settings gear */}
       <div ref={settingsRef} className="flex items-center justify-between mb-4 relative">
         <h1 className="text-2xl font-semibold">{locale === "he" ? "פריטים" : "Items"}</h1>
-        <button
-          onMouseDown={(e) => { e.preventDefault(); setShowSettings((v) => !v); }}
-          className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors"
-        >
-          <IconSettings />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setItemModalId("new")}
+            aria-label={t("catalog.items.add")}
+            className="w-10 h-10 rounded-xl bg-primary text-white flex items-center justify-center text-xl font-medium hover:bg-primary-light transition-colors"
+          >
+            +
+          </button>
+          <button
+            onMouseDown={(e) => { e.preventDefault(); setShowSettings((v) => !v); }}
+            className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors"
+          >
+            <IconSettings />
+          </button>
+        </div>
         {showSettings && (
           <div className="absolute end-0 top-full mt-1 z-20 bg-surface rounded-xl border border-neutral shadow-lg min-w-[200px] py-1">
             <Link
@@ -433,8 +459,10 @@ export function HomeClient(props: {
           ) : (
             <div className="space-y-2">
               {homeCategoryItems.map((item) => (
-                <ItemCard key={item.id} item={item} showActions={false}
-                  isInList={itemsInList.has(item.id)} onAddToList={() => setAddToListItem(item)} />
+                <ItemCard key={item.id} item={item} showActions
+                  isInList={itemsInList.has(item.id)} onAddToList={() => setAddToListItem(item)}
+                  onEdit={() => setItemModalId(item.id)}
+                  onDelete={deletingItemId === item.id ? undefined : () => handleDeleteItem(item)} />
               ))}
             </div>
           )}
@@ -499,6 +527,15 @@ export function HomeClient(props: {
             </button>
           </div>
         </BottomSheet>
+      )}
+
+      {itemModalId && (
+        <AddItemModal
+          item={itemModalId === "new" ? null : editingItem}
+          categories={props.categories}
+          tags={props.tags}
+          onClose={() => setItemModalId(null)}
+        />
       )}
     </div>
   );

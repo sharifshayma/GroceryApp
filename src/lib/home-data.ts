@@ -1,6 +1,7 @@
 export type HomeItem = {
   id: string; name: string; nameHe: string | null; emoji: string;
   defaultUnit: string; notes: string | null; categoryId: string | null; photoUrl: string | null;
+  autoTrackStock: boolean;
   tags: { notes: string | null; tag: { id: string; name: string; color: string; type: "recipe" | "store" | "custom" } }[];
 };
 export type HomeCategory = { id: string; name: string; nameHe: string | null; emoji: string };

@@ -14,7 +14,7 @@ export default async function HomePage() {
       orderBy: { createdAt: "desc" },
       select: {
         id: true, name: true, nameHe: true, emoji: true, defaultUnit: true, notes: true,
-        categoryId: true, photoUrl: true,
+        categoryId: true, photoUrl: true, autoTrackStock: true,
         tags: { select: { notes: true, tag: { select: { id: true, name: true, color: true, type: true } } } },
       },
     }),
