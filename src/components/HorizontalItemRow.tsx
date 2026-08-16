@@ -34,9 +34,10 @@ export function HorizontalItemRow({
   collapsed,
   onToggleCollapse,
 }: HorizontalItemRowProps) {
+  const { locale } = useT();
+
   if (!items || items.length === 0) return null;
 
-  const { locale } = useT();
   const collapsible = typeof onToggleCollapse === "function";
 
   return (
