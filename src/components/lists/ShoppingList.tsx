@@ -51,6 +51,8 @@ export function ShoppingList({
   const [showCarryOver, setShowCarryOver] = useState(false);
   const [carryOverSaving, setCarryOverSaving] = useState(false);
 
+  const readOnly = list.status === "completed";
+
   const items = list.items;
   const boughtCount = items.filter((li) => li.isBought).length;
   const total = items.length;
@@ -178,9 +180,10 @@ export function ShoppingList({
                     className="w-full bg-white rounded-xl p-2 flex items-center gap-1 border shadow-sm transition-all min-h-[52px] border-green/30 opacity-60"
                   >
                     <button
-                      onClick={() => toggleBought(li)}
+                      onClick={readOnly ? undefined : () => toggleBought(li)}
+                      disabled={readOnly}
                       aria-label={isHe ? `בטל סימון של ${name}` : `Unmark ${name}`}
-                      className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-neutral/10 active:bg-neutral/20 transition-colors"
+                      className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-neutral/10 active:bg-neutral/20 transition-colors disabled:opacity-100"
                     >
                       <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center bg-green border-green text-white">
                         <IconCheck />
@@ -219,8 +222,9 @@ export function ShoppingList({
                   className="w-full bg-white rounded-xl p-2 flex items-center gap-1 border shadow-sm transition-all min-h-[52px] border-neutral/20"
                 >
                   <button
-                    onClick={() => toggleBought(li)}
-                    className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-neutral/10 active:bg-neutral/20 transition-colors"
+                    onClick={readOnly ? undefined : () => toggleBought(li)}
+                    disabled={readOnly}
+                    className="w-11 h-11 rounded-lg flex items-center justify-center flex-shrink-0 hover:bg-neutral/10 active:bg-neutral/20 transition-colors disabled:opacity-100"
                     aria-label={isHe ? `סמן ${name} כנקנה` : `Mark ${name} as bought`}
                   >
                     <div className="w-7 h-7 rounded-lg border-2 flex items-center justify-center border-neutral" />
@@ -245,8 +249,8 @@ export function ShoppingList({
                   </button>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
-                      onClick={() => changeQuantity(li, li.quantity - 1)}
-                      disabled={li.quantity <= 1}
+                      onClick={readOnly ? undefined : () => changeQuantity(li, li.quantity - 1)}
+                      disabled={readOnly || li.quantity <= 1}
                       className="w-7 h-7 rounded-lg bg-neutral/30 flex items-center justify-center font-medium disabled:opacity-40"
                       aria-label={isHe ? "הפחת" : "Decrease"}
                     >
@@ -254,8 +258,9 @@ export function ShoppingList({
                     </button>
                     <span className="w-6 text-center text-sm font-medium">{li.quantity}</span>
                     <button
-                      onClick={() => changeQuantity(li, li.quantity + 1)}
-                      className="w-7 h-7 rounded-lg bg-primary text-white flex items-center justify-center font-medium"
+                      onClick={readOnly ? undefined : () => changeQuantity(li, li.quantity + 1)}
+                      disabled={readOnly}
+                      className="w-7 h-7 rounded-lg bg-primary text-white flex items-center justify-center font-medium disabled:opacity-40"
                       aria-label={isHe ? "הוסף" : "Increase"}
                     >
                       +
@@ -270,14 +275,16 @@ export function ShoppingList({
       ))}
 
       {/* Done button */}
-      <button
-        onClick={handleDone}
-        className={`w-full py-3.5 rounded-xl font-medium text-lg text-white transition-colors mt-2 ${
-          boughtCount === total ? "bg-green-dark hover:bg-green" : "bg-primary hover:bg-primary-light"
-        }`}
-      >
-        {t("common.done")} ✓
-      </button>
+      {!readOnly && (
+        <button
+          onClick={handleDone}
+          className={`w-full py-3.5 rounded-xl font-medium text-lg text-white transition-colors mt-2 ${
+            boughtCount === total ? "bg-green-dark hover:bg-green" : "bg-primary hover:bg-primary-light"
+          }`}
+        >
+          {t("common.done")} ✓
+        </button>
+      )}
 
       {showCarryOver && (
         <CarryOverModal

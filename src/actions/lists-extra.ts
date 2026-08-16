@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { prisma } from "@/lib/prisma";
 import { requireHousehold } from "@/lib/household-context";
 import { getCurrentUser } from "@/lib/auth-guard";
 import { createListCore } from "@/lib/mutations/lists";
@@ -9,6 +10,11 @@ import { setListStatusCore } from "@/lib/mutations/list-status";
 
 export async function activateList(id: string): Promise<{ ok: true } | { ok: false; error: string }> {
   const household = await requireHousehold();
+  // Enforce a single active list per household: demote any other currently-active list to draft.
+  await prisma.groceryList.updateMany({
+    where: { householdId: household.id, status: "active", id: { not: id } },
+    data: { status: "draft" },
+  });
   const res = await setListStatusCore(household.id, { id, status: "active" });
   if (res.ok) { revalidatePath("/lists"); revalidatePath(`/lists/${id}`); }
   return res;

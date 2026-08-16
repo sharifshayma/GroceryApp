@@ -26,6 +26,7 @@ export default async function ListsPage() {
       },
     },
   });
+  // eslint-disable-next-line react-hooks/purity -- server component: intentional server-side timestamp passed to the client as a prop
   const nowMs = Date.now();
   return <ListsManager lists={lists} nowMs={nowMs} />;
 }
