@@ -51,7 +51,7 @@ model User {
   householdId String?
   household   Household? @relation("HouseholdMembers", fields: [householdId], references: [id], onDelete: SetNull)
   role        Role       @default(member)
-  language    Language   @default(he)
+  language    Language   @default(en)
   displayName String?
 
   createdHouseholds Household[] @relation("HouseholdCreator")
