@@ -72,6 +72,18 @@ export function McpTokensCard({
       <h2 className="text-lg font-bold">{t(d, "settings.connect.heading")}</h2>
       <p className="mt-1 text-sm text-text/70">{t(d, "settings.connect.intro")}</p>
 
+      <div className="mt-3 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-text/80">
+        <p>
+          <span className="font-semibold">Using claude.ai or the Claude mobile app?</span> You
+          don&rsquo;t need a token — add <code className="break-all">{endpoint}</code> as a custom
+          connector and sign in. Claude connects over OAuth.
+        </p>
+        <p className="mt-1.5">
+          <span className="font-semibold">Using Claude Desktop?</span> Generate a token below and
+          paste it into your <code>mcpServers</code> config (shown at the bottom).
+        </p>
+      </div>
+
       <div className="mt-3 flex gap-2">
         <div className="flex-1">
           <Input
