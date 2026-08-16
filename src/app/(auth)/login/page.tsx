@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { unstable_rethrow } from "next/navigation";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { logIn } from "@/actions/auth";
@@ -30,10 +31,16 @@ export default function LoginPage() {
         setError(result.error);
         setSubmitting(false);
       }
-    } catch {
-      // logIn() rethrows anything that isn't the sign-in failure/redirect it
-      // already handles (e.g. a DB hiccup) — without this, the button would
-      // stay stuck disabled behind a generic framework error.
+    } catch (e) {
+      // On success logIn() calls next/navigation's redirect(), which throws a
+      // NEXT_REDIRECT control-flow signal. When the action is awaited
+      // imperatively (as here), that signal surfaces on the client and MUST be
+      // re-thrown so Next performs the navigation — otherwise we'd flash a
+      // bogus error just before the page redirects. unstable_rethrow re-throws
+      // framework signals (redirect/notFound) and returns for everything else.
+      unstable_rethrow(e);
+      // A real failure (e.g. a DB hiccup logIn() couldn't handle): show the
+      // generic error so the button doesn't stay stuck disabled.
       setError(t(d, "auth.login.genericError"));
       setSubmitting(false);
     }

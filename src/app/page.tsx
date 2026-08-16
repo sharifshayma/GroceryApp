@@ -6,5 +6,5 @@ import { getCurrentUser } from "@/lib/auth-guard";
 // (which is where a new visitor tries the demo account).
 export default async function Home() {
   const user = await getCurrentUser();
-  redirect(user ? "/dashboard" : "/login");
+  redirect(user ? "/items" : "/login");
 }

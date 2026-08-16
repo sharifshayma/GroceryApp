@@ -28,7 +28,7 @@ export function OnboardingForm() {
       setCreateError(result.error);
       return;
     }
-    router.push("/dashboard");
+    router.push("/items");
   }
 
   async function handleJoin(e: FormEvent) {
@@ -41,7 +41,7 @@ export function OnboardingForm() {
       setJoinError(result.error);
       return;
     }
-    router.push("/dashboard");
+    router.push("/items");
   }
 
   return (
