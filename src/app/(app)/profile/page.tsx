@@ -1,7 +1,6 @@
 import { redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth-guard";
 import { getCurrentHousehold } from "@/lib/household-context";
-import { listMcpTokens } from "@/lib/mcp-token";
 import { prisma } from "@/lib/prisma";
 import { ProfileClient } from "@/components/profile/ProfileClient";
 import { McpTokensCard } from "@/components/McpTokensCard";
@@ -16,13 +15,12 @@ export default async function ProfilePage() {
   const household = await getCurrentHousehold();
   if (!household) redirect("/onboarding");
 
-  const [profile, members, tokens] = await Promise.all([
+  const [profile, members] = await Promise.all([
     prisma.user.findUnique({ where: { id: user.id }, select: { displayName: true } }),
     prisma.user.findMany({
       where: { householdId: household.id },
       select: { id: true, displayName: true, email: true },
     }),
-    listMcpTokens(user.id),
   ]);
 
   const base = (process.env.BETTER_AUTH_URL ?? "http://localhost:3000").replace(/\/+$/, "");
@@ -36,16 +34,7 @@ export default async function ProfilePage() {
         members={members}
         currentUserId={user.id}
       />
-      <McpTokensCard
-        initialTokens={tokens.map((tk) => ({
-          id: tk.id,
-          name: tk.name,
-          lastFour: tk.lastFour,
-          createdAt: tk.createdAt.toISOString(),
-          lastUsedAt: tk.lastUsedAt ? tk.lastUsedAt.toISOString() : null,
-        }))}
-        endpoint={endpoint}
-      />
+      <McpTokensCard endpoint={endpoint} />
       {/* Sign out — kept at the very bottom of the profile page */}
       <div className="flex justify-center pt-2">
         <LogoutButton />

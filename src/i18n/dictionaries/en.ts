@@ -212,7 +212,7 @@ export const en = {
     title: "Settings",
     connect: {
       heading: "Connect to Claude",
-      intro: "Generate a token to let Claude read and manage your groceries via MCP.",
+      intro: "Let Claude read and manage your groceries via MCP.",
       namePlaceholder: "Token name (e.g. Claude Desktop)",
       generate: "Generate token",
       generating: "Generating...",
