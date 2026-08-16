@@ -188,18 +188,18 @@ const baseHandler = createMcpHandler(
 
     server.tool(
       "log_price",
-      "Record a price for an item. Get itemId from search_items. purchasedAt is YYYY-MM-DD (defaults to today).",
-      { itemId: z.string(), price: z.number(), store: z.string().optional(), purchasedAt: z.string().optional() },
-      async ({ itemId, price, store, purchasedAt }, extra) =>
-        json(await addPriceEntryCore(hh(extra), uid(extra), { itemId, price, store, purchasedAt })),
+      "Record a price for an item. Get itemId from search_items. purchasedAt is YYYY-MM-DD (defaults to today). quantityAmount and quantityUnit capture how much you got for the price, for unit-price comparison.",
+      { itemId: z.string(), price: z.number(), store: z.string().optional(), purchasedAt: z.string().optional(), quantityAmount: z.number().positive().optional(), quantityUnit: z.string().optional() },
+      async ({ itemId, price, store, purchasedAt, quantityAmount, quantityUnit }, extra) =>
+        json(await addPriceEntryCore(hh(extra), uid(extra), { itemId, price, store, purchasedAt, quantityAmount, quantityUnit })),
     );
 
     server.tool(
       "edit_price",
-      "Edit a recorded price. Get entryId from list_prices. purchasedAt is YYYY-MM-DD.",
-      { entryId: z.string(), price: z.number(), store: z.string().optional(), purchasedAt: z.string().optional() },
-      async ({ entryId, price, store, purchasedAt }, extra) =>
-        json(await updatePriceEntryCore(hh(extra), { entryId, price, store, purchasedAt })),
+      "Edit a recorded price. Get entryId from list_prices. purchasedAt is YYYY-MM-DD. quantityAmount and quantityUnit capture how much you got for the price, for unit-price comparison.",
+      { entryId: z.string(), price: z.number(), store: z.string().optional(), purchasedAt: z.string().optional(), quantityAmount: z.number().positive().optional(), quantityUnit: z.string().optional() },
+      async ({ entryId, price, store, purchasedAt, quantityAmount, quantityUnit }, extra) =>
+        json(await updatePriceEntryCore(hh(extra), { entryId, price, store, purchasedAt, quantityAmount, quantityUnit })),
     );
 
     server.tool(

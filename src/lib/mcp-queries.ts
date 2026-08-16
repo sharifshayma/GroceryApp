@@ -1,8 +1,9 @@
 import { prisma } from "@/lib/prisma";
 import { computeNeedToBuy } from "@/lib/need-to-buy";
+import { computeUnitPrice } from "@/lib/unit-price";
 import type { TagType } from "@prisma/client";
 
-type PriceRow = { entryId: string; itemId: string; item: string; price: number; store: string | null; purchasedAt: string };
+type PriceRow = { entryId: string; itemId: string; item: string; price: number; store: string | null; purchasedAt: string; quantityAmount: number | null; quantityUnit: string | null; unitPrice: number | null };
 
 /** Flag the minimum-price row per itemId (item name is not unique). Pure — unit tested. */
 export function markCheapest(rows: PriceRow[]): (PriceRow & { cheapest: boolean })[] {
@@ -91,7 +92,7 @@ export async function listPrices(householdId: string, itemId?: string) {
   const entries = await prisma.priceHistory.findMany({
     where: { householdId, ...(itemId ? { itemId } : {}) },
     orderBy: { purchasedAt: "desc" },
-    select: { id: true, price: true, store: true, purchasedAt: true, item: { select: { id: true, name: true } } },
+    select: { id: true, price: true, store: true, purchasedAt: true, quantityAmount: true, quantityUnit: true, item: { select: { id: true, name: true } } },
   });
   const rows: PriceRow[] = entries.map((e) => ({
     entryId: e.id,
@@ -100,6 +101,9 @@ export async function listPrices(householdId: string, itemId?: string) {
     price: Number(e.price),
     store: e.store,
     purchasedAt: e.purchasedAt.toISOString().slice(0, 10),
+    quantityAmount: e.quantityAmount,
+    quantityUnit: e.quantityUnit,
+    unitPrice: computeUnitPrice(Number(e.price), e.quantityAmount),
   }));
   return markCheapest(rows);
 }
