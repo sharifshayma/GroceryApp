@@ -1,5 +1,7 @@
 import { createMcpHandler, withMcpAuth } from "mcp-handler";
 import { z } from "zod";
+import { auth } from "@/lib/auth-server";
+import { prisma } from "@/lib/prisma";
 import { verifyMcpToken } from "@/lib/mcp-token";
 import { searchItems, getLists, getNeedToBuy, listTags, listCategories, listPrices } from "@/lib/mcp-queries";
 import { addListItemCore, updateListItemCore, setListItemBoughtCore } from "@/lib/mutations/list-items";
@@ -20,6 +22,11 @@ function uid(extra: unknown): string {
   return id;
 }
 const json = (data: unknown) => ({ content: [{ type: "text" as const, text: JSON.stringify(data, null, 2) }] });
+
+async function householdForUser(userId: string): Promise<string | null> {
+  const u = await prisma.user.findUnique({ where: { id: userId }, select: { householdId: true } });
+  return u?.householdId ?? null;
+}
 
 const baseHandler = createMcpHandler(
   (server) => {
@@ -225,7 +232,25 @@ const baseHandler = createMcpHandler(
 
 const authedHandler = withMcpAuth(
   baseHandler,
-  async (_req: Request, bearer?: string) => {
+  async (req: Request, bearer?: string) => {
+    // 1. OAuth access token (claude.ai custom connector)
+    try {
+      const session = await auth.api.getMcpSession({ headers: req.headers });
+      if (session?.userId) {
+        const householdId = await householdForUser(session.userId);
+        if (householdId) {
+          return {
+            token: bearer ?? "oauth",
+            scopes: typeof session.scopes === "string" ? session.scopes.split(" ") : [],
+            clientId: session.clientId ?? "oauth",
+            extra: { householdId, userId: session.userId },
+          };
+        }
+      }
+    } catch {
+      // not an OAuth token / no session — fall through to the manual bearer
+    }
+    // 2. Manual hashed bearer (Claude Desktop/Code — existing 5a path)
     if (!bearer) return undefined;
     const v = await verifyMcpToken(bearer);
     if (!v) return undefined;
