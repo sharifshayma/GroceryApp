@@ -44,6 +44,7 @@ export const en = {
     nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices", settings: "Settings" },
     categories: {
       title: "Categories",
+      manageTitle: "Manage Categories",
       add: "Add category",
       namePlaceholder: "Category name",
       nameHePlaceholder: "Hebrew name (optional)",

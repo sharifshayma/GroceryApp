@@ -46,6 +46,7 @@ export const he: typeof en = {
     nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים", settings: "הגדרות" },
     categories: {
       title: "קטגוריות",
+      manageTitle: "ניהול קטגוריות",
       add: "הוספת קטגוריה",
       namePlaceholder: "שם קטגוריה",
       nameHePlaceholder: "שם בעברית (אופציונלי)",

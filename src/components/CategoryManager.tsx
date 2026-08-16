@@ -2,17 +2,15 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { useT } from "@/i18n/LocaleProvider";
+import { getCategoryName } from "@/lib/i18n-names";
+import { IconBack, IconEdit, IconTrash, IconChevronUp, IconChevronDown } from "@/components/Icons";
 import {
   createCategory,
   updateCategory,
   deleteCategory,
   moveCategory,
 } from "@/actions/categories";
-import { getDictionary, t } from "@/i18n";
-
-const d = getDictionary("en");
 
 interface CategoryRow {
   id: string;
@@ -22,85 +20,71 @@ interface CategoryRow {
   sortOrder: number;
 }
 
+const EMOJI_OPTIONS = [
+  "📦", "🥬", "🥜", "🥚", "🧀", "🥩", "🥗", "🍞", "🫙", "🍫",
+  "🍪", "🍦", "🧊", "☕", "🥤", "🍷", "🍼", "🐾", "🧹", "🧴",
+  "💊", "👕", "🛒", "🍽️", "🧂", "🫒", "🥫", "🧃", "🏠", "✨",
+];
+
 export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
+  const { t, locale } = useT();
   const router = useRouter();
-
-  // Add-category form state
-  const [addName, setAddName] = useState("");
-  const [addNameHe, setAddNameHe] = useState("");
-  const [addEmoji, setAddEmoji] = useState("");
-  const [addError, setAddError] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
-
-  // Which row is being edited, and its edit-form state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editNameHe, setEditNameHe] = useState("");
-  const [editEmoji, setEditEmoji] = useState("");
-  const [editError, setEditError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  // Row id currently running a delete/move mutation
-  const [pendingId, setPendingId] = useState<string | null>(null);
 
   const sorted = [...categories].sort((a, b) => a.sortOrder - b.sortOrder);
 
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    setAddError(null);
-    setAdding(true);
-    const result = await createCategory({
-      name: addName,
-      nameHe: addNameHe,
-      emoji: addEmoji,
-    });
+  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [nameHe, setNameHe] = useState("");
+  const [emoji, setEmoji] = useState("📦");
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pendingId, setPendingId] = useState<string | null>(null);
+
+  const isFormOpen = adding || editingId !== null;
+
+  function resetForm() {
+    setName("");
+    setNameHe("");
+    setEmoji("📦");
+    setShowEmojiPicker(false);
     setAdding(false);
-    if (!result.ok) {
-      setAddError(result.error);
-      return;
-    }
-    setAddName("");
-    setAddNameHe("");
-    setAddEmoji("");
-    router.refresh();
+    setEditingId(null);
+    setError(null);
   }
 
   function startEdit(row: CategoryRow) {
     setEditingId(row.id);
-    setEditName(row.name);
-    setEditNameHe(row.nameHe ?? "");
-    setEditEmoji(row.emoji);
-    setEditError(null);
+    setName(row.name);
+    setNameHe(row.nameHe ?? "");
+    setEmoji(row.emoji);
+    setAdding(false);
+    setShowEmojiPicker(false);
+    setError(null);
   }
 
-  function cancelEdit() {
-    setEditingId(null);
-    setEditError(null);
-  }
-
-  async function handleSaveEdit(e: FormEvent, id: string) {
+  async function handleSave(e: FormEvent) {
     e.preventDefault();
-    setEditError(null);
+    if (!name.trim()) return;
     setSaving(true);
-    const result = await updateCategory({
-      id,
-      name: editName,
-      nameHe: editNameHe,
-      emoji: editEmoji,
-    });
+    setError(null);
+    const result = editingId
+      ? await updateCategory({ id: editingId, name, nameHe, emoji })
+      : await createCategory({ name, nameHe, emoji });
     setSaving(false);
     if (!result.ok) {
-      setEditError(result.error);
+      setError(result.error);
       return;
     }
-    setEditingId(null);
+    resetForm();
     router.refresh();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm(t(d, "catalog.categories.deleteConfirm"))) return;
-    setPendingId(id);
-    const result = await deleteCategory(id);
+  async function handleDelete(row: CategoryRow) {
+    if (!confirm(t("catalog.categories.deleteConfirm"))) return;
+    setPendingId(row.id);
+    const result = await deleteCategory(row.id);
     setPendingId(null);
     if (!result.ok) {
       alert(result.error);
@@ -121,170 +105,171 @@ export function CategoryManager({ categories }: { categories: CategoryRow[] }) {
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 p-4 sm:p-6">
-      <h1 className="text-2xl font-extrabold">{t(d, "catalog.categories.title")}</h1>
+    <div className="px-4 pt-4 pb-8 max-w-lg mx-auto animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors"
+        >
+          <IconBack />
+        </button>
+        <h1 className="text-xl font-semibold">{t("catalog.categories.manageTitle")}</h1>
+      </div>
 
-      <form
-        onSubmit={handleAdd}
-        className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4 sm:flex-row sm:items-end sm:gap-2"
-      >
-        <div className="flex-1">
-          <Input
-            id="addCategoryName"
-            type="text"
-            placeholder={t(d, "catalog.categories.namePlaceholder")}
-            value={addName}
-            onChange={(e) => setAddName(e.target.value)}
-            required
-          />
-        </div>
-        <div className="flex-1">
-          <Input
-            id="addCategoryNameHe"
-            type="text"
-            placeholder={t(d, "catalog.categories.nameHePlaceholder")}
-            value={addNameHe}
-            onChange={(e) => setAddNameHe(e.target.value)}
-          />
-        </div>
-        <div className="w-24">
-          <Input
-            id="addCategoryEmoji"
-            type="text"
-            placeholder={t(d, "catalog.categories.emojiPlaceholder")}
-            value={addEmoji}
-            onChange={(e) => setAddEmoji(e.target.value)}
-          />
-        </div>
-        <Button type="submit" disabled={adding}>
-          {adding ? t(d, "common.saving") : t(d, "catalog.categories.add")}
-        </Button>
-      </form>
-      {addError && <p className="text-sm text-red-600">{addError}</p>}
+      {/* Add / Edit form */}
+      {isFormOpen && (
+        <form
+          onSubmit={handleSave}
+          className="bg-surface rounded-2xl border border-neutral p-4 mb-4 animate-fade-in space-y-3"
+        >
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker((v) => !v)}
+              className="w-12 h-12 rounded-xl bg-bg border border-neutral text-2xl flex items-center justify-center flex-shrink-0"
+            >
+              {emoji}
+            </button>
+            <div className="flex-1 space-y-2">
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder={t("catalog.categories.namePlaceholder")}
+                required
+                autoFocus
+                className="w-full px-3 py-2 rounded-xl border border-neutral bg-bg text-text text-sm placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+              <input
+                type="text"
+                value={nameHe}
+                onChange={(e) => setNameHe(e.target.value)}
+                placeholder={t("catalog.categories.nameHePlaceholder")}
+                dir="rtl"
+                className="w-full px-3 py-2 rounded-xl border border-neutral bg-bg text-text text-sm placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+              />
+            </div>
+          </div>
 
-      {sorted.length === 0 && (
-        <p className="text-ink/60">{t(d, "catalog.categories.empty")}</p>
+          {showEmojiPicker && (
+            <div className="grid grid-cols-8 gap-1.5 p-3 bg-bg rounded-xl border border-neutral/40">
+              {EMOJI_OPTIONS.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => {
+                    setEmoji(e);
+                    setShowEmojiPicker(false);
+                  }}
+                  className={`w-10 h-10 rounded-lg text-xl flex items-center justify-center hover:bg-surface transition-colors ${
+                    emoji === e ? "bg-primary/10 ring-2 ring-primary" : ""
+                  }`}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {error && <p className="text-danger text-sm">{error}</p>}
+
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm disabled:opacity-50 min-h-[44px]"
+            >
+              {saving ? t("common.saving") : t("common.save")}
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-4 py-2.5 rounded-xl text-text-secondary font-semibold text-sm min-h-[44px]"
+            >
+              {t("common.cancel")}
+            </button>
+          </div>
+        </form>
       )}
 
-      <ul className="flex flex-col gap-2">
-        {sorted.map((row, idx) => {
-          const isEditing = editingId === row.id;
-          const isPending = pendingId === row.id;
-          const isFirst = idx === 0;
-          const isLast = idx === sorted.length - 1;
+      {/* Add button */}
+      {!isFormOpen && (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="w-full py-3 rounded-xl border-2 border-dashed border-primary/40 text-primary font-semibold mb-4 hover:bg-primary/5 transition-colors"
+        >
+          + {t("catalog.categories.add")}
+        </button>
+      )}
 
-          if (isEditing) {
+      {/* Category list */}
+      {sorted.length === 0 ? (
+        <p className="text-text-secondary text-sm text-center py-6">
+          {t("catalog.categories.empty")}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {sorted.map((row, idx) => {
+            const isPending = pendingId === row.id;
             return (
-              <li
+              <div
                 key={row.id}
-                className="rounded-2xl border border-border bg-white p-4"
+                className={`bg-white rounded-xl border shadow-sm p-3.5 flex items-center gap-3 transition-colors ${
+                  editingId === row.id ? "border-primary" : "border-neutral/20"
+                }`}
               >
-                <form
-                  onSubmit={(e) => handleSaveEdit(e, row.id)}
-                  className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-2"
-                >
-                  <div className="flex-1">
-                    <Input
-                      id={`editName-${row.id}`}
-                      type="text"
-                      placeholder={t(d, "catalog.categories.namePlaceholder")}
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      required
-                      autoFocus
-                    />
-                  </div>
-                  <div className="flex-1">
-                    <Input
-                      id={`editNameHe-${row.id}`}
-                      type="text"
-                      placeholder={t(d, "catalog.categories.nameHePlaceholder")}
-                      value={editNameHe}
-                      onChange={(e) => setEditNameHe(e.target.value)}
-                    />
-                  </div>
-                  <div className="w-24">
-                    <Input
-                      id={`editEmoji-${row.id}`}
-                      type="text"
-                      placeholder={t(d, "catalog.categories.emojiPlaceholder")}
-                      value={editEmoji}
-                      onChange={(e) => setEditEmoji(e.target.value)}
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button type="submit" disabled={saving}>
-                      {saving ? t(d, "common.saving") : t(d, "catalog.categories.save")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      disabled={saving}
-                      onClick={cancelEdit}
-                    >
-                      {t(d, "catalog.categories.cancel")}
-                    </Button>
-                  </div>
-                </form>
-                {editError && <p className="mt-2 text-sm text-red-600">{editError}</p>}
-              </li>
-            );
-          }
+                {/* Reorder arrows */}
+                <div className="flex flex-col gap-0.5">
+                  <button
+                    type="button"
+                    onClick={() => handleMove(row.id, "up")}
+                    disabled={idx === 0 || isPending}
+                    aria-label={t("catalog.categories.moveUp")}
+                    className="w-9 h-9 rounded-lg text-text-secondary hover:text-text hover:bg-neutral/20 disabled:opacity-20 flex items-center justify-center transition-colors"
+                  >
+                    <IconChevronUp />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMove(row.id, "down")}
+                    disabled={idx === sorted.length - 1 || isPending}
+                    aria-label={t("catalog.categories.moveDown")}
+                    className="w-9 h-9 rounded-lg text-text-secondary hover:text-text hover:bg-neutral/20 disabled:opacity-20 flex items-center justify-center transition-colors"
+                  >
+                    <IconChevronDown />
+                  </button>
+                </div>
 
-          return (
-            <li
-              key={row.id}
-              className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4"
-            >
-              <span className="text-2xl">{row.emoji}</span>
-              <div className="flex-1">
-                <div className="font-bold">{row.name}</div>
-                {row.nameHe && <div className="text-sm text-ink/60">{row.nameHe}</div>}
-              </div>
-              <div className="flex items-center gap-1">
-                <Button
+                <span className="text-2xl">{row.emoji}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="font-semibold truncate">{getCategoryName(row, locale)}</p>
+                </div>
+
+                {/* Actions */}
+                <button
                   type="button"
-                  variant="ghost"
-                  size="sm"
-                  aria-label={t(d, "catalog.categories.moveUp")}
-                  disabled={isFirst || isPending}
-                  onClick={() => handleMove(row.id, "up")}
-                >
-                  ▲
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  aria-label={t(d, "catalog.categories.moveDown")}
-                  disabled={isLast || isPending}
-                  onClick={() => handleMove(row.id, "down")}
-                >
-                  ▼
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={isPending}
                   onClick={() => startEdit(row)}
-                >
-                  {t(d, "catalog.categories.edit")}
-                </Button>
-                <Button
-                  type="button"
-                  variant="danger"
-                  size="sm"
                   disabled={isPending}
-                  onClick={() => handleDelete(row.id)}
+                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors disabled:opacity-40"
                 >
-                  {t(d, "catalog.categories.delete")}
-                </Button>
+                  <IconEdit />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleDelete(row)}
+                  disabled={isPending}
+                  className="w-10 h-10 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors disabled:opacity-40"
+                >
+                  <IconTrash />
+                </button>
               </div>
-            </li>
-          );
-        })}
-      </ul>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

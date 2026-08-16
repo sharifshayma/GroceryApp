@@ -137,6 +137,14 @@ export function IconChevronDown({ className = "w-4 h-4" }: IconProps) {
   );
 }
 
+export function IconChevronUp({ className = "w-4 h-4" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="6 15 12 9 18 15" />
+    </svg>
+  );
+}
+
 export function IconChevronRight({ className = "w-4 h-4" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
