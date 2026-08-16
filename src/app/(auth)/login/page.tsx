@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      // On success logIn() redirects server-side (to /dashboard, or back into
+      // On success logIn() redirects server-side (to "/", or back into
       // an in-progress OAuth /authorize flow) via next/navigation's redirect(),
       // which is handled entirely on the server — the client call below simply
       // never resolves to a handled value in that case, so there's nothing to
