@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { adjustStock, setStock, removeStock } from "@/actions/stock";
 import { setAutoTrackStock } from "@/actions/stock-extra";
@@ -72,16 +72,34 @@ export function StockManager({
   const [editingThreshold, setEditingThreshold] = useState<string | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [, startTransition] = useTransition();
 
-  async function handleAdjust(itemId: string, delta: number) {
-    setPendingId(itemId);
-    const result = await adjustStock({ itemId, delta });
-    setPendingId(null);
-    if (!result.ok) {
-      alert(result.error);
-      return;
-    }
-    router.refresh();
+  // Optimistic layers: quantity steppers and the auto-track toggle apply
+  // instantly, then reconcile against the data `router.refresh()` re-fetches.
+  // A failed action drops its patch automatically when the transition ends.
+  const [optimisticStock, applyStockPatch] = useOptimistic(
+    stock,
+    (state: StockRow[], patch: { itemId: string; delta: number }) =>
+      state.map((s) =>
+        s.itemId === patch.itemId ? { ...s, quantity: Math.max(0, s.quantity + patch.delta) } : s,
+      ),
+  );
+  const [optimisticCatalog, applyAutoTrackPatch] = useOptimistic(
+    allItems,
+    (state: CatalogItem[], patch: { id: string; autoTrackStock: boolean }) =>
+      state.map((it) => (it.id === patch.id ? { ...it, autoTrackStock: patch.autoTrackStock } : it)),
+  );
+
+  function handleAdjust(itemId: string, delta: number) {
+    startTransition(async () => {
+      applyStockPatch({ itemId, delta });
+      const result = await adjustStock({ itemId, delta });
+      if (!result.ok) {
+        alert(result.error);
+        return;
+      }
+      router.refresh();
+    });
   }
 
   async function handleThresholdBlur(row: StockRow, value: string) {
@@ -145,18 +163,23 @@ export function StockManager({
     router.refresh();
   }
 
-  async function handleToggleAutoTrack(item: CatalogItem) {
+  function handleToggleAutoTrack(item: CatalogItem) {
     const next = !(item.autoTrackStock ?? true);
-    const result = await setAutoTrackStock(item.id, next);
-    if (!result.ok) {
-      alert(result.error);
-      return;
-    }
-    router.refresh();
+    startTransition(async () => {
+      applyAutoTrackPatch({ id: item.id, autoTrackStock: next });
+      const result = await setAutoTrackStock(item.id, next);
+      if (!result.ok) {
+        alert(result.error);
+        return;
+      }
+      router.refresh();
+    });
   }
 
   // Group stock rows by category (sorted by sortOrder; unassigned -> Other)
-  const displayItems = filterLow ? stock.filter((s) => s.quantity <= s.lowThreshold) : stock;
+  const displayItems = filterLow
+    ? optimisticStock.filter((s) => s.quantity <= s.lowThreshold)
+    : optimisticStock;
 
   const grouped: Record<
     string,
@@ -178,12 +201,12 @@ export function StockManager({
   const sortedGroups = Object.entries(grouped).sort((a, b) => a[1].sortOrder - b[1].sortOrder);
 
   // Items not yet tracked in stock (for the add modal)
-  const stockItemIds = new Set(stock.map((s) => s.itemId));
-  const unstockedItems = allItems.filter((i) => !stockItemIds.has(i.id));
+  const stockItemIds = new Set(optimisticStock.map((s) => s.itemId));
+  const unstockedItems = optimisticCatalog.filter((i) => !stockItemIds.has(i.id));
 
   // Group allItems by category for the auto-track settings panel
   const itemsByCategory = new Map<string, CatalogItem[]>();
-  allItems.forEach((item) => {
+  optimisticCatalog.forEach((item) => {
     const key = item.categoryId || OTHER_KEY;
     if (!itemsByCategory.has(key)) itemsByCategory.set(key, []);
     itemsByCategory.get(key)!.push(item);
@@ -249,7 +272,7 @@ export function StockManager({
               ? "פריטים מופעלים יעודכנו אוטומטית במלאי כשנקנים"
               : "Enabled items will auto-update stock when bought"}
           </p>
-          {allItems.length === 0 ? (
+          {optimisticCatalog.length === 0 ? (
             <p className="py-2 text-center text-xs text-text-secondary">
               {isHe ? "אין פריטים" : "No items"}
             </p>
@@ -304,7 +327,7 @@ export function StockManager({
         </div>
       )}
 
-      {stock.length === 0 ? (
+      {optimisticStock.length === 0 ? (
         <div className="flex min-h-[40vh] flex-col items-center justify-center">
           <div className="mb-4 flex justify-center">
             <IllustrationNoItems className="h-28 w-28" />

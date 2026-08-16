@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useOptimistic, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useT } from "@/i18n/LocaleProvider";
@@ -55,7 +55,16 @@ export function ShoppingList({
 
   const readOnly = list.status === "completed";
 
-  const items = list.items;
+  // Optimistic layer: reflect check-offs and quantity changes instantly, then
+  // reconcile against the server data that `router.refresh()` re-fetches.
+  const [optimisticItems, applyOptimistic] = useOptimistic(
+    list.items,
+    (state: ShoppingListItemRow[], patch: { id: string; isBought?: boolean; quantity?: number }) =>
+      state.map((li) => (li.id === patch.id ? { ...li, ...patch } : li)),
+  );
+  const [, startTransition] = useTransition();
+
+  const items = optimisticItems;
   const boughtCount = items.filter((li) => li.isBought).length;
   const total = items.length;
   const progress = total > 0 ? (boughtCount / total) * 100 : 0;
@@ -79,14 +88,23 @@ export function ShoppingList({
 
   const unboughtItems = items.filter((li) => !li.isBought);
 
-  async function toggleBought(li: ShoppingListItemRow) {
-    await setListItemBought({ listItemId: li.id, isBought: !li.isBought });
-    router.refresh();
+  function toggleBought(li: ShoppingListItemRow) {
+    const isBought = !li.isBought;
+    startTransition(async () => {
+      applyOptimistic({ id: li.id, isBought });
+      await setListItemBought({ listItemId: li.id, isBought });
+      router.refresh();
+    });
   }
 
-  async function changeQuantity(li: ShoppingListItemRow, next: number) {
-    await updateListItem({ listItemId: li.id, quantity: Math.max(1, next), unit: li.unit, notes: li.notes ?? undefined });
-    router.refresh();
+  function changeQuantity(li: ShoppingListItemRow, next: number) {
+    const quantity = Math.max(1, next);
+    if (quantity === li.quantity) return;
+    startTransition(async () => {
+      applyOptimistic({ id: li.id, quantity });
+      await updateListItem({ listItemId: li.id, quantity, unit: li.unit, notes: li.notes ?? undefined });
+      router.refresh();
+    });
   }
 
   function openDetails(li: ShoppingListItemRow) {
