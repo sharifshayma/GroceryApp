@@ -21,6 +21,7 @@ export async function createTag(input: {
   name: string;
   type: string;
   color?: string;
+  description?: string;
 }): Promise<Result> {
   const household = await requireHousehold();
   const name = clean(input.name);
@@ -32,6 +33,7 @@ export async function createTag(input: {
       name,
       type: input.type,
       color: clean(input.color) ?? "#3B82F6",
+      description: clean(input.description),
     },
   });
   revalidatePath("/tags");
@@ -44,6 +46,7 @@ export async function updateTag(input: {
   name: string;
   type: string;
   color?: string;
+  description?: string;
 }): Promise<Result> {
   const household = await requireHousehold();
   const name = clean(input.name);
@@ -51,7 +54,12 @@ export async function updateTag(input: {
   if (!isTagType(input.type)) return { ok: false, error: "Invalid tag type" };
   const res = await prisma.tag.updateMany({
     where: { id: input.id, householdId: household.id },
-    data: { name, type: input.type, color: clean(input.color) ?? "#3B82F6" },
+    data: {
+      name,
+      type: input.type,
+      color: clean(input.color) ?? "#3B82F6",
+      description: clean(input.description),
+    },
   });
   if (res.count === 0) return { ok: false, error: "Tag not found" };
   revalidatePath("/tags");

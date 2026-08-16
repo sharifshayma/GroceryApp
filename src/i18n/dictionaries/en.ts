@@ -82,8 +82,10 @@ export const en = {
     },
     tags: {
       title: "Tags",
+      manageTitle: "Manage Tags",
       add: "Add tag",
       namePlaceholder: "Tag name",
+      descriptionPlaceholder: "Description (optional)",
       type: "Type",
       typeRecipe: "Recipe",
       typeStore: "Store",

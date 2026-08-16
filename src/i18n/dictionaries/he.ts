@@ -84,8 +84,10 @@ export const he: typeof en = {
     },
     tags: {
       title: "תגיות",
+      manageTitle: "ניהול תגיות",
       add: "הוספת תגית",
       namePlaceholder: "שם תגית",
+      descriptionPlaceholder: "תיאור (אופציונלי)",
       type: "סוג",
       typeRecipe: "מתכון",
       typeStore: "חנות",
