@@ -147,6 +147,9 @@ export const en = {
     removeConfirm: "Delete this price entry?",
     noStore: "—",
     empty: "No prices logged yet.",
+    amountPlaceholder: "Amount",
+    unitPlaceholder: "Unit (e.g. L, kg)",
+    forQuantity: "for {amount} {unit}",
   },
   settings: {
     title: "Settings",

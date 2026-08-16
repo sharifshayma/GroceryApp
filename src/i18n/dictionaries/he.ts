@@ -149,6 +149,9 @@ export const he: typeof en = {
     removeConfirm: "למחוק את רשומת המחיר הזו?",
     noStore: "—",
     empty: "עדיין לא נרשמו מחירים.",
+    amountPlaceholder: "כמות",
+    unitPlaceholder: 'יחידה (למשל L, ק"ג)',
+    forQuantity: "עבור {amount} {unit}",
   },
   settings: {
     title: "הגדרות",

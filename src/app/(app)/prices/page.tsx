@@ -18,6 +18,8 @@ export default async function PricesPage() {
         currency: true,
         store: true,
         purchasedAt: true,
+        quantityAmount: true,
+        quantityUnit: true,
         item: { select: { id: true, name: true, emoji: true } },
       },
     }),
@@ -37,6 +39,8 @@ export default async function PricesPage() {
       currency: e.currency,
       store: e.store,
       purchasedAt: e.purchasedAt.toISOString().slice(0, 10),
+      quantityAmount: e.quantityAmount,
+      quantityUnit: e.quantityUnit,
       item: { id: e.item.id, name: e.item.name, emoji: e.item.emoji },
     }));
 

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { addPriceEntry, updatePriceEntry, deletePriceEntry } from "@/actions/prices";
 import { formatPrice } from "@/lib/format-price";
+import { computeUnitPrice } from "@/lib/unit-price";
 import { getDictionary, t } from "@/i18n";
 
 const d = getDictionary("en");
@@ -20,6 +21,8 @@ interface PriceEntryRow {
   currency: string;
   store: string | null;
   purchasedAt: string;
+  quantityAmount: number | null;
+  quantityUnit: string | null;
 }
 
 interface PricedItem {
@@ -48,6 +51,8 @@ export function PricesManager({
   const [addPrice, setAddPrice] = useState("");
   const [addStore, setAddStore] = useState("");
   const [addDate, setAddDate] = useState(today());
+  const [addAmount, setAddAmount] = useState("");
+  const [addUnit, setAddUnit] = useState("");
   const [addError, setAddError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
 
@@ -59,6 +64,8 @@ export function PricesManager({
   const [editPrice, setEditPrice] = useState("");
   const [editStore, setEditStore] = useState("");
   const [editDate, setEditDate] = useState("");
+  const [editAmount, setEditAmount] = useState("");
+  const [editUnit, setEditUnit] = useState("");
   const [editError, setEditError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -78,6 +85,8 @@ export function PricesManager({
       price: Number(addPrice),
       store: addStore,
       purchasedAt: addDate,
+      quantityAmount: addAmount.trim() ? Number(addAmount) : null,
+      quantityUnit: addUnit,
     });
     setAdding(false);
     if (!result.ok) {
@@ -88,6 +97,8 @@ export function PricesManager({
     setAddPrice("");
     setAddStore("");
     setAddDate(today());
+    setAddAmount("");
+    setAddUnit("");
     router.refresh();
   }
 
@@ -102,6 +113,8 @@ export function PricesManager({
     setEditPrice(String(entry.price));
     setEditStore(entry.store ?? "");
     setEditDate(entry.purchasedAt);
+    setEditAmount(entry.quantityAmount != null ? String(entry.quantityAmount) : "");
+    setEditUnit(entry.quantityUnit ?? "");
     setEditError(null);
   }
 
@@ -119,6 +132,8 @@ export function PricesManager({
       price: Number(editPrice),
       store: editStore,
       purchasedAt: editDate,
+      quantityAmount: editAmount.trim() ? Number(editAmount) : null,
+      quantityUnit: editUnit,
     });
     setSaving(false);
     if (!result.ok) {
@@ -189,6 +204,26 @@ export function PricesManager({
               type="text"
               value={addStore}
               onChange={(e) => setAddStore(e.target.value)}
+            />
+          </div>
+          <div className="w-24">
+            <Input
+              id="addQuantityAmount"
+              type="number"
+              step="any"
+              min="0"
+              placeholder={t(d, "prices.amountPlaceholder")}
+              value={addAmount}
+              onChange={(e) => setAddAmount(e.target.value)}
+            />
+          </div>
+          <div className="w-28">
+            <Input
+              id="addPriceUnit"
+              type="text"
+              placeholder={t(d, "prices.unitPlaceholder")}
+              value={addUnit}
+              onChange={(e) => setAddUnit(e.target.value)}
             />
           </div>
           <div className="w-40">
@@ -286,6 +321,26 @@ export function PricesManager({
                                       onChange={(e) => setEditStore(e.target.value)}
                                     />
                                   </div>
+                                  <div className="w-24">
+                                    <Input
+                                      id={`editQuantityAmount-${entry.id}`}
+                                      type="number"
+                                      step="any"
+                                      min="0"
+                                      placeholder={t(d, "prices.amountPlaceholder")}
+                                      value={editAmount}
+                                      onChange={(e) => setEditAmount(e.target.value)}
+                                    />
+                                  </div>
+                                  <div className="w-28">
+                                    <Input
+                                      id={`editQuantityUnit-${entry.id}`}
+                                      type="text"
+                                      placeholder={t(d, "prices.unitPlaceholder")}
+                                      value={editUnit}
+                                      onChange={(e) => setEditUnit(e.target.value)}
+                                    />
+                                  </div>
                                   <div className="w-40">
                                     <Input
                                       id={`editDate-${entry.id}`}
@@ -329,6 +384,21 @@ export function PricesManager({
                                 <span className="text-ink/60">
                                   {entry.store ?? t(d, "prices.noStore")} · {entry.purchasedAt}
                                 </span>
+                                {entry.quantityAmount != null && (
+                                  <span className="text-sm text-ink/60">
+                                    {" · "}
+                                    {t(d, "prices.forQuantity", {
+                                      amount: String(entry.quantityAmount),
+                                      unit: entry.quantityUnit ?? "",
+                                    })}
+                                    {(() => {
+                                      const u = computeUnitPrice(entry.price, entry.quantityAmount);
+                                      return u != null
+                                        ? ` (${formatPrice(u, entry.currency)}/${entry.quantityUnit ?? ""})`
+                                        : "";
+                                    })()}
+                                  </span>
+                                )}
                               </div>
                               <div className="flex items-center gap-1">
                                 <Button
