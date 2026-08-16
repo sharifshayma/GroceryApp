@@ -21,7 +21,7 @@ export default function LoginPage() {
     setError(null);
     setSubmitting(true);
     try {
-      // On success logIn() redirects server-side (to /dashboard, or back into
+      // On success logIn() redirects server-side (to "/", or back into
       // an in-progress OAuth /authorize flow) via next/navigation's redirect(),
       // which is handled entirely on the server — the client call below simply
       // never resolves to a handled value in that case, so there's nothing to
@@ -50,7 +50,7 @@ export default function LoginPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <form
         onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
+        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-neutral bg-white p-6 shadow-sm"
       >
         <h1 className="text-center text-xl font-extrabold">{t(d, "auth.login.title")}</h1>
         <Input
@@ -76,13 +76,13 @@ export default function LoginPage() {
         <Button type="submit" disabled={submitting}>
           {submitting ? t(d, "common.saving") : t(d, "auth.login.submit")}
         </Button>
-        <p className="text-center text-sm text-ink/60">
-          <Link href="/signup" className="font-bold text-brand hover:underline">
+        <p className="text-center text-sm text-text/60">
+          <Link href="/signup" className="font-bold text-primary hover:underline">
             {t(d, "auth.login.noAccount")}
           </Link>
         </p>
-        <p className="text-center text-sm text-ink/60">
-          <Link href="/reset" className="font-bold text-brand hover:underline">
+        <p className="text-center text-sm text-text/60">
+          <Link href="/reset" className="font-bold text-primary hover:underline">
             {t(d, "auth.reset.title")}
           </Link>
         </p>

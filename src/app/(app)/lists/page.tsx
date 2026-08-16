@@ -13,14 +13,27 @@ export default async function ListsPage() {
       id: true,
       name: true,
       status: true,
-      _count: { select: { items: true } },
+      createdAt: true,
+      items: {
+        select: {
+          id: true,
+          isBought: true,
+          quantity: true,
+          unit: true,
+          notes: true,
+          item: {
+            select: {
+              emoji: true,
+              name: true,
+              nameHe: true,
+              category: { select: { name: true, nameHe: true, emoji: true } },
+            },
+          },
+        },
+      },
     },
   });
-  const rows = lists.map((l) => ({
-    id: l.id,
-    name: l.name,
-    status: l.status,
-    itemCount: l._count.items,
-  }));
-  return <ListsManager lists={rows} />;
+  // eslint-disable-next-line react-hooks/purity -- server component: intentional server-side timestamp passed to the client as a prop
+  const nowMs = Date.now();
+  return <ListsManager lists={lists} nowMs={nowMs} />;
 }

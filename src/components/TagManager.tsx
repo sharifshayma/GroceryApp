@@ -2,13 +2,11 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
+import { useT } from "@/i18n/LocaleProvider";
+import { IconBack, IconEdit, IconTrash } from "@/components/Icons";
 import { createTag, updateTag, deleteTag } from "@/actions/tags";
-import { getDictionary, t } from "@/i18n";
-import { groupTagsByType } from "@/lib/group-tags";
 
-const d = getDictionary("en");
+const TAG_TYPES = ["recipe", "store", "custom"] as const;
 
 const TYPE_ICON: Record<string, string> = {
   recipe: "🍽️",
@@ -22,264 +20,265 @@ const TYPE_LABEL_KEY: Record<string, string> = {
   custom: "catalog.tags.typeCustom",
 };
 
-const DEFAULT_COLOR = "#3B82F6";
+const COLOR_OPTIONS = [
+  "#F28B30",
+  "#E8C840",
+  "#8BC34A",
+  "#5A9E3E",
+  "#3B82F6",
+  "#8B5CF6",
+  "#EC4899",
+  "#EF4444",
+  "#6B7280",
+  "#D4C48A",
+];
+
+const DEFAULT_COLOR = COLOR_OPTIONS[0];
 
 interface TagRow {
   id: string;
   name: string;
-  type: string;
+  type: "recipe" | "store" | "custom";
   color: string;
+  description: string | null;
   itemCount: number;
 }
 
 export function TagManager({ tags }: { tags: TagRow[] }) {
+  const { t } = useT();
   const router = useRouter();
 
-  // Add-tag form state
-  const [addName, setAddName] = useState("");
-  const [addType, setAddType] = useState("custom");
-  const [addColor, setAddColor] = useState(DEFAULT_COLOR);
-  const [addError, setAddError] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-
-  // Which row is being edited, and its edit-form state
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editName, setEditName] = useState("");
-  const [editType, setEditType] = useState("custom");
-  const [editColor, setEditColor] = useState(DEFAULT_COLOR);
-  const [editError, setEditError] = useState<string | null>(null);
+  const [name, setName] = useState("");
+  const [type, setType] = useState<(typeof TAG_TYPES)[number]>("recipe");
+  const [description, setDescription] = useState("");
+  const [color, setColor] = useState(DEFAULT_COLOR);
   const [saving, setSaving] = useState(false);
-
-  // Row id currently running a delete mutation
+  const [error, setError] = useState<string | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
 
-  const groups = groupTagsByType(tags);
+  const isFormOpen = adding || editingId !== null;
 
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    setAddError(null);
-    setAdding(true);
-    const result = await createTag({
-      name: addName,
-      type: addType,
-      color: addColor,
-    });
+  const groups = TAG_TYPES.map((tp) => ({
+    key: tp,
+    icon: TYPE_ICON[tp],
+    labelKey: TYPE_LABEL_KEY[tp],
+    rows: tags.filter((row) => row.type === tp),
+  }));
+
+  function resetForm() {
+    setName("");
+    setType("recipe");
+    setDescription("");
+    setColor(DEFAULT_COLOR);
     setAdding(false);
-    if (!result.ok) {
-      setAddError(result.error);
-      return;
-    }
-    setAddName("");
-    setAddType("custom");
-    setAddColor(DEFAULT_COLOR);
-    router.refresh();
+    setEditingId(null);
+    setError(null);
   }
 
   function startEdit(row: TagRow) {
     setEditingId(row.id);
-    setEditName(row.name);
-    setEditType(row.type);
-    setEditColor(row.color);
-    setEditError(null);
+    setName(row.name);
+    setType(row.type);
+    setDescription(row.description ?? "");
+    setColor(row.color || DEFAULT_COLOR);
+    setAdding(false);
+    setError(null);
   }
 
-  function cancelEdit() {
-    setEditingId(null);
-    setEditError(null);
-  }
-
-  async function handleSaveEdit(e: FormEvent, id: string) {
+  async function handleSave(e: FormEvent) {
     e.preventDefault();
-    setEditError(null);
+    if (!name.trim()) return;
     setSaving(true);
-    const result = await updateTag({
-      id,
-      name: editName,
-      type: editType,
-      color: editColor,
-    });
+    setError(null);
+    const result = editingId
+      ? await updateTag({ id: editingId, name, type, color, description })
+      : await createTag({ name, type, color, description });
     setSaving(false);
     if (!result.ok) {
-      setEditError(result.error);
+      setError(result.error);
       return;
     }
-    setEditingId(null);
+    resetForm();
     router.refresh();
   }
 
-  async function handleDelete(id: string) {
-    if (!confirm(t(d, "catalog.tags.deleteConfirm"))) return;
-    setPendingId(id);
-    const result = await deleteTag(id);
+  async function handleDelete(row: TagRow) {
+    if (!confirm(t("catalog.tags.deleteConfirm"))) return;
+    setPendingId(row.id);
+    const result = await deleteTag(row.id);
     setPendingId(null);
     if (!result.ok) {
       alert(result.error);
       return;
     }
+    if (editingId === row.id) resetForm();
     router.refresh();
   }
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 p-4 sm:p-6">
-      <h1 className="text-2xl font-extrabold">{t(d, "catalog.tags.title")}</h1>
+    <div className="px-4 pt-4 pb-8 max-w-lg mx-auto animate-fade-in">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-4">
+        <button
+          type="button"
+          onClick={() => router.push("/")}
+          className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary hover:text-text transition-colors"
+        >
+          <IconBack />
+        </button>
+        <h1 className="text-xl font-semibold">{t("catalog.tags.manageTitle")}</h1>
+      </div>
 
-      <form
-        onSubmit={handleAdd}
-        className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4 sm:flex-row sm:items-end sm:gap-2"
-      >
-        <div className="flex-1">
-          <Input
-            id="addTagName"
-            type="text"
-            placeholder={t(d, "catalog.tags.namePlaceholder")}
-            value={addName}
-            onChange={(e) => setAddName(e.target.value)}
-            required
-          />
-        </div>
-        <div className="flex-1">
-          <select
-            id="addTagType"
-            value={addType}
-            onChange={(e) => setAddType(e.target.value)}
-            className="h-10 w-full rounded-lg border border-border bg-white px-3"
-          >
-            <option value="recipe">{t(d, "catalog.tags.typeRecipe")}</option>
-            <option value="store">{t(d, "catalog.tags.typeStore")}</option>
-            <option value="custom">{t(d, "catalog.tags.typeCustom")}</option>
-          </select>
-        </div>
-        <div className="w-16">
+      {/* Add / Edit form */}
+      {isFormOpen && (
+        <form
+          onSubmit={handleSave}
+          className="bg-surface rounded-2xl border border-neutral p-4 mb-4 animate-fade-in space-y-3"
+        >
           <input
-            id="addTagColor"
-            type="color"
-            aria-label={t(d, "catalog.tags.color")}
-            value={addColor}
-            onChange={(e) => setAddColor(e.target.value)}
-            className="h-10 w-full cursor-pointer rounded-lg border border-border bg-white p-1"
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder={t("catalog.tags.namePlaceholder")}
+            required
+            autoFocus
+            className="w-full px-3 py-2.5 rounded-xl border border-neutral bg-bg text-text placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
           />
-        </div>
-        <Button type="submit" disabled={adding}>
-          {adding ? t(d, "common.saving") : t(d, "catalog.tags.add")}
-        </Button>
-      </form>
-      {addError && <p className="text-sm text-red-600">{addError}</p>}
 
-      {groups.length === 0 && <p className="text-ink/60">{t(d, "catalog.tags.empty")}</p>}
+          {/* Type selector */}
+          <div className="flex gap-2">
+            {TAG_TYPES.map((tp) => (
+              <button
+                key={tp}
+                type="button"
+                onClick={() => setType(tp)}
+                className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-colors min-h-[44px] ${
+                  type === tp
+                    ? "bg-primary text-white"
+                    : "bg-bg border border-neutral/40 text-text-secondary"
+                }`}
+              >
+                {TYPE_ICON[tp]} {t(TYPE_LABEL_KEY[tp])}
+              </button>
+            ))}
+          </div>
 
+          {/* Description */}
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder={t("catalog.tags.descriptionPlaceholder")}
+            rows={2}
+            className="w-full px-3 py-2 rounded-xl border border-neutral bg-bg text-text text-sm placeholder:text-text-secondary focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
+          />
+
+          {/* Color picker */}
+          <div className="flex gap-2.5 flex-wrap">
+            {COLOR_OPTIONS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                aria-label={t("catalog.tags.color")}
+                onClick={() => setColor(c)}
+                className={`w-10 h-10 rounded-full transition-transform ${
+                  color === c ? "ring-2 ring-offset-2 ring-primary scale-110" : ""
+                }`}
+                style={{ backgroundColor: c }}
+              />
+            ))}
+          </div>
+
+          {error && <p className="text-danger text-sm">{error}</p>}
+
+          <div className="flex gap-2">
+            <button
+              type="submit"
+              disabled={saving || !name.trim()}
+              className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold text-sm disabled:opacity-50 min-h-[44px]"
+            >
+              {saving ? t("common.saving") : t("common.save")}
+            </button>
+            <button
+              type="button"
+              onClick={resetForm}
+              className="px-4 py-2.5 rounded-xl text-text-secondary font-semibold text-sm min-h-[44px]"
+            >
+              {t("common.cancel")}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* Add button */}
+      {!isFormOpen && (
+        <button
+          type="button"
+          onClick={() => setAdding(true)}
+          className="w-full py-3 rounded-xl border-2 border-dashed border-primary/40 text-primary font-semibold mb-4 hover:bg-primary/5 transition-colors"
+        >
+          + {t("catalog.tags.add")}
+        </button>
+      )}
+
+      {/* Tags grouped by type */}
       {groups.map((group) => (
-        <div key={group.type} className="flex flex-col gap-2">
-          <h2 className="flex items-center gap-2 text-sm font-bold text-ink/60">
-            <span>{TYPE_ICON[group.type]}</span>
-            <span>{t(d, TYPE_LABEL_KEY[group.type])}</span>
-          </h2>
-          <ul className="flex flex-col gap-2">
-            {group.tags.map((row) => {
-              const isEditing = editingId === row.id;
-              const isPending = pendingId === row.id;
+        <div key={group.key} className="mb-5">
+          <h3 className="text-sm font-medium text-text-secondary mb-2 flex items-center gap-1.5">
+            <span>{group.icon}</span>
+            <span>{t(group.labelKey)}</span>
+            <span className="text-xs font-normal">({group.rows.length})</span>
+          </h3>
 
-              if (isEditing) {
+          {group.rows.length === 0 ? (
+            <p className="text-xs text-text-secondary ps-6 mb-2">{t("catalog.tags.empty")}</p>
+          ) : (
+            <div className="space-y-2">
+              {group.rows.map((row) => {
+                const isPending = pendingId === row.id;
                 return (
-                  <li
+                  <div
                     key={row.id}
-                    className="rounded-2xl border border-border bg-white p-4"
+                    className={`bg-white rounded-xl border shadow-sm p-3.5 flex items-center gap-3 transition-colors ${
+                      editingId === row.id ? "border-primary" : "border-neutral/20"
+                    }`}
                   >
-                    <form
-                      onSubmit={(e) => handleSaveEdit(e, row.id)}
-                      className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-2"
-                    >
-                      <div className="flex-1">
-                        <Input
-                          id={`editTagName-${row.id}`}
-                          type="text"
-                          placeholder={t(d, "catalog.tags.namePlaceholder")}
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                          required
-                          autoFocus
-                        />
-                      </div>
-                      <div className="flex-1">
-                        <select
-                          id={`editTagType-${row.id}`}
-                          value={editType}
-                          onChange={(e) => setEditType(e.target.value)}
-                          className="h-10 w-full rounded-lg border border-border bg-white px-3"
-                        >
-                          <option value="recipe">{t(d, "catalog.tags.typeRecipe")}</option>
-                          <option value="store">{t(d, "catalog.tags.typeStore")}</option>
-                          <option value="custom">{t(d, "catalog.tags.typeCustom")}</option>
-                        </select>
-                      </div>
-                      <div className="w-16">
-                        <input
-                          id={`editTagColor-${row.id}`}
-                          type="color"
-                          aria-label={t(d, "catalog.tags.color")}
-                          value={editColor}
-                          onChange={(e) => setEditColor(e.target.value)}
-                          className="h-10 w-full cursor-pointer rounded-lg border border-border bg-white p-1"
-                        />
-                      </div>
-                      <div className="flex gap-2">
-                        <Button type="submit" disabled={saving}>
-                          {saving ? t(d, "common.saving") : t(d, "catalog.tags.save")}
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          disabled={saving}
-                          onClick={cancelEdit}
-                        >
-                          {t(d, "catalog.tags.cancel")}
-                        </Button>
-                      </div>
-                    </form>
-                    {editError && <p className="mt-2 text-sm text-red-600">{editError}</p>}
-                  </li>
-                );
-              }
-
-              return (
-                <li
-                  key={row.id}
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4"
-                >
-                  <span
-                    aria-hidden
-                    className="h-5 w-5 shrink-0 rounded-full border border-border"
-                    style={{ backgroundColor: row.color }}
-                  />
-                  <div className="flex-1">
-                    <div className="font-bold">{row.name}</div>
-                    <div className="text-sm text-ink/60">
-                      {row.itemCount} {t(d, "catalog.tags.items")}
+                    <span
+                      aria-hidden
+                      className="w-5 h-5 rounded-full flex-shrink-0"
+                      style={{ backgroundColor: row.color || DEFAULT_COLOR }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-text truncate">{row.name}</p>
+                      {row.description && (
+                        <p className="text-xs text-text-secondary truncate">{row.description}</p>
+                      )}
+                      <p className="text-xs text-text-secondary">
+                        {row.itemCount} {t("catalog.tags.items")}
+                      </p>
                     </div>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Button
+                    <button
                       type="button"
-                      variant="ghost"
-                      size="sm"
-                      disabled={isPending}
                       onClick={() => startEdit(row)}
-                    >
-                      {t(d, "catalog.tags.edit")}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="danger"
-                      size="sm"
                       disabled={isPending}
-                      onClick={() => handleDelete(row.id)}
+                      className="w-10 h-10 rounded-lg text-text-secondary hover:text-primary hover:bg-primary/10 flex items-center justify-center transition-colors disabled:opacity-40"
                     >
-                      {t(d, "catalog.tags.delete")}
-                    </Button>
+                      <IconEdit />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(row)}
+                      disabled={isPending}
+                      className="w-10 h-10 rounded-lg text-text-secondary hover:text-danger hover:bg-danger/10 flex items-center justify-center transition-colors disabled:opacity-40"
+                    >
+                      <IconTrash />
+                    </button>
                   </div>
-                </li>
-              );
-            })}
-          </ul>
+                );
+              })}
+            </div>
+          )}
         </div>
       ))}
     </div>

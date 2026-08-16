@@ -14,6 +14,7 @@ export default async function TagsPage() {
       name: true,
       type: true,
       color: true,
+      description: true,
       _count: { select: { items: true } },
     },
   });
@@ -22,6 +23,7 @@ export default async function TagsPage() {
     name: tg.name,
     type: tg.type,
     color: tg.color,
+    description: tg.description,
     itemCount: tg._count.items,
   }));
   return <TagManager tags={rows} />;

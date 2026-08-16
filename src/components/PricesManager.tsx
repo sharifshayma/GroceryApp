@@ -165,17 +165,17 @@ export function PricesManager({
         <h2 className="text-lg font-bold">{t(d, "prices.logPrice")}</h2>
         <form
           onSubmit={handleAdd}
-          className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4 sm:flex-row sm:items-end sm:gap-2"
+          className="flex flex-col gap-3 rounded-2xl border border-neutral bg-white p-4 sm:flex-row sm:items-end sm:gap-2"
         >
           <div className="flex-1">
-            <label htmlFor="addPriceItem" className="mb-1.5 block text-sm font-bold text-ink">
+            <label htmlFor="addPriceItem" className="mb-1.5 block text-sm font-bold text-text">
               {t(d, "prices.chooseItem")}
             </label>
             <select
               id="addPriceItem"
               value={addItemId}
               onChange={(e) => setAddItemId(e.target.value)}
-              className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+              className="w-full rounded-xl border border-neutral bg-white px-4 py-2.5 text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             >
               <option value="">{t(d, "prices.chooseItem")}</option>
               {catalogItems.map((item) => (
@@ -246,7 +246,7 @@ export function PricesManager({
       {/* Priced items */}
       <div className="flex flex-col gap-3">
         {pricedItems.length === 0 ? (
-          <p className="text-ink/60">{t(d, "prices.empty")}</p>
+          <p className="text-text/60">{t(d, "prices.empty")}</p>
         ) : (
           <ul className="flex flex-col gap-2">
             {pricedItems.map((row) => {
@@ -256,7 +256,7 @@ export function PricesManager({
               return (
                 <li
                   key={row.item.id}
-                  className="rounded-2xl border border-border bg-white p-4"
+                  className="rounded-2xl border border-neutral bg-white p-4"
                 >
                   <button
                     type="button"
@@ -267,7 +267,7 @@ export function PricesManager({
                     <div className="flex-1">
                       <div className="font-bold">{row.item.name}</div>
                       {cheapest && (
-                        <div className="text-sm text-ink/60">
+                        <div className="text-sm text-text/60">
                           {t(d, "prices.cheapest")}: {formatPrice(cheapest.price, cheapest.currency)}
                           {" · "}
                           {cheapest.store ?? t(d, "prices.noStore")}
@@ -276,14 +276,14 @@ export function PricesManager({
                         </div>
                       )}
                     </div>
-                    <span className="text-sm text-ink/60">
+                    <span className="text-sm text-text/60">
                       {row.entries.length} {t(d, "prices.entriesCount")}
                     </span>
                   </button>
 
                   {isExpanded && (
-                    <div className="mt-3 flex flex-col gap-2 border-t border-border pt-3">
-                      <h3 className="text-sm font-bold text-ink/70">{t(d, "prices.history")}</h3>
+                    <div className="mt-3 flex flex-col gap-2 border-t border-neutral pt-3">
+                      <h3 className="text-sm font-bold text-text/70">{t(d, "prices.history")}</h3>
                       <ul className="flex flex-col gap-2">
                         {row.entries.map((entry) => {
                           const isEditingEntry = editingEntryId === entry.id;
@@ -293,7 +293,7 @@ export function PricesManager({
                             return (
                               <li
                                 key={entry.id}
-                                className="rounded-xl border border-border bg-white p-3"
+                                className="rounded-xl border border-neutral bg-white p-3"
                               >
                                 <form
                                   onSubmit={(e) => handleSaveEdit(e, entry.id)}
@@ -375,17 +375,17 @@ export function PricesManager({
                           return (
                             <li
                               key={entry.id}
-                              className="flex items-center gap-3 rounded-xl border border-border bg-white p-3"
+                              className="flex items-center gap-3 rounded-xl border border-neutral bg-white p-3"
                             >
                               <div className="flex-1 text-sm">
                                 <span className="font-bold">
                                   {formatPrice(entry.price, entry.currency)}
                                 </span>{" "}
-                                <span className="text-ink/60">
+                                <span className="text-text/60">
                                   {entry.store ?? t(d, "prices.noStore")} · {entry.purchasedAt}
                                 </span>
                                 {entry.quantityAmount != null && (
-                                  <span className="text-sm text-ink/60">
+                                  <span className="text-sm text-text/60">
                                     {" · "}
                                     {t(d, "prices.forQuantity", {
                                       amount: String(entry.quantityAmount),

@@ -1,5 +1,15 @@
 export const en = {
-  common: { greeting: "Hi, {name}", save: "Save", saving: "Saving...", loading: "Loading..." },
+  nav: { home: "Items", lists: "Lists", stock: "Stock", profile: "Profile" },
+  common: {
+    greeting: "Hi, {name}",
+    save: "Save",
+    saving: "Saving...",
+    loading: "Loading...",
+    done: "Done",
+    cancel: "Cancel",
+    edit: "Edit",
+    you: "you",
+  },
   auth: {
     login: {
       title: "Log in",
@@ -17,12 +27,25 @@ export const en = {
     title: "Set up your household",
     create: { heading: "Create a household", name: "Household name", submit: "Create" },
     join: { heading: "Join a household", code: "Invite code", submit: "Join" },
+    inviteFailed: { heading: "Couldn't join that household", cta: "Enter the code manually" },
   },
   dashboard: { title: "Dashboard", empty: "Your household is set up. Grocery features are coming next." },
+  home: {
+    emptyCategory: "No items in this category yet.",
+    search: "Search items...",
+    noResults: "No items found",
+  },
+  empty: {
+    noLists: "No lists yet",
+    noListsDesc: "Create your first shopping list!",
+    noStock: "No items in stock",
+    noStockDesc: "Add items to start tracking your stock levels.",
+  },
   catalog: {
     nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices", settings: "Settings" },
     categories: {
       title: "Categories",
+      manageTitle: "Manage Categories",
       add: "Add category",
       namePlaceholder: "Category name",
       nameHePlaceholder: "Hebrew name (optional)",
@@ -60,8 +83,10 @@ export const en = {
     },
     tags: {
       title: "Tags",
+      manageTitle: "Manage Tags",
       add: "Add tag",
       namePlaceholder: "Tag name",
+      descriptionPlaceholder: "Description (optional)",
       type: "Type",
       typeRecipe: "Recipe",
       typeStore: "Store",
@@ -83,12 +108,21 @@ export const en = {
   lists: {
     title: "Lists",
     create: "Create list",
+    newTitle: "New List",
+    allCategories: "All",
+    clearFilter: "Clear",
     namePlaceholder: "List name",
     open: "Open",
     completed: "Completed",
     itemsCount: "items",
     emptyOpen: "No open lists.",
     emptyCompleted: "No completed lists.",
+    active: "Active",
+    draft: "Draft",
+    completedLabel: "Completed",
+    continueShopping: "Continue Shopping",
+    startShopping: "Start Shopping",
+    view: "View",
     rename: "Rename",
     duplicate: "Duplicate",
     delete: "Delete",
@@ -114,6 +148,10 @@ export const en = {
     completeAnyway: "Complete anyway",
     completedBadge: "Completed",
     completePrompt: "Some items aren't bought yet.",
+    unboughtTitle: "Unbought items",
+    unboughtMessage: "You still have {count} unbought item(s).",
+    keepShopping: "Keep shopping",
+    saving: "Saving...",
   },
   stock: {
     title: "Stock",
@@ -136,6 +174,7 @@ export const en = {
     remove: "Remove",
     removeConfirm: "Stop tracking this item's stock?",
     onLists: "on: {lists}",
+    noSearchResults: "No items found",
   },
   prices: {
     title: "Prices",
@@ -157,6 +196,17 @@ export const en = {
     amountPlaceholder: "Amount",
     unitPlaceholder: "Unit (e.g. L, kg)",
     forQuantity: "for {amount} {unit}",
+  },
+  profile: {
+    title: "Profile",
+    language: "Language",
+    household: "Household",
+  },
+  household: {
+    inviteMembers: "Invite members",
+    members: "Members",
+    inviteMessage: "Join our household on Grocery:",
+    codeCopied: "Invite link copied",
   },
   settings: {
     title: "Settings",

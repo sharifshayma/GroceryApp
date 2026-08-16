@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useMemo, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, type ReactNode } from "react";
 import { getDictionary, t as translate, dirFor, type Dictionary, type Locale } from "@/i18n";
 
 type LocaleContextValue = {
@@ -16,6 +16,10 @@ export function LocaleProvider({ locale, children }: { locale: Locale; children:
   const value = useMemo<LocaleContextValue>(() => {
     const d = getDictionary(locale);
     return { d, locale, dir: dirFor(locale), t: (path, vars) => translate(d, path, vars) };
+  }, [locale]);
+  useEffect(() => {
+    document.documentElement.dir = dirFor(locale);
+    document.documentElement.lang = locale;
   }, [locale]);
   return <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>;
 }

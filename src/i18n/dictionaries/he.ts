@@ -1,7 +1,17 @@
 import type { en } from "./en";
 
 export const he: typeof en = {
-  common: { greeting: "שלום, {name}", save: "שמור", saving: "שומר...", loading: "טוען..." },
+  nav: { home: "פריטים", lists: "רשימות", stock: "מלאי", profile: "פרופיל" },
+  common: {
+    greeting: "שלום, {name}",
+    save: "שמור",
+    saving: "שומר...",
+    loading: "טוען...",
+    done: "סיום",
+    cancel: "ביטול",
+    edit: "עריכה",
+    you: "את/ה",
+  },
   auth: {
     login: {
       title: "התחברות",
@@ -19,12 +29,25 @@ export const he: typeof en = {
     title: "הגדרת משק הבית",
     create: { heading: "יצירת משק בית", name: "שם משק הבית", submit: "צור" },
     join: { heading: "הצטרפות למשק בית", code: "קוד הזמנה", submit: "הצטרף" },
+    inviteFailed: { heading: "לא הצלחנו להצטרף למשק הבית", cta: "הזן את הקוד ידנית" },
   },
   dashboard: { title: "לוח בקרה", empty: "משק הבית שלך מוגדר. תכונות הקניות בדרך." },
+  home: {
+    emptyCategory: "אין עדיין פריטים בקטגוריה הזו.",
+    search: "חיפוש פריטים...",
+    noResults: "לא נמצאו פריטים",
+  },
+  empty: {
+    noLists: "אין רשימות עדיין",
+    noListsDesc: "צרו את רשימת הקניות הראשונה שלכם!",
+    noStock: "אין פריטים במלאי",
+    noStockDesc: "הוסיפו פריטים כדי להתחיל לעקוב אחרי רמות המלאי.",
+  },
   catalog: {
     nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים", settings: "הגדרות" },
     categories: {
       title: "קטגוריות",
+      manageTitle: "ניהול קטגוריות",
       add: "הוספת קטגוריה",
       namePlaceholder: "שם קטגוריה",
       nameHePlaceholder: "שם בעברית (אופציונלי)",
@@ -62,8 +85,10 @@ export const he: typeof en = {
     },
     tags: {
       title: "תגיות",
+      manageTitle: "ניהול תגיות",
       add: "הוספת תגית",
       namePlaceholder: "שם תגית",
+      descriptionPlaceholder: "תיאור (אופציונלי)",
       type: "סוג",
       typeRecipe: "מתכון",
       typeStore: "חנות",
@@ -85,12 +110,21 @@ export const he: typeof en = {
   lists: {
     title: "רשימות",
     create: "יצירת רשימה",
+    newTitle: "רשימה חדשה",
+    allCategories: "הכל",
+    clearFilter: "נקה",
     namePlaceholder: "שם הרשימה",
     open: "פתוחות",
     completed: "הושלמו",
     itemsCount: "פריטים",
     emptyOpen: "אין רשימות פתוחות.",
     emptyCompleted: "אין רשימות שהושלמו.",
+    active: "פעיל",
+    draft: "טיוטה",
+    completedLabel: "הושלם",
+    continueShopping: "המשך קניות",
+    startShopping: "התחל קניות",
+    view: "צפייה",
     rename: "שינוי שם",
     duplicate: "שכפול",
     delete: "מחיקה",
@@ -116,6 +150,10 @@ export const he: typeof en = {
     completeAnyway: "השלם בכל זאת",
     completedBadge: "הושלמה",
     completePrompt: "חלק מהפריטים עדיין לא נקנו.",
+    unboughtTitle: "פריטים שלא נקנו",
+    unboughtMessage: "נותרו לך {count} פריטים שלא נקנו.",
+    keepShopping: "המשך קניות",
+    saving: "שומר...",
   },
   stock: {
     title: "מלאי",
@@ -138,6 +176,7 @@ export const he: typeof en = {
     remove: "הסרה",
     removeConfirm: "להפסיק לעקוב אחרי המלאי של הפריט הזה?",
     onLists: "ב: {lists}",
+    noSearchResults: "לא נמצאו פריטים",
   },
   prices: {
     title: "מחירים",
@@ -159,6 +198,17 @@ export const he: typeof en = {
     amountPlaceholder: "כמות",
     unitPlaceholder: 'יחידה (למשל L, ק"ג)',
     forQuantity: "עבור {amount} {unit}",
+  },
+  profile: {
+    title: "פרופיל",
+    language: "שפה",
+    household: "משק בית",
+  },
+  household: {
+    inviteMembers: "הזמנת חברים",
+    members: "חברים",
+    inviteMessage: "הצטרפו למשק הבית שלנו באפליקציית הקניות:",
+    codeCopied: "קישור ההזמנה הועתק",
   },
   settings: {
     title: "הגדרות",

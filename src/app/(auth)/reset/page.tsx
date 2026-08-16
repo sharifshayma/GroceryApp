@@ -59,7 +59,7 @@ export default function ResetPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <form
         onSubmit={stage === "request" ? handleSendCode : handleResetPassword}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
+        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-neutral bg-white p-6 shadow-sm"
       >
         <h1 className="text-center text-xl font-extrabold">{t(d, "auth.reset.title")}</h1>
 
@@ -111,7 +111,7 @@ export default function ResetPage() {
             type="button"
             disabled={submitting}
             onClick={() => void sendCode()}
-            className="text-center text-sm font-bold text-ink/60 hover:text-ink"
+            className="text-center text-sm font-bold text-text/60 hover:text-text"
           >
             {t(d, "auth.reset.sendCode")}
           </button>

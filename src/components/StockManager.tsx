@@ -1,111 +1,77 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Input } from "@/components/ui/Input";
-import { Button } from "@/components/ui/Button";
-import { setStock, adjustStock, removeStock } from "@/actions/stock";
-import { isLowStock } from "@/lib/need-to-buy";
-import { getDictionary, t } from "@/i18n";
+import { adjustStock, setStock, removeStock } from "@/actions/stock";
+import { setAutoTrackStock } from "@/actions/stock-extra";
+import { useT } from "@/i18n/LocaleProvider";
+import { getItemName, getCategoryName } from "@/lib/i18n-names";
+import { ItemImage } from "@/components/ItemImage";
+import { Toggle } from "@/components/Toggle";
+import { IconSettings, IllustrationNoItems } from "@/components/Icons";
+import { EditStockModal } from "@/components/stock/EditStockModal";
+import { AddToStockModal } from "@/components/stock/AddToStockModal";
 
-const d = getDictionary("en");
-
-interface StockRow {
-  itemId: string;
+export interface Category {
+  id: string;
   name: string;
+  nameHe: string | null;
   emoji: string;
+  sortOrder: number;
+}
+
+export interface CatalogItem {
+  id: string;
+  name: string;
+  nameHe: string | null;
+  emoji: string;
+  defaultUnit: string;
+  photoUrl: string | null;
+  categoryId: string | null;
+  autoTrackStock: boolean;
+}
+
+interface StockItemInfo {
+  id: string;
+  name: string;
+  nameHe: string | null;
+  emoji: string;
+  defaultUnit: string;
+  photoUrl: string | null;
+  category: Category | null;
+}
+
+export interface StockRow {
+  itemId: string;
+  item: StockItemInfo;
   quantity: number;
   unit: string;
   lowThreshold: number;
 }
 
-interface UntrackedItem {
-  id: string;
-  name: string;
-  emoji: string;
-  defaultUnit: string;
-}
-
-interface NeedEntry {
-  item: { id: string; name: string; emoji: string };
-  reason: "low_stock" | "on_list" | "both";
-  onLists: { listName: string; quantity: number }[];
-  stock: { quantity: number; lowThreshold: number } | null;
-}
-
-interface NeedToBuy {
-  entries: NeedEntry[];
-  lowCount: number;
-  onListCount: number;
-}
-
-const reasonKey: Record<NeedEntry["reason"], string> = {
-  low_stock: "stock.reasonLow",
-  on_list: "stock.reasonOnList",
-  both: "stock.reasonBoth",
-};
+const OTHER_KEY = "other";
 
 export function StockManager({
   stock,
-  untrackedItems,
-  needToBuy,
+  allItems,
+  categories,
+  lowStockCount,
 }: {
   stock: StockRow[];
-  untrackedItems: UntrackedItem[];
-  needToBuy: NeedToBuy;
+  allItems: CatalogItem[];
+  categories: Category[];
+  lowStockCount: number;
 }) {
   const router = useRouter();
+  const { t, locale } = useT();
+  const isHe = locale === "he";
 
-  // Which row is being edited, and its edit-form state
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editQuantity, setEditQuantity] = useState("");
-  const [editUnit, setEditUnit] = useState("");
-  const [editLowThreshold, setEditLowThreshold] = useState("");
-  const [editError, setEditError] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  // Item id currently running an adjust/remove mutation
+  const [addModalMode, setAddModalMode] = useState<"in-stock" | "out-of-stock" | null>(null);
+  const [editingStock, setEditingStock] = useState<StockRow | null>(null);
+  const [filterLow, setFilterLow] = useState(false);
+  const [editingThreshold, setEditingThreshold] = useState<string | null>(null);
+  const [showSettings, setShowSettings] = useState(false);
   const [pendingId, setPendingId] = useState<string | null>(null);
-
-  // Add-to-stock form state
-  const [addItemId, setAddItemId] = useState("");
-  const [addQuantity, setAddQuantity] = useState("");
-  const [addUnit, setAddUnit] = useState("");
-  const [addLowThreshold, setAddLowThreshold] = useState("");
-  const [addError, setAddError] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
-
-  function startEdit(row: StockRow) {
-    setEditingId(row.itemId);
-    setEditQuantity(String(row.quantity));
-    setEditUnit(row.unit);
-    setEditLowThreshold(String(row.lowThreshold));
-    setEditError(null);
-  }
-
-  function cancelEdit() {
-    setEditingId(null);
-    setEditError(null);
-  }
-
-  async function handleSaveEdit(e: FormEvent, itemId: string) {
-    e.preventDefault();
-    setEditError(null);
-    setSaving(true);
-    const result = await setStock({
-      itemId,
-      quantity: Number(editQuantity),
-      unit: editUnit,
-      lowThreshold: Number(editLowThreshold),
-    });
-    setSaving(false);
-    if (!result.ok) {
-      setEditError(result.error);
-      return;
-    }
-    setEditingId(null);
-    router.refresh();
-  }
 
   async function handleAdjust(itemId: string, delta: number) {
     setPendingId(itemId);
@@ -118,8 +84,25 @@ export function StockManager({
     router.refresh();
   }
 
+  async function handleThresholdBlur(row: StockRow, value: string) {
+    setEditingThreshold(null);
+    const raw = value.trim();
+    const lowThreshold = raw === "" ? row.lowThreshold : Math.max(0, Number(raw) || 0);
+    const result = await setStock({
+      itemId: row.itemId,
+      quantity: row.quantity,
+      unit: row.unit,
+      lowThreshold,
+    });
+    if (!result.ok) {
+      alert(result.error);
+      return;
+    }
+    router.refresh();
+  }
+
   async function handleRemove(itemId: string) {
-    if (!confirm(t(d, "stock.removeConfirm"))) return;
+    if (!confirm(t("stock.removeConfirm"))) return;
     setPendingId(itemId);
     const result = await removeStock(itemId);
     setPendingId(null);
@@ -130,270 +113,334 @@ export function StockManager({
     router.refresh();
   }
 
-  function handleChooseAddItem(id: string) {
-    setAddItemId(id);
-    const item = untrackedItems.find((i) => i.id === id);
-    setAddUnit(item?.defaultUnit ?? "");
-  }
-
-  async function handleAdd(e: FormEvent) {
-    e.preventDefault();
-    setAddError(null);
-    if (!addItemId) {
-      setAddError(t(d, "stock.chooseItem"));
-      return;
-    }
-    setAdding(true);
+  async function handleEditSave(
+    row: StockRow,
+    updates: { quantity: number; lowThreshold: number },
+  ) {
     const result = await setStock({
-      itemId: addItemId,
-      quantity: Number(addQuantity),
-      unit: addUnit,
-      lowThreshold: Number(addLowThreshold),
+      itemId: row.itemId,
+      quantity: updates.quantity,
+      unit: row.unit,
+      lowThreshold: updates.lowThreshold,
     });
-    setAdding(false);
     if (!result.ok) {
-      setAddError(result.error);
+      alert(result.error);
       return;
     }
-    setAddItemId("");
-    setAddQuantity("");
-    setAddUnit("");
-    setAddLowThreshold("");
+    setEditingStock(null);
     router.refresh();
   }
 
+  async function handleBatchAdd(
+    items: { itemId: string; quantity: number; unit: string; lowThreshold: number }[],
+  ) {
+    for (const item of items) {
+      const result = await setStock(item);
+      if (!result.ok) {
+        alert(result.error);
+        return;
+      }
+    }
+    setAddModalMode(null);
+    router.refresh();
+  }
+
+  async function handleToggleAutoTrack(item: CatalogItem) {
+    const next = !(item.autoTrackStock ?? true);
+    const result = await setAutoTrackStock(item.id, next);
+    if (!result.ok) {
+      alert(result.error);
+      return;
+    }
+    router.refresh();
+  }
+
+  // Group stock rows by category (sorted by sortOrder; unassigned -> Other)
+  const displayItems = filterLow ? stock.filter((s) => s.quantity <= s.lowThreshold) : stock;
+
+  const grouped: Record<
+    string,
+    { name: string; emoji: string; sortOrder: number; items: StockRow[] }
+  > = {};
+  displayItems.forEach((s) => {
+    const cat = s.item.category;
+    const key = cat ? cat.id : OTHER_KEY;
+    if (!grouped[key]) {
+      grouped[key] = {
+        name: cat ? getCategoryName(cat, locale) : isHe ? "אחר" : "Other",
+        emoji: cat?.emoji || "📦",
+        sortOrder: cat?.sortOrder ?? 999,
+        items: [],
+      };
+    }
+    grouped[key].items.push(s);
+  });
+  const sortedGroups = Object.entries(grouped).sort((a, b) => a[1].sortOrder - b[1].sortOrder);
+
+  // Items not yet tracked in stock (for the add modal)
+  const stockItemIds = new Set(stock.map((s) => s.itemId));
+  const unstockedItems = allItems.filter((i) => !stockItemIds.has(i.id));
+
+  // Group allItems by category for the auto-track settings panel
+  const itemsByCategory = new Map<string, CatalogItem[]>();
+  allItems.forEach((item) => {
+    const key = item.categoryId || OTHER_KEY;
+    if (!itemsByCategory.has(key)) itemsByCategory.set(key, []);
+    itemsByCategory.get(key)!.push(item);
+  });
+  const settingsGroups = categories
+    .filter((cat) => itemsByCategory.has(cat.id))
+    .map((cat) => ({
+      key: cat.id,
+      name: getCategoryName(cat, locale),
+      emoji: cat.emoji,
+      items: itemsByCategory.get(cat.id)!,
+    }));
+  if (itemsByCategory.has(OTHER_KEY)) {
+    settingsGroups.push({
+      key: OTHER_KEY,
+      name: isHe ? "אחר" : "Other",
+      emoji: "📦",
+      items: itemsByCategory.get(OTHER_KEY)!,
+    });
+  }
+
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-6 p-4 sm:p-6">
-      <h1 className="text-2xl font-extrabold">{t(d, "stock.title")}</h1>
-
-      {/* Need to buy */}
-      <div className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold">{t(d, "stock.needToBuy")}</h2>
-        {needToBuy.entries.length === 0 ? (
-          <p className="text-ink/60">{t(d, "stock.needEmpty")}</p>
-        ) : (
-          <ul className="flex flex-col gap-2">
-            {needToBuy.entries.map((entry) => (
-              <li
-                key={entry.item.id}
-                className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4"
-              >
-                <span className="text-2xl">{entry.item.emoji}</span>
-                <div className="flex-1">
-                  <div className="font-bold">{entry.item.name}</div>
-                  {entry.onLists.length > 0 && (
-                    <div className="text-sm text-ink/60">
-                      {t(d, "stock.onLists", {
-                        lists: entry.onLists.map((l) => l.listName).join(", "),
-                      })}
-                    </div>
-                  )}
-                </div>
-                <span className="rounded-full border px-2 py-0.5 text-xs font-bold text-ink/80">
-                  {t(d, reasonKey[entry.reason])}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
-      </div>
-
-      {/* In stock */}
-      <div className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold">{t(d, "stock.tracked")}</h2>
-        {stock.length === 0 && <p className="text-ink/60">{t(d, "stock.trackedEmpty")}</p>}
-
-        <ul className="flex flex-col gap-2">
-          {stock.map((row) => {
-            const isEditing = editingId === row.itemId;
-            const isPending = pendingId === row.itemId;
-            const low = isLowStock(row.quantity, row.lowThreshold);
-
-            if (isEditing) {
-              return (
-                <li key={row.itemId} className="rounded-2xl border border-border bg-white p-4">
-                  <form
-                    onSubmit={(e) => handleSaveEdit(e, row.itemId)}
-                    className="flex flex-col gap-3 sm:flex-row sm:items-end sm:gap-2"
-                  >
-                    <div className="w-24">
-                      <Input
-                        id={`editQuantity-${row.itemId}`}
-                        label={t(d, "stock.quantity")}
-                        type="number"
-                        step="any"
-                        value={editQuantity}
-                        onChange={(e) => setEditQuantity(e.target.value)}
-                        required
-                        autoFocus
-                      />
-                    </div>
-                    <div className="flex-1">
-                      <Input
-                        id={`editUnit-${row.itemId}`}
-                        label={t(d, "stock.unit")}
-                        type="text"
-                        value={editUnit}
-                        onChange={(e) => setEditUnit(e.target.value)}
-                      />
-                    </div>
-                    <div className="w-24">
-                      <Input
-                        id={`editLowThreshold-${row.itemId}`}
-                        label={t(d, "stock.lowThreshold")}
-                        type="number"
-                        step="any"
-                        value={editLowThreshold}
-                        onChange={(e) => setEditLowThreshold(e.target.value)}
-                        required
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button type="submit" disabled={saving}>
-                        {saving ? t(d, "common.saving") : t(d, "stock.save")}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        disabled={saving}
-                        onClick={cancelEdit}
-                      >
-                        {t(d, "stock.cancel")}
-                      </Button>
-                    </div>
-                  </form>
-                  {editError && <p className="mt-2 text-sm text-red-600">{editError}</p>}
-                </li>
-              );
-            }
-
-            return (
-              <li
-                key={row.itemId}
-                className="flex items-center gap-3 rounded-2xl border border-border bg-white p-4"
-              >
-                <span className="text-2xl">{row.emoji}</span>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 font-bold">
-                    {row.name}
-                    {low && (
-                      <span className="rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
-                        {t(d, "stock.low")}
-                      </span>
-                    )}
-                  </div>
-                  <div className="text-sm text-ink/60">
-                    {row.quantity} {row.unit}
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label="-"
-                    disabled={isPending}
-                    onClick={() => handleAdjust(row.itemId, -1)}
-                  >
-                    −
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    aria-label="+"
-                    disabled={isPending}
-                    onClick={() => handleAdjust(row.itemId, 1)}
-                  >
-                    ＋
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => startEdit(row)}
-                  >
-                    {t(d, "stock.edit")}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="danger"
-                    size="sm"
-                    disabled={isPending}
-                    onClick={() => handleRemove(row.itemId)}
-                  >
-                    {t(d, "stock.remove")}
-                  </Button>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-      </div>
-
-      {/* Add to stock */}
-      <div className="flex flex-col gap-3">
-        <h2 className="text-lg font-bold">{t(d, "stock.addToStock")}</h2>
-        <form
-          onSubmit={handleAdd}
-          className="flex flex-col gap-3 rounded-2xl border border-border bg-white p-4 sm:flex-row sm:items-end sm:gap-2"
-        >
-          <div className="flex-1">
-            <label htmlFor="addStockItem" className="mb-1.5 block text-sm font-bold text-ink">
-              {t(d, "stock.chooseItem")}
-            </label>
-            <select
-              id="addStockItem"
-              value={addItemId}
-              onChange={(e) => handleChooseAddItem(e.target.value)}
-              className="w-full rounded-xl border border-border bg-white px-4 py-2.5 text-ink outline-none focus:border-brand focus:ring-2 focus:ring-brand/20"
+    <div className="mx-auto max-w-lg animate-fade-in px-4 pb-8 pt-6">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{t("nav.stock")}</h1>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowSettings((v) => !v)}
+            aria-label={isHe ? "הגדרות" : "Settings"}
+            className={`flex h-10 w-10 items-center justify-center rounded-xl border transition-colors ${
+              showSettings
+                ? "border-primary bg-primary text-white"
+                : "border-neutral bg-surface text-text-secondary hover:text-text"
+            }`}
+          >
+            <IconSettings />
+          </button>
+          {lowStockCount > 0 && (
+            <button
+              onClick={() => setFilterLow(!filterLow)}
+              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${
+                filterLow ? "bg-danger text-white" : "bg-danger/10 text-danger"
+              }`}
             >
-              <option value="">{t(d, "stock.chooseItem")}</option>
-              {untrackedItems.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.emoji} {item.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="w-24">
-            <Input
-              id="addStockQuantity"
-              label={t(d, "stock.quantity")}
-              type="number"
-              step="any"
-              value={addQuantity}
-              onChange={(e) => setAddQuantity(e.target.value)}
-              required
-            />
-          </div>
-          <div className="flex-1">
-            <Input
-              id="addStockUnit"
-              label={t(d, "stock.unit")}
-              type="text"
-              value={addUnit}
-              onChange={(e) => setAddUnit(e.target.value)}
-            />
-          </div>
-          <div className="w-24">
-            <Input
-              id="addStockLowThreshold"
-              label={t(d, "stock.lowThreshold")}
-              type="number"
-              step="any"
-              value={addLowThreshold}
-              onChange={(e) => setAddLowThreshold(e.target.value)}
-              required
-            />
-          </div>
-          <Button type="submit" disabled={adding}>
-            {adding ? t(d, "common.saving") : t(d, "stock.save")}
-          </Button>
-        </form>
-        {addError && <p className="text-sm text-red-600">{addError}</p>}
+              {filterLow
+                ? isHe
+                  ? "הצג הכל"
+                  : "Show All"
+                : `${lowStockCount} ${isHe ? "מלאי נמוך" : "Low Stock"}`}
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Auto-track settings panel */}
+      {showSettings && (
+        <div className="mb-6 rounded-2xl border border-neutral/20 bg-surface p-4">
+          <h3 className="mb-1 text-sm font-semibold">
+            {isHe ? "מעקב מלאי אוטומטי" : "Auto Stock Tracking"}
+          </h3>
+          <p className="mb-3 text-xs text-text-secondary">
+            {isHe
+              ? "פריטים מופעלים יעודכנו אוטומטית במלאי כשנקנים"
+              : "Enabled items will auto-update stock when bought"}
+          </p>
+          {allItems.length === 0 ? (
+            <p className="py-2 text-center text-xs text-text-secondary">
+              {isHe ? "אין פריטים" : "No items"}
+            </p>
+          ) : (
+            <div className="max-h-64 overflow-y-auto overflow-x-hidden">
+              {settingsGroups.map((group) => (
+                <div key={group.key} className="mb-3 last:mb-0">
+                  <h4 className="mb-1 flex items-center gap-1.5 text-xs font-medium text-text-secondary">
+                    <span>{group.emoji}</span>
+                    <span>{group.name}</span>
+                  </h4>
+                  {group.items.map((item) => (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between border-b border-neutral/10 py-2 last:border-0"
+                    >
+                      <div className="flex min-w-0 items-center gap-2">
+                        <ItemImage item={item} size="md" />
+                        <span className="truncate text-sm font-medium">
+                          {getItemName(item, locale)}
+                        </span>
+                      </div>
+                      <Toggle
+                        checked={item.autoTrackStock ?? true}
+                        onChange={() => handleToggleAutoTrack(item)}
+                        ariaLabel={getItemName(item, locale)}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add items buttons */}
+      {unstockedItems.length > 0 && (
+        <div className="mb-5 flex gap-3">
+          <button
+            onClick={() => setAddModalMode("in-stock")}
+            className="min-h-[48px] flex-1 rounded-xl bg-green py-3.5 text-sm font-medium text-white shadow-sm transition-colors hover:bg-green-dark active:scale-[0.98]"
+          >
+            + {isHe ? "במלאי" : "In Stock"}
+          </button>
+          <button
+            onClick={() => setAddModalMode("out-of-stock")}
+            className="min-h-[48px] flex-1 rounded-xl border border-danger/30 bg-white py-3.5 text-sm font-medium text-danger shadow-sm transition-colors hover:bg-danger/5 active:scale-[0.98]"
+          >
+            − {isHe ? "חסר במלאי" : "Out of Stock"}
+          </button>
+        </div>
+      )}
+
+      {stock.length === 0 ? (
+        <div className="flex min-h-[40vh] flex-col items-center justify-center">
+          <div className="mb-4 flex justify-center">
+            <IllustrationNoItems className="h-28 w-28" />
+          </div>
+          <h2 className="mb-2 text-xl font-medium">{t("empty.noStock")}</h2>
+          <p className="mb-4 text-center text-text-secondary">{t("empty.noStockDesc")}</p>
+        </div>
+      ) : (
+        sortedGroups.map(([catId, group]) => (
+          <div key={catId} className="mb-5">
+            <h3 className="mb-2 flex items-center gap-1.5 text-sm font-medium text-text-secondary">
+              <span>{group.emoji}</span>
+              <span>{group.name}</span>
+              <span className="text-xs font-normal">({group.items.length})</span>
+            </h3>
+            <div className="space-y-2">
+              {group.items.map((s) => {
+                const isLow = s.quantity <= s.lowThreshold;
+                const isPending = pendingId === s.itemId;
+                return (
+                  <div
+                    key={s.itemId}
+                    className={`rounded-xl border bg-white p-3.5 shadow-sm transition-colors ${
+                      isLow ? "border-danger/30 bg-danger/5" : "border-neutral/20"
+                    }`}
+                  >
+                    <div className="flex items-center gap-3">
+                      <ItemImage item={s.item} size="md" />
+                      <div className="min-w-0 flex-1">
+                        <p className="break-words font-semibold leading-tight">
+                          {getItemName(s.item, locale)}
+                        </p>
+                        {isLow && (
+                          <span className="text-xs font-medium text-danger">
+                            {isHe ? "מלאי נמוך" : "Low Stock"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="mt-3 flex items-center gap-2">
+                      <button
+                        onClick={() => handleAdjust(s.itemId, -1)}
+                        disabled={isPending}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-neutral/30 text-lg font-medium text-text transition-transform active:scale-90 disabled:opacity-50"
+                      >
+                        −
+                      </button>
+                      <span
+                        className={`w-10 text-center text-lg font-medium ${
+                          isLow ? "text-danger" : "text-green-dark"
+                        }`}
+                      >
+                        {s.quantity}
+                      </span>
+                      <button
+                        onClick={() => handleAdjust(s.itemId, 1)}
+                        disabled={isPending}
+                        className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary text-lg font-medium text-white transition-transform active:scale-90 disabled:opacity-50"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div className="mt-2 flex items-center justify-between border-t border-neutral/20 pt-2">
+                      <span className="text-xs text-text-secondary">{s.unit}</span>
+
+                      {editingThreshold === s.itemId ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-text-secondary">
+                            {isHe ? "סף:" : "Threshold:"}
+                          </span>
+                          <input
+                            type="number"
+                            defaultValue={s.lowThreshold}
+                            min={0}
+                            className="w-14 rounded-lg border border-neutral bg-bg px-2 py-1 text-center text-sm text-text"
+                            onBlur={(e) => handleThresholdBlur(s, e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                            }}
+                            autoFocus
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setEditingThreshold(s.itemId)}
+                          className="text-xs text-text-secondary hover:text-text"
+                        >
+                          {isHe ? "סף:" : "Min:"} {s.lowThreshold}
+                        </button>
+                      )}
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => setEditingStock(s)}
+                          className="flex min-h-[36px] items-center px-2 py-1.5 text-xs text-primary hover:underline"
+                        >
+                          {t("stock.edit")}
+                        </button>
+                        <button
+                          onClick={() => handleRemove(s.itemId)}
+                          disabled={isPending}
+                          className="flex min-h-[36px] items-center px-2 py-1.5 text-xs text-danger hover:underline disabled:opacity-50"
+                        >
+                          {t("stock.remove")}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))
+      )}
+
+      {/* Add to stock modal */}
+      {addModalMode && (
+        <AddToStockModal
+          mode={addModalMode}
+          items={unstockedItems}
+          categories={categories}
+          onBatchAdd={handleBatchAdd}
+          onClose={() => setAddModalMode(null)}
+        />
+      )}
+
+      {/* Edit stock modal */}
+      {editingStock && (
+        <EditStockModal
+          stockItem={editingStock}
+          onSave={(updates) => handleEditSave(editingStock, updates)}
+          onClose={() => setEditingStock(null)}
+        />
+      )}
     </div>
   );
 }

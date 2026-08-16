@@ -28,7 +28,7 @@ export function OnboardingForm() {
       setCreateError(result.error);
       return;
     }
-    router.push("/items");
+    router.push("/");
   }
 
   async function handleJoin(e: FormEvent) {
@@ -41,14 +41,14 @@ export function OnboardingForm() {
       setJoinError(result.error);
       return;
     }
-    router.push("/items");
+    router.push("/");
   }
 
   return (
     <div className="mx-auto grid w-full max-w-3xl gap-6 p-4 sm:grid-cols-2">
       <form
         onSubmit={handleCreate}
-        className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
+        className="flex flex-col gap-4 rounded-2xl border border-neutral bg-white p-6 shadow-sm"
       >
         <h2 className="text-lg font-extrabold">{t(d, "onboarding.create.heading")}</h2>
         <Input
@@ -68,7 +68,7 @@ export function OnboardingForm() {
 
       <form
         onSubmit={handleJoin}
-        className="flex flex-col gap-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
+        className="flex flex-col gap-4 rounded-2xl border border-neutral bg-white p-6 shadow-sm"
       >
         <h2 className="text-lg font-extrabold">{t(d, "onboarding.join.heading")}</h2>
         <Input

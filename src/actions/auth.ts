@@ -21,7 +21,7 @@ type Result = { ok: true } | { ok: false; error: string };
 
 /**
  * Signs the user in and, if this login is continuing an in-progress OAuth
- * `/authorize` request, resumes it — otherwise sends the user to /dashboard.
+ * `/authorize` request, resumes it — otherwise sends the user to "/".
  *
  * Login round-trip (confirmed against node_modules/better-auth/dist/plugins/mcp/authorize.mjs
  * and node_modules/better-auth/dist/plugins/mcp/index.mjs):
@@ -84,7 +84,7 @@ export async function logIn(email: string, password: string): Promise<Result> {
     }
     resumeTo = location;
   }
-  redirect(resumeTo ?? "/items");
+  redirect(resumeTo ?? "/");
 }
 
 export async function signUp(input: SignupInput): Promise<Result> {

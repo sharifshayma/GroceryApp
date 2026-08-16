@@ -11,7 +11,7 @@ export default async function OnboardingPage() {
   if (!user) redirect("/login");
 
   const household = await getCurrentHousehold();
-  if (household) redirect("/items");
+  if (household) redirect("/");
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-6 p-4">

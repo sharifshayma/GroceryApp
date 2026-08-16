@@ -115,18 +115,18 @@ export function ItemTagPicker({
         role="dialog"
         aria-modal="true"
         aria-labelledby="itemTagPickerTitle"
-        className="relative flex w-full max-w-md flex-col gap-3 rounded-2xl border border-border bg-white p-5"
+        className="relative flex w-full max-w-md flex-col gap-3 rounded-2xl border border-neutral bg-white p-5"
       >
         <h2 id="itemTagPickerTitle" className="text-lg font-extrabold">
           {t(d, "catalog.tags.pickerTitle", { name: itemName })}
         </h2>
 
-        {groups.length === 0 && <p className="text-ink/60">{t(d, "catalog.tags.empty")}</p>}
+        {groups.length === 0 && <p className="text-text/60">{t(d, "catalog.tags.empty")}</p>}
 
         <div className="flex max-h-80 flex-col gap-4 overflow-y-auto">
           {groups.map((group) => (
             <div key={group.type} className="flex flex-col gap-2">
-              <h3 className="flex items-center gap-2 text-sm font-bold text-ink/60">
+              <h3 className="flex items-center gap-2 text-sm font-bold text-text/60">
                 <span>{TYPE_ICON[group.type]}</span>
                 <span>{t(d, TYPE_LABEL_KEY[group.type])}</span>
               </h3>
@@ -138,7 +138,7 @@ export function ItemTagPicker({
                     <li key={tag.id}>
                       <label
                         className={`flex cursor-pointer items-center gap-3 rounded-xl border p-2.5 ${
-                          isAssigned ? "border-brand bg-brand/10" : "border-border bg-white"
+                          isAssigned ? "border-primary bg-primary/10" : "border-neutral bg-white"
                         }`}
                       >
                         <input
@@ -150,7 +150,7 @@ export function ItemTagPicker({
                         />
                         <span
                           aria-hidden
-                          className="h-4 w-4 shrink-0 rounded-full border border-border"
+                          className="h-4 w-4 shrink-0 rounded-full border border-neutral"
                           style={{ backgroundColor: tag.color }}
                         />
                         <span className="flex-1">{tag.name}</span>
@@ -162,7 +162,7 @@ export function ItemTagPicker({
                           onChange={(e) => setNotes((n) => ({ ...n, [tag.id]: e.target.value }))}
                           onBlur={() => saveNote(tag.id)}
                           placeholder={t(d, "catalog.tags.notePlaceholder")}
-                          className="mt-1 w-full rounded-lg border border-border px-2 py-1 text-sm"
+                          className="mt-1 w-full rounded-lg border border-neutral px-2 py-1 text-sm"
                         />
                       )}
                     </li>
