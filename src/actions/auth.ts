@@ -84,7 +84,7 @@ export async function logIn(email: string, password: string): Promise<Result> {
     }
     resumeTo = location;
   }
-  redirect(resumeTo ?? "/items");
+  redirect(resumeTo ?? "/");
 }
 
 export async function signUp(input: SignupInput): Promise<Result> {
