@@ -28,6 +28,8 @@ export const en = {
   empty: {
     noLists: "No lists yet",
     noListsDesc: "Create your first shopping list!",
+    noStock: "No items in stock",
+    noStockDesc: "Add items to start tracking your stock levels.",
   },
   catalog: {
     nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices", settings: "Settings" },

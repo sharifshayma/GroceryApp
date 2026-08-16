@@ -30,6 +30,8 @@ export const he: typeof en = {
   empty: {
     noLists: "אין רשימות עדיין",
     noListsDesc: "צרו את רשימת הקניות הראשונה שלכם!",
+    noStock: "אין פריטים במלאי",
+    noStockDesc: "הוסיפו פריטים כדי להתחיל לעקוב אחרי רמות המלאי.",
   },
   catalog: {
     nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים", settings: "הגדרות" },
