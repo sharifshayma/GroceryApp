@@ -1,4 +1,5 @@
 export const en = {
+  nav: { home: "Items", lists: "Lists", stock: "Stock", profile: "Profile" },
   common: { greeting: "Hi, {name}", save: "Save", saving: "Saving...", loading: "Loading..." },
   auth: {
     login: {
