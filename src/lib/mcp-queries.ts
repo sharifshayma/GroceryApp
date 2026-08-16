@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { computeNeedToBuy } from "@/lib/need-to-buy";
 import { computeUnitPrice } from "@/lib/unit-price";
+import { rankFrequentlyBought } from "@/lib/frequently-bought";
 import type { TagType } from "@prisma/client";
 
 type PriceRow = { entryId: string; itemId: string; item: string; price: number; store: string | null; purchasedAt: string; quantityAmount: number | null; quantityUnit: string | null; unitPrice: number | null };
@@ -106,4 +107,15 @@ export async function listPrices(householdId: string, itemId?: string) {
     unitPrice: computeUnitPrice(Number(e.price), e.quantityAmount),
   }));
   return markCheapest(rows);
+}
+
+export async function getFrequentlyBought(householdId: string, limit = 15) {
+  const rows = await prisma.listItem.findMany({
+    where: { list: { householdId }, isBought: true, itemId: { not: null } },
+    select: { itemId: true },
+  });
+  return rankFrequentlyBought(
+    rows.filter((r): r is { itemId: string } => r.itemId != null),
+    limit,
+  );
 }
