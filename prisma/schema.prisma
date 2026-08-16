@@ -3,8 +3,12 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // Direct (non-pooled) connection for `prisma migrate`/`db` commands, which
+  // can't run over the Accelerate pooled URL. Only used by CLI tooling, never
+  // at runtime. Set DIRECT_URL to the postgres://…@db.prisma.io:5432 URL.
+  directUrl = env("DIRECT_URL")
 }
 
 enum Role {
