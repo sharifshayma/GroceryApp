@@ -5,6 +5,7 @@ import { listMcpTokens } from "@/lib/mcp-token";
 import { prisma } from "@/lib/prisma";
 import { ProfileClient } from "@/components/profile/ProfileClient";
 import { McpTokensCard } from "@/components/McpTokensCard";
+import { LogoutButton } from "@/components/LogoutButton";
 
 export const dynamic = "force-dynamic";
 
@@ -45,6 +46,10 @@ export default async function ProfilePage() {
         }))}
         endpoint={endpoint}
       />
+      {/* Sign out — kept at the very bottom of the profile page */}
+      <div className="flex justify-center pt-2">
+        <LogoutButton />
+      </div>
     </div>
   );
 }

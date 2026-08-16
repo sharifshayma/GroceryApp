@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useT } from "@/i18n/LocaleProvider";
 import { updateDisplayName } from "@/actions/profile";
 import { LanguageToggle } from "@/components/LanguageToggle";
-import { LogoutButton } from "@/components/LogoutButton";
 
 type ProfileUser = {
   id: string;
@@ -172,11 +171,6 @@ export function ProfileClient({
             ))}
           </div>
         )}
-      </div>
-
-      {/* Sign out */}
-      <div className="flex justify-center pt-2">
-        <LogoutButton label={t("auth.logout")} />
       </div>
     </div>
   );

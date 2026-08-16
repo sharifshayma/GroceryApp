@@ -14,7 +14,10 @@ export async function sendPasswordResetOtp(email: string, otp: string): Promise<
   }
   const from = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
   try {
-    await resend.emails.send({
+    // The Resend SDK resolves with { data, error } and does NOT throw on API
+    // errors (invalid key, unverified domain, validation) — only on network
+    // failures. We must inspect `error`, or rejected sends fail silently.
+    const { data, error } = await resend.emails.send({
       from,
       to: email,
       subject: "Your password reset code",
@@ -27,7 +30,14 @@ export async function sendPasswordResetOtp(email: string, otp: string): Promise<
         </div>
       `,
     });
+    if (error) {
+      console.error(
+        `Resend rejected password reset email (from=${from}): ${error.name} — ${error.message}`,
+      );
+      return;
+    }
+    console.log(`Password reset email accepted by Resend (id=${data?.id}, from=${from})`);
   } catch (err) {
-    console.error("Failed to send password reset OTP email", err);
+    console.error("Failed to send password reset OTP email (network error)", err);
   }
 }
