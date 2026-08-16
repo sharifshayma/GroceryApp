@@ -1,7 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { nextCookies } from "better-auth/next-js";
-import { emailOTP } from "better-auth/plugins";
+import { emailOTP, mcp } from "better-auth/plugins";
 import { prisma } from "@/lib/prisma";
 import { sendPasswordResetOtp } from "@/lib/resend";
 
@@ -45,6 +45,15 @@ export const auth = betterAuth({
       disableSignUp: true,
       async sendVerificationOTP({ email, otp }) {
         await sendPasswordResetOtp(email, otp);
+      },
+    }),
+    mcp({
+      loginPage: "/login",
+      oidcConfig: {
+        loginPage: "/login", // OIDCOptions.loginPage is required, unlike MCPOptions.loginPage
+        allowDynamicClientRegistration: true, // claude.ai self-registers
+        requirePKCE: true,
+        consentPage: "/oauth/consent",
       },
     }),
     nextCookies(), // MUST stay last
