@@ -170,6 +170,20 @@ export function IllustrationNoLists({ className = "w-24 h-24" }: IconProps) {
   );
 }
 
+export function IllustrationNoItems({ className = "w-24 h-24" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 120 120" fill="none">
+      <rect x="25" y="30" width="70" height="65" rx="8" fill="#FFF8E7" stroke="#F28B30" strokeWidth="2" />
+      <path d="M25 38h70" stroke="#F28B30" strokeWidth="2" />
+      <rect x="38" y="20" width="44" height="18" rx="6" fill="none" stroke="#E8611A" strokeWidth="2" />
+      <path d="M48 55l6 6 12-12" stroke="#8BC34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <line x1="40" y1="76" x2="80" y2="76" stroke="#F2A665" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+      <circle cx="90" cy="25" r="5" fill="#E8C840" opacity="0.5" />
+      <circle cx="97" cy="35" r="3" fill="#E8C840" opacity="0.3" />
+    </svg>
+  );
+}
+
 export function IconSearch({ className = "w-5 h-5" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
