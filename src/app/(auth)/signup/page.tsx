@@ -45,7 +45,7 @@ export default function SignupPage() {
     <div className="flex min-h-screen items-center justify-center p-4">
       <form
         onSubmit={handleSubmit}
-        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-border bg-white p-6 shadow-sm"
+        className="flex w-full max-w-sm flex-col gap-4 rounded-2xl border border-neutral bg-white p-6 shadow-sm"
       >
         <h1 className="text-center text-xl font-extrabold">{t(d, "auth.signup.title")}</h1>
         <Input
@@ -80,8 +80,8 @@ export default function SignupPage() {
         <Button type="submit" disabled={submitting}>
           {submitting ? t(d, "common.saving") : t(d, "auth.signup.submit")}
         </Button>
-        <p className="text-center text-sm text-ink/60">
-          <Link href="/login" className="font-bold text-brand hover:underline">
+        <p className="text-center text-sm text-text/60">
+          <Link href="/login" className="font-bold text-primary hover:underline">
             {t(d, "auth.signup.haveAccount")}
           </Link>
         </p>

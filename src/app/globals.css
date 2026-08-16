@@ -26,31 +26,6 @@
 @utility animate-slide-up { animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1); }
 @utility animate-backdrop { animation: backdrop-fade 0.2s ease-out; }
 
-/* ===== Legacy tokens — DEPRECATED, removed at M5 cutover. Kept so
-   not-yet-rebuilt (app) screens still render during M2–M4. ===== */
-:root {
-  --paper: #fdf8f0;
-  --ink: #241a14;
-  --brand: #b5542c;
-  --brand-dark: color-mix(in srgb, var(--brand) 82%, #000);
-  --accent: #1f6f6b;
-  --gold: #d9a441;
-  --card: #ffffff;
-  --muted: #7a6a5c;
-  --border: #e7dbc9;
-}
-@theme inline {
-  --color-paper: var(--paper);
-  --color-ink: var(--ink);
-  --color-brand: var(--brand);
-  --color-brand-dark: var(--brand-dark);
-  --color-accent: var(--accent);
-  --color-gold: var(--gold);
-  --color-card: var(--card);
-  --color-muted: var(--muted);
-  --color-border: var(--border);
-}
-
 body {
   font-family: var(--font-sans);
   background-color: var(--color-bg);

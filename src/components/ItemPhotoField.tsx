@@ -46,12 +46,12 @@ export function ItemPhotoField({ itemId, photoUrl }: { itemId: string; photoUrl:
 
   return (
     <div className="flex flex-col gap-2">
-      <span className="text-sm font-bold text-ink">{t(d, "catalog.items.photo")}</span>
+      <span className="text-sm font-bold text-text">{t(d, "catalog.items.photo")}</span>
       <div className="flex items-center gap-3">
         {photoUrl ? (
           <img src={photoUrl} alt="" className="h-16 w-16 rounded-lg object-cover" />
         ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-border text-ink/40">
+          <div className="flex h-16 w-16 items-center justify-center rounded-lg border border-neutral text-text/40">
             —
           </div>
         )}
@@ -69,7 +69,7 @@ export function ItemPhotoField({ itemId, photoUrl }: { itemId: string; photoUrl:
           )}
         </div>
       </div>
-      {busy && <p className="text-sm text-ink/60">{t(d, "catalog.items.uploading")}</p>}
+      {busy && <p className="text-sm text-text/60">{t(d, "catalog.items.uploading")}</p>}
       {error && <p className="text-sm text-red-600">{error}</p>}
     </div>
   );

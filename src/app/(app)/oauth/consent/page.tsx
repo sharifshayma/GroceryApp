@@ -28,8 +28,8 @@ export default async function OAuthConsentPage({
   if (!consentCode || !clientId) {
     return (
       <div className="mx-auto max-w-md p-4">
-        <div className="rounded-2xl border border-border bg-white p-6 text-center">
-          <p className="text-sm text-ink/70">{t(d, "oauth.consent.invalid")}</p>
+        <div className="rounded-2xl border border-neutral bg-white p-6 text-center">
+          <p className="text-sm text-text/70">{t(d, "oauth.consent.invalid")}</p>
         </div>
       </div>
     );
@@ -44,19 +44,19 @@ export default async function OAuthConsentPage({
 
   return (
     <div className="mx-auto max-w-md p-4">
-      <div className="rounded-2xl border border-border bg-white p-6">
+      <div className="rounded-2xl border border-neutral bg-white p-6">
         {client?.icon && (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={client.icon} alt="" className="mb-3 h-10 w-10 rounded-lg" />
         )}
         <h1 className="text-xl font-extrabold">{t(d, "oauth.consent.title")}</h1>
-        <p className="mt-2 text-sm text-ink/70">{t(d, "oauth.consent.heading", { client: clientName })}</p>
+        <p className="mt-2 text-sm text-text/70">{t(d, "oauth.consent.heading", { client: clientName })}</p>
         {scopes.length > 0 && (
           <>
             <p className="mt-4 text-sm font-bold">{t(d, "oauth.consent.scopesHeading")}</p>
             <ul className="mt-2 space-y-1">
               {scopes.map((s) => (
-                <li key={s} className="rounded-lg bg-ink/5 px-3 py-1.5 text-sm">
+                <li key={s} className="rounded-lg bg-text/5 px-3 py-1.5 text-sm">
                   {s}
                 </li>
               ))}

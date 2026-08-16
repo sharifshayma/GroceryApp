@@ -63,11 +63,16 @@ export function HomeClient(props: {
     };
   }, [showSettings, showCategoryDropdown, expandedTagType]);
 
-  // Clear selections when switching filters
-  useEffect(() => {
+  // Clear selections when switching filters. Adjusted during render (per
+  // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
+  // rather than in an effect, so it doesn't trigger an extra cascading render.
+  const filterKey = `${activeTag ?? ""}|${activeCategory ?? ""}|${search}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (filterKey !== prevFilterKey) {
+    setPrevFilterKey(filterKey);
     setSelectedItems(new Map());
     setSelectMode(false);
-  }, [activeTag, activeCategory, search]);
+  }
 
   const itemsInList = new Set(props.openLists.flatMap((l) => l.items.map((i) => i.itemId)));
   const stockByItem = new Map(props.stockRows.map((s) => [s.itemId, s]));

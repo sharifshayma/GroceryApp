@@ -68,9 +68,9 @@ export function McpTokensCard({
   );
 
   return (
-    <section className="rounded-lg border border-border bg-white p-4">
+    <section className="rounded-lg border border-neutral bg-white p-4">
       <h2 className="text-lg font-bold">{t(d, "settings.connect.heading")}</h2>
-      <p className="mt-1 text-sm text-ink/70">{t(d, "settings.connect.intro")}</p>
+      <p className="mt-1 text-sm text-text/70">{t(d, "settings.connect.intro")}</p>
 
       <div className="mt-3 flex gap-2">
         <div className="flex-1">
@@ -87,7 +87,7 @@ export function McpTokensCard({
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
       {rawToken && (
-        <div className="mt-3 rounded border border-brand/40 bg-brand/5 p-3">
+        <div className="mt-3 rounded border border-primary/40 bg-primary/5 p-3">
           <p className="text-sm font-medium">{t(d, "settings.connect.oncePrefix")}</p>
           <div className="mt-1 flex items-center gap-2">
             <code className="flex-1 break-all rounded bg-white px-2 py-1 text-sm">{rawToken}</code>
@@ -106,18 +106,18 @@ export function McpTokensCard({
         </div>
       )}
 
-      <ul className="mt-4 divide-y divide-border">
+      <ul className="mt-4 divide-y divide-neutral">
         {initialTokens.length === 0 && (
-          <li className="py-2 text-sm text-ink/60">{t(d, "settings.connect.empty")}</li>
+          <li className="py-2 text-sm text-text/60">{t(d, "settings.connect.empty")}</li>
         )}
         {initialTokens.map((tk) => (
           <li key={tk.id} className="flex items-start justify-between gap-2 py-2 text-sm">
             <span>
               <span className="font-medium">{tk.name ?? "—"}</span>{" "}
-              <span className="text-ink/50">
+              <span className="text-text/50">
                 {t(d, "settings.connect.lastFour", { four: tk.lastFour ?? "????" })}
               </span>
-              <div className="text-xs text-ink/50">
+              <div className="text-xs text-text/50">
                 {t(d, "settings.connect.created")}: {tk.createdAt.slice(0, 10)} ·{" "}
                 {t(d, "settings.connect.lastUsed")}:{" "}
                 {tk.lastUsedAt ? tk.lastUsedAt.slice(0, 10) : t(d, "settings.connect.never")}
@@ -137,11 +137,11 @@ export function McpTokensCard({
 
       <div className="mt-4">
         <h3 className="text-sm font-semibold">{t(d, "settings.connect.instructionsHeading")}</h3>
-        <p className="mt-1 text-sm text-ink/70">{t(d, "settings.connect.instructions")}</p>
-        <p className="mt-2 text-xs text-ink/60">
+        <p className="mt-1 text-sm text-text/70">{t(d, "settings.connect.instructions")}</p>
+        <p className="mt-2 text-xs text-text/60">
           {t(d, "settings.connect.endpointLabel")}: <code>{endpoint}</code>
         </p>
-        <pre className="mt-2 overflow-x-auto rounded bg-ink/5 p-2 text-xs">{configSnippet}</pre>
+        <pre className="mt-2 overflow-x-auto rounded bg-text/5 p-2 text-xs">{configSnippet}</pre>
       </div>
     </section>
   );
