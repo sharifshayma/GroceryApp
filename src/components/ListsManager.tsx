@@ -8,7 +8,8 @@ import { duplicateList, deleteList } from "@/actions/lists";
 import { useT } from "@/i18n/LocaleProvider";
 import { getItemName } from "@/lib/i18n-names";
 import { formatListDate } from "@/lib/format-list-date";
-import { IconEdit, IconChevronDown, IconCopy, IconTrash, IllustrationNoLists } from "@/components/Icons";
+import { IconEdit, IconChevronDown, IconCopy, IconTrash, IconShare, IllustrationNoLists } from "@/components/Icons";
+import { ShareSheet } from "@/components/ShareSheet";
 
 interface ListItemRow {
   id: string;
@@ -16,7 +17,12 @@ interface ListItemRow {
   quantity: number;
   unit: string;
   notes: string | null;
-  item: { emoji: string; name: string; nameHe: string | null } | null;
+  item: {
+    emoji: string;
+    name: string;
+    nameHe: string | null;
+    category: { name: string; nameHe: string | null; emoji: string } | null;
+  } | null;
 }
 
 interface ListRow {
@@ -32,6 +38,7 @@ export function ListsManager({ lists, nowMs }: { lists: ListRow[]; nowMs: number
   const { t, locale } = useT();
 
   const [expandedListId, setExpandedListId] = useState<string | null>(null);
+  const [shareList, setShareList] = useState<ListRow | null>(null);
 
   const activeList = lists.find((l) => l.status === "active");
   const otherLists = lists.filter((l) => l.id !== activeList?.id);
@@ -90,6 +97,13 @@ export function ListsManager({ lists, nowMs }: { lists: ListRow[]; nowMs: number
                   className="flex-1 py-2.5 rounded-xl bg-primary text-white font-semibold"
                 >
                   {t("lists.continueShopping")} →
+                </button>
+                <button
+                  onClick={() => setShareList(activeList)}
+                  className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-text-secondary flex items-center justify-center"
+                  title="Share"
+                >
+                  <IconShare className="w-4 h-4" />
                 </button>
               </div>
             </div>
@@ -173,6 +187,13 @@ export function ListsManager({ lists, nowMs }: { lists: ListRow[]; nowMs: number
                     </button>
                   )}
                   <button
+                    onClick={() => setShareList(list)}
+                    className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-text-secondary flex items-center justify-center"
+                    title="Share"
+                  >
+                    <IconShare className="w-4 h-4" />
+                  </button>
+                  <button
                     onClick={() => handleDuplicate(list.id)}
                     className="w-11 h-11 rounded-xl bg-white border border-neutral/30 text-text-secondary flex items-center justify-center"
                     title="Duplicate"
@@ -201,6 +222,8 @@ export function ListsManager({ lists, nowMs }: { lists: ListRow[]; nowMs: number
       >
         +
       </Link>
+
+      {shareList && <ShareSheet list={shareList} onClose={() => setShareList(null)} />}
     </div>
   );
 }

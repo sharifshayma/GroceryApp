@@ -21,7 +21,14 @@ export default async function ListsPage() {
           quantity: true,
           unit: true,
           notes: true,
-          item: { select: { emoji: true, name: true, nameHe: true } },
+          item: {
+            select: {
+              emoji: true,
+              name: true,
+              nameHe: true,
+              category: { select: { name: true, nameHe: true, emoji: true } },
+            },
+          },
         },
       },
     },

@@ -9,7 +9,8 @@ import { setListItemBought, updateListItem } from "@/actions/list-items";
 import { completeList } from "@/actions/lists";
 import { AddToListModal } from "@/components/AddToListModal";
 import { CarryOverModal } from "@/components/CarryOverModal";
-import { IconBack, IconEdit, IconCheck, IconChevronRight } from "@/components/Icons";
+import { ShareSheet } from "@/components/ShareSheet";
+import { IconBack, IconEdit, IconCheck, IconChevronRight, IconShare } from "@/components/Icons";
 import type { HomeItem, OpenList, StockRow } from "@/lib/home-data";
 
 type CategoryRef = { name: string; nameHe: string | null; emoji: string };
@@ -50,6 +51,7 @@ export function ShoppingList({
   const [detailItem, setDetailItem] = useState<ModalItem | null>(null);
   const [showCarryOver, setShowCarryOver] = useState(false);
   const [carryOverSaving, setCarryOverSaving] = useState(false);
+  const [showShare, setShowShare] = useState(false);
 
   const readOnly = list.status === "completed";
 
@@ -147,6 +149,13 @@ export function ShoppingList({
             <IconEdit />
           </Link>
         )}
+        <button
+          onClick={() => setShowShare(true)}
+          className="w-10 h-10 rounded-xl bg-surface border border-neutral flex items-center justify-center text-text-secondary"
+          title="Share"
+        >
+          <IconShare />
+        </button>
       </div>
 
       {/* Progress */}
@@ -304,6 +313,8 @@ export function ShoppingList({
           onClose={() => setDetailItem(null)}
         />
       )}
+
+      {showShare && <ShareSheet list={list} onClose={() => setShowShare(false)} />}
     </div>
   );
 }
