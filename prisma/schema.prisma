@@ -57,6 +57,10 @@ model User {
   createdHouseholds Household[] @relation("HouseholdCreator")
   mcpTokens         McpToken[]
 
+  oauthApplications OauthApplication[]
+  oauthAccessTokens OauthAccessToken[]
+  oauthConsents     OauthConsent[]
+
   @@map("user")
 }
 
@@ -290,5 +294,60 @@ model McpToken {
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([householdId])
+  @@index([userId])
+}
+
+model OauthApplication {
+  id           String   @id @default(cuid())
+  name         String
+  icon         String?
+  metadata     String?
+  clientId     String   @unique
+  clientSecret String?
+  redirectUrls String
+  type         String
+  disabled     Boolean  @default(false)
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  accessTokens OauthAccessToken[]
+  consents     OauthConsent[]
+
+  @@index([userId])
+  @@index([clientId])
+}
+
+model OauthAccessToken {
+  id                    String    @id @default(cuid())
+  accessToken           String    @unique
+  refreshToken          String?   @unique
+  accessTokenExpiresAt  DateTime
+  refreshTokenExpiresAt DateTime?
+  clientId              String
+  client                OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes                String
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@index([clientId])
+  @@index([userId])
+}
+
+model OauthConsent {
+  id           String   @id @default(cuid())
+  clientId     String
+  client       OauthApplication @relation(fields: [clientId], references: [clientId], onDelete: Cascade)
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  scopes       String
+  consentGiven Boolean
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([clientId])
   @@index([userId])
 }
