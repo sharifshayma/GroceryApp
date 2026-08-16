@@ -19,12 +19,23 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    // On success logIn() redirects server-side (to /dashboard, or back into an
-    // in-progress OAuth /authorize flow) and never resolves with a value.
-    const result = await logIn(email, password);
-    setSubmitting(false);
-    if (result && !result.ok) {
-      setError(result.error);
+    try {
+      // On success logIn() redirects server-side (to /dashboard, or back into
+      // an in-progress OAuth /authorize flow) via next/navigation's redirect(),
+      // which is handled entirely on the server — the client call below simply
+      // never resolves to a handled value in that case, so there's nothing to
+      // do here but let the navigation happen.
+      const result = await logIn(email, password);
+      if (result && !result.ok) {
+        setError(result.error);
+        setSubmitting(false);
+      }
+    } catch {
+      // logIn() rethrows anything that isn't the sign-in failure/redirect it
+      // already handles (e.g. a DB hiccup) — without this, the button would
+      // stay stuck disabled behind a generic framework error.
+      setError(t(d, "auth.login.genericError"));
+      setSubmitting(false);
     }
   }
 

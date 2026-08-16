@@ -3,7 +3,14 @@ import type { en } from "./en";
 export const he: typeof en = {
   common: { greeting: "שלום, {name}", save: "שמור", saving: "שומר...", loading: "טוען..." },
   auth: {
-    login: { title: "התחברות", email: "אימייל", password: "סיסמה", submit: "התחבר", noAccount: "אין לך חשבון? הרשמה" },
+    login: {
+      title: "התחברות",
+      email: "אימייל",
+      password: "סיסמה",
+      submit: "התחבר",
+      noAccount: "אין לך חשבון? הרשמה",
+      genericError: "משהו השתבש. נסה/י שוב.",
+    },
     signup: { title: "יצירת חשבון", name: "השם שלך", submit: "הרשמה", haveAccount: "כבר יש לך חשבון? התחבר" },
     reset: { title: "איפוס סיסמה", sendCode: "שלח קוד", code: "קוד", newPassword: "סיסמה חדשה", submit: "אפס" },
     logout: "התנתקות",
