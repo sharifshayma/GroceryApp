@@ -8,6 +8,9 @@ import { getItemName } from "@/lib/i18n-names";
 import { addListItem, removeListItem } from "@/actions/list-items";
 import { createListAndAddItem } from "@/actions/home";
 import { setStock } from "@/actions/stock";
+import { getItemPriceHistory, type ItemPriceEntry } from "@/actions/prices";
+import { formatPrice } from "@/lib/format-price";
+import { computeUnitPrice } from "@/lib/unit-price";
 
 type Item = {
   id: string;
@@ -46,6 +49,34 @@ export function AddToListModal({
   const isHe = locale === "he";
   const [step, setStep] = useState<"quantity" | "pickList">("quantity");
   const [saving, setSaving] = useState(false);
+
+  // Price history for this item, fetched on demand when the sheet opens.
+  const [priceEntries, setPriceEntries] = useState<ItemPriceEntry[]>([]);
+  const [cheapest, setCheapest] = useState<ItemPriceEntry | null>(null);
+  const [pricesLoading, setPricesLoading] = useState(true);
+  const [showAllPrices, setShowAllPrices] = useState(false);
+  useEffect(() => {
+    let cancelled = false;
+    setPricesLoading(true);
+    setShowAllPrices(false);
+    getItemPriceHistory(item.id)
+      .then((res) => {
+        if (cancelled) return;
+        setPriceEntries(res.entries);
+        setCheapest(res.cheapest);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setPriceEntries([]);
+        setCheapest(null);
+      })
+      .finally(() => {
+        if (!cancelled) setPricesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [item.id]);
 
   // Local stock state, kept in sync with the prop
   const [stockQty, setStockQty] = useState(stockRow?.quantity ?? 0);
@@ -293,6 +324,78 @@ export function AddToListModal({
                     >
                       {isHe ? "ביטול" : "Cancel"}
                     </button>
+                  </div>
+                )}
+              </div>
+            </section>
+
+            {/* Price history section */}
+            <section>
+              <div className="flex items-baseline justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-base">🏷️</span>
+                  <h3 className="text-sm font-semibold">{isHe ? "היסטוריית מחירים" : "Price history"}</h3>
+                </div>
+                {!pricesLoading && priceEntries.length > 0 && (
+                  <p className="text-xs text-text-secondary">
+                    {priceEntries.length} {isHe ? "רשומות" : priceEntries.length === 1 ? "entry" : "entries"}
+                  </p>
+                )}
+              </div>
+              <div className="p-3 rounded-xl bg-bg border border-neutral/30">
+                {pricesLoading ? (
+                  <p className="text-sm text-text-secondary">{isHe ? "טוען…" : "Loading…"}</p>
+                ) : priceEntries.length === 0 ? (
+                  <p className="text-sm text-text-secondary">
+                    {isHe ? "עדיין לא נרשמו מחירים" : "No prices logged yet"}
+                  </p>
+                ) : (
+                  <div className="space-y-2.5">
+                    {cheapest && (
+                      <div className="flex items-center flex-wrap gap-x-2 gap-y-1 text-sm">
+                        <span className="px-2 py-0.5 rounded-full bg-green/15 text-green-dark text-xs font-semibold flex-shrink-0">
+                          {isHe ? "הזול ביותר" : "Cheapest"}
+                        </span>
+                        <span className="font-semibold text-text">
+                          {formatPrice(cheapest.price, cheapest.currency)}
+                        </span>
+                        <span className="text-text-secondary">
+                          {cheapest.store || "—"} · {cheapest.purchasedAt}
+                        </span>
+                      </div>
+                    )}
+                    <ul className="space-y-1.5">
+                      {(showAllPrices ? priceEntries : priceEntries.slice(0, 3)).map((e) => {
+                        const unit = computeUnitPrice(e.price, e.quantityAmount);
+                        return (
+                          <li key={e.id} className="flex items-baseline justify-between gap-2 text-sm">
+                            <span className="text-text-secondary truncate min-w-0">
+                              {e.store || "—"} · {e.purchasedAt}
+                              {e.quantityAmount != null && unit != null && (
+                                <span> · {formatPrice(unit, e.currency)}/{e.quantityUnit || ""}</span>
+                              )}
+                            </span>
+                            <span className="font-medium text-text flex-shrink-0">
+                              {formatPrice(e.price, e.currency)}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                    {priceEntries.length > 3 && (
+                      <button
+                        onClick={() => setShowAllPrices((v) => !v)}
+                        className="text-xs font-medium text-primary hover:underline"
+                      >
+                        {showAllPrices
+                          ? isHe
+                            ? "הצג פחות"
+                            : "Show less"
+                          : isHe
+                            ? `הצג הכל (${priceEntries.length})`
+                            : `Show all (${priceEntries.length})`}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
