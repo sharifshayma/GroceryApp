@@ -27,6 +27,10 @@ export const he: typeof en = {
     search: "חיפוש פריטים...",
     noResults: "לא נמצאו פריטים",
   },
+  empty: {
+    noLists: "אין רשימות עדיין",
+    noListsDesc: "צרו את רשימת הקניות הראשונה שלכם!",
+  },
   catalog: {
     nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים", settings: "הגדרות" },
     categories: {
@@ -97,6 +101,12 @@ export const he: typeof en = {
     itemsCount: "פריטים",
     emptyOpen: "אין רשימות פתוחות.",
     emptyCompleted: "אין רשימות שהושלמו.",
+    active: "פעיל",
+    draft: "טיוטה",
+    completedLabel: "הושלם",
+    continueShopping: "המשך קניות",
+    startShopping: "התחל קניות",
+    view: "צפייה",
     rename: "שינוי שם",
     duplicate: "שכפול",
     delete: "מחיקה",

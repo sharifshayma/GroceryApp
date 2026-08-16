@@ -129,6 +129,31 @@ export function IconChevronRight({ className = "w-4 h-4" }: IconProps) {
   );
 }
 
+export function IconCopy({ className = "w-5 h-5" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="9" y="9" width="13" height="13" rx="2" />
+      <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+    </svg>
+  );
+}
+
+export function IllustrationNoLists({ className = "w-24 h-24" }: IconProps) {
+  return (
+    <svg className={className} viewBox="0 0 120 120" fill="none">
+      <rect x="25" y="15" width="70" height="90" rx="10" fill="#FFF8E7" stroke="#F28B30" strokeWidth="2" />
+      <rect x="20" y="10" width="10" height="20" rx="3" fill="#E8C840" />
+      <rect x="90" y="10" width="10" height="20" rx="3" fill="#E8C840" />
+      <line x1="40" y1="42" x2="80" y2="42" stroke="#F2A665" strokeWidth="2" strokeLinecap="round" />
+      <line x1="40" y1="55" x2="72" y2="55" stroke="#F2A665" strokeWidth="2" strokeLinecap="round" opacity="0.6" />
+      <line x1="40" y1="68" x2="76" y2="68" stroke="#F2A665" strokeWidth="2" strokeLinecap="round" opacity="0.4" />
+      <circle cx="33" cy="42" r="3" fill="#8BC34A" />
+      <circle cx="33" cy="55" r="3" fill="#8BC34A" opacity="0.6" />
+      <circle cx="33" cy="68" r="3" fill="#8BC34A" opacity="0.4" />
+    </svg>
+  );
+}
+
 export function IconSearch({ className = "w-5 h-5" }: IconProps) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">

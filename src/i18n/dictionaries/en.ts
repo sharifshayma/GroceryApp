@@ -25,6 +25,10 @@ export const en = {
     search: "Search items...",
     noResults: "No items found",
   },
+  empty: {
+    noLists: "No lists yet",
+    noListsDesc: "Create your first shopping list!",
+  },
   catalog: {
     nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices", settings: "Settings" },
     categories: {
@@ -95,6 +99,12 @@ export const en = {
     itemsCount: "items",
     emptyOpen: "No open lists.",
     emptyCompleted: "No completed lists.",
+    active: "Active",
+    draft: "Draft",
+    completedLabel: "Completed",
+    continueShopping: "Continue Shopping",
+    startShopping: "Start Shopping",
+    view: "View",
     rename: "Rename",
     duplicate: "Duplicate",
     delete: "Delete",
