@@ -81,7 +81,7 @@ export function ShoppingList({
   }
 
   async function changeQuantity(li: ShoppingListItemRow, next: number) {
-    await updateListItem({ listItemId: li.id, quantity: Math.max(1, next), unit: li.unit });
+    await updateListItem({ listItemId: li.id, quantity: Math.max(1, next), unit: li.unit, notes: li.notes ?? undefined });
     router.refresh();
   }
 
