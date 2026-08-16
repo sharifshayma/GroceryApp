@@ -12,6 +12,8 @@ export async function addPriceEntry(input: {
   price: number;
   store?: string;
   purchasedAt?: string;
+  quantityAmount?: number | null;
+  quantityUnit?: string;
 }): Promise<Result> {
   const household = await requireHousehold();
   const user = await getCurrentUser();
@@ -25,6 +27,8 @@ export async function updatePriceEntry(input: {
   price: number;
   store?: string;
   purchasedAt?: string;
+  quantityAmount?: number | null;
+  quantityUnit?: string;
 }): Promise<Result> {
   const household = await requireHousehold();
   const res = await updatePriceEntryCore(household.id, input);
