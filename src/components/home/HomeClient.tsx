@@ -59,6 +59,7 @@ export function HomeClient(props: {
   // Clear selections when switching filters
   useEffect(() => {
     setSelectedItems(new Map());
+    setSelectMode(false);
   }, [activeTag, activeCategory, search]);
 
   const itemsInList = new Set(props.openLists.flatMap((l) => l.items.map((i) => i.itemId)));

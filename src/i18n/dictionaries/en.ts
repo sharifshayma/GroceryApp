@@ -23,7 +23,7 @@ export const en = {
   home: {
     emptyCategory: "No items in this category yet.",
     search: "Search items...",
-    noResults: "No items in this category yet",
+    noResults: "No items found",
   },
   catalog: {
     nav: { categories: "Categories", items: "Items", tags: "Tags", lists: "Lists", stock: "Stock", prices: "Prices", settings: "Settings" },

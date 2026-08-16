@@ -25,7 +25,7 @@ export const he: typeof en = {
   home: {
     emptyCategory: "אין עדיין פריטים בקטגוריה הזו.",
     search: "חיפוש פריטים...",
-    noResults: "אין פריטים בקטגוריה הזו עדיין",
+    noResults: "לא נמצאו פריטים",
   },
   catalog: {
     nav: { categories: "קטגוריות", items: "פריטים", tags: "תגיות", lists: "רשימות", stock: "מלאי", prices: "מחירים", settings: "הגדרות" },
